@@ -1,0 +1,1398 @@
+basePath: /api/v1
+definitions:
+  api-gateway_internal_models.AddressInfo:
+    properties:
+      city:
+        example: Ho Chi Minh City
+        type: string
+      country:
+        example: Vietnam
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_default:
+        example: true
+        type: boolean
+      postal_code:
+        example: "70000"
+        type: string
+      state:
+        example: Ho Chi Minh
+        type: string
+      street:
+        example: 123 Main St
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  api-gateway_internal_models.AuthData:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/api-gateway_internal_models.UserInfo'
+    type: object
+  api-gateway_internal_models.AuthResponse:
+    properties:
+      data:
+        $ref: '#/definitions/api-gateway_internal_models.AuthData'
+      message:
+        example: login successful
+        type: string
+    type: object
+  api-gateway_internal_models.Category:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/api-gateway_internal_models.Category'
+        type: array
+      created_at:
+        example: "2025-12-23T10:00:00Z"
+        type: string
+      description:
+        example: Electronic devices and gadgets
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Electronics
+        type: string
+      parent:
+        $ref: '#/definitions/api-gateway_internal_models.Category'
+      parent_id:
+        example: 0
+        type: integer
+      slug:
+        example: electronics
+        type: string
+      updated_at:
+        example: "2025-12-23T10:00:00Z"
+        type: string
+    type: object
+  api-gateway_internal_models.ChangePasswordRequest:
+    properties:
+      new_password:
+        example: newpassword123
+        minLength: 6
+        type: string
+      old_password:
+        example: oldpassword123
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  api-gateway_internal_models.CreateAddressRequest:
+    properties:
+      city:
+        example: Ho Chi Minh City
+        type: string
+      country:
+        example: Vietnam
+        type: string
+      is_default:
+        example: false
+        type: boolean
+      postal_code:
+        example: "70000"
+        type: string
+      state:
+        example: Ho Chi Minh
+        type: string
+      street:
+        example: 123 Main St
+        type: string
+    required:
+    - city
+    - country
+    - postal_code
+    - state
+    - street
+    type: object
+  api-gateway_internal_models.CreateCategoryRequest:
+    properties:
+      description:
+        example: Electronic devices and gadgets
+        type: string
+      name:
+        example: Electronics
+        type: string
+      parent_id:
+        example: 0
+        type: integer
+      slug:
+        example: electronics
+        type: string
+    required:
+    - name
+    type: object
+  api-gateway_internal_models.CreateProductRequest:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      description:
+        example: Latest iPhone with A17 Pro chip
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: iPhone 15 Pro
+        type: string
+      price:
+        example: 999.99
+        type: number
+      sku:
+        example: IPH15P-001
+        type: string
+      status:
+        example: ACTIVE
+        type: string
+      stock:
+        example: 50
+        minimum: 0
+        type: integer
+    required:
+    - description
+    - name
+    - price
+    - sku
+    type: object
+  api-gateway_internal_models.ErrorResponse:
+    properties:
+      error:
+        example: Bad request
+        type: string
+      message:
+        example: Invalid input
+        type: string
+    type: object
+  api-gateway_internal_models.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  api-gateway_internal_models.Product:
+    properties:
+      category:
+        $ref: '#/definitions/api-gateway_internal_models.Category'
+      category_id:
+        example: 1
+        type: integer
+      created_at:
+        example: "2025-12-23T10:00:00Z"
+        type: string
+      description:
+        example: Latest iPhone with A17 Pro chip
+        type: string
+      id:
+        example: 1
+        type: integer
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: iPhone 15 Pro
+        type: string
+      price:
+        example: 999.99
+        type: number
+      sku:
+        example: IPH15P-001
+        type: string
+      status:
+        example: ACTIVE
+        type: string
+      stock:
+        example: 50
+        type: integer
+      updated_at:
+        example: "2025-12-23T10:00:00Z"
+        type: string
+    type: object
+  api-gateway_internal_models.ProductsResponse:
+    properties:
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/api-gateway_internal_models.Product'
+        type: array
+      total:
+        example: 100
+        type: integer
+    type: object
+  api-gateway_internal_models.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      phone_number:
+        example: "+1234567890"
+        type: string
+      username:
+        example: johndoe
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - username
+    type: object
+  api-gateway_internal_models.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        example: Operation successful
+        type: string
+    type: object
+  api-gateway_internal_models.UpdateAddressRequest:
+    properties:
+      city:
+        example: Ho Chi Minh City
+        type: string
+      country:
+        example: Vietnam
+        type: string
+      is_default:
+        example: false
+        type: boolean
+      postal_code:
+        example: "70000"
+        type: string
+      state:
+        example: Ho Chi Minh
+        type: string
+      street:
+        example: 123 Main St
+        type: string
+    type: object
+  api-gateway_internal_models.UpdateCategoryRequest:
+    properties:
+      description:
+        example: Updated description
+        type: string
+      name:
+        example: Electronics Updated
+        type: string
+      parent_id:
+        example: 0
+        type: integer
+      slug:
+        example: electronics-updated
+        type: string
+    type: object
+  api-gateway_internal_models.UpdateProductRequest:
+    properties:
+      category_id:
+        example: 1
+        type: integer
+      description:
+        example: Updated description
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: iPhone 15 Pro Updated
+        type: string
+      price:
+        example: 1099.99
+        type: number
+      status:
+        example: ACTIVE
+        type: string
+      stock:
+        example: 60
+        type: integer
+    type: object
+  api-gateway_internal_models.UpdateProfileRequest:
+    properties:
+      full_name:
+        example: John Doe Updated
+        type: string
+      phone_number:
+        example: "+1234567890"
+        type: string
+    type: object
+  api-gateway_internal_models.UserInfo:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
+      id:
+        example: 1
+        type: integer
+      phone_number:
+        example: "+1234567890"
+        type: string
+      role:
+        example: user
+        type: string
+      status:
+        example: ACTIVE
+        type: string
+      username:
+        example: johndoe
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: Comprehensive API documentation for the Ecommerce Platform. All endpoints
+    are accessed through the API Gateway. This is the single source of truth for all
+    API documentation.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Ecommerce Platform API
+  version: "1.0"
+paths:
+  /addresses:
+    get:
+      consumes:
+      - application/json
+      description: Get all addresses for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of addresses
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all addresses
+      tags:
+      - Addresses
+    post:
+      consumes:
+      - application/json
+      description: Create a new address for the authenticated user
+      parameters:
+      - description: Create Address Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.CreateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Address created successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new address
+      tags:
+      - Addresses
+  /addresses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an address for the authenticated user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address deleted successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Address not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an address
+      tags:
+      - Addresses
+    get:
+      consumes:
+      - application/json
+      description: Get a specific address by ID for the authenticated user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address details
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Address not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get address by ID
+      tags:
+      - Addresses
+    put:
+      consumes:
+      - application/json
+      description: Update an existing address for the authenticated user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Address Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.UpdateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address updated successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Address not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an address
+      tags:
+      - Addresses
+  /addresses/{id}/default:
+    put:
+      consumes:
+      - application/json
+      description: Set an address as the default address for the authenticated user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address set as default
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Address not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set default address
+      tags:
+      - Addresses
+  /api/gateway/health:
+    get:
+      description: Returns the health status of the API Gateway and all registered
+        microservices
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Gateway and services are healthy
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: One or more services are unhealthy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - Gateway
+  /api/v1/{path}:
+    delete:
+      consumes:
+      - application/json
+      description: Routes requests to appropriate backend microservices (Identity
+        Service, Product Service, etc.)
+      parameters:
+      - description: Bearer token for protected routes
+        in: header
+        name: Authorization
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response from backend service
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Proxy request to microservice
+      tags:
+      - Gateway
+    get:
+      consumes:
+      - application/json
+      description: Routes requests to appropriate backend microservices (Identity
+        Service, Product Service, etc.)
+      parameters:
+      - description: Bearer token for protected routes
+        in: header
+        name: Authorization
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response from backend service
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Proxy request to microservice
+      tags:
+      - Gateway
+    patch:
+      consumes:
+      - application/json
+      description: Routes requests to appropriate backend microservices (Identity
+        Service, Product Service, etc.)
+      parameters:
+      - description: Bearer token for protected routes
+        in: header
+        name: Authorization
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response from backend service
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Proxy request to microservice
+      tags:
+      - Gateway
+    post:
+      consumes:
+      - application/json
+      description: Routes requests to appropriate backend microservices (Identity
+        Service, Product Service, etc.)
+      parameters:
+      - description: Bearer token for protected routes
+        in: header
+        name: Authorization
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response from backend service
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Proxy request to microservice
+      tags:
+      - Gateway
+    put:
+      consumes:
+      - application/json
+      description: Routes requests to appropriate backend microservices (Identity
+        Service, Product Service, etc.)
+      parameters:
+      - description: Bearer token for protected routes
+        in: header
+        name: Authorization
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Response from backend service
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Proxy request to microservice
+      tags:
+      - Gateway
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, receive JWT token
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AuthResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account with email, password, username, and
+        full name
+      parameters:
+      - description: Register Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.AuthResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /categories:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of categories
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_models.Category'
+            type: array
+      summary: Get all categories
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new category
+      parameters:
+      - description: Create Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Category created successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Create a new category
+      tags:
+      - Categories
+  /categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category deleted successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Delete a category
+      tags:
+      - Categories
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category details
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.Category'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Get category by ID
+      tags:
+      - Categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category updated successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Update an existing category
+      tags:
+      - Categories
+  /categories/{id}/children:
+    get:
+      consumes:
+      - application/json
+      description: Get all child categories of a parent category
+      parameters:
+      - description: Parent Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of child categories
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_models.Category'
+            type: array
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Get child categories
+      tags:
+      - Categories
+  /categories/{id}/products:
+    get:
+      consumes:
+      - application/json
+      description: Get all products in a specific category with pagination
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products in category
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ProductsResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Get products by category
+      tags:
+      - Categories
+  /categories/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Get category information by its slug
+      parameters:
+      - description: Category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category details
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.Category'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Get category by slug
+      tags:
+      - Categories
+  /health:
+    get:
+      description: Returns the health status of the API Gateway and all registered
+        microservices
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Gateway and services are healthy
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: One or more services are unhealthy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - Gateway
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of products with optional filters (category,
+        status)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Filter by status (ACTIVE, INACTIVE, DRAFT)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ProductsResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: List products with pagination and filters
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product (requires authentication)
+      parameters:
+      - description: Create Product Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product created successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new product
+      tags:
+      - Products
+  /products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a product (requires authentication)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product deleted successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a product
+      tags:
+      - Products
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product details
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.Product'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Get product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product (requires authentication)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Product Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product updated successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing product
+      tags:
+      - Products
+  /products/{id}/inventory:
+    patch:
+      consumes:
+      - application/json
+      description: Update product stock quantity (requires authentication)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stock update
+        in: body
+        name: stock
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Inventory updated successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update product inventory
+      tags:
+      - Products
+  /products/search:
+    get:
+      consumes:
+      - application/json
+      description: Search products by query string and optional category
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Filter by category slug
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of matching products
+          schema:
+            items:
+              $ref: '#/definitions/api-gateway_internal_models.Product'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Search products
+      tags:
+      - Products
+  /users/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password
+      parameters:
+      - description: Change Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Users
+  /users/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.UserInfo'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Update Profile Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api-gateway_internal_models.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.UserInfo'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: 'Type "Bearer" followed by a space and JWT token. Example: "Bearer
+      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

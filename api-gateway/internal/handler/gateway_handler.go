@@ -40,6 +40,21 @@ func NewGatewayHandler(gatewayService *service.GatewayService, logger *zap.Logge
 
 // ProxyRequest proxies a request to the appropriate microservice
 // This is the main handler that routes requests to backend services
+// @Summary Proxy request to microservice
+// @Description Routes requests to appropriate backend microservices (Identity Service, Product Service, etc.)
+// @Tags Gateway
+// @Accept json
+// @Produce json
+// @Param Authorization header string false "Bearer token for protected routes"
+// @Success 200 {object} map[string]interface{} "Response from backend service"
+// @Failure 400 {object} map[string]interface{} "Bad request"
+// @Failure 401 {object} map[string]interface{} "Unauthorized"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/{path} [get]
+// @Router /api/v1/{path} [post]
+// @Router /api/v1/{path} [put]
+// @Router /api/v1/{path} [patch]
+// @Router /api/v1/{path} [delete]
 func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 	// DEBUG: Log incoming request immediately
 	_, hasAuthInContext := c.Get("auth_header")
@@ -147,6 +162,14 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 }
 
 // HealthCheck returns the health status of the gateway and all services
+// @Summary Health check
+// @Description Returns the health status of the API Gateway and all registered microservices
+// @Tags Gateway
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Gateway and services are healthy"
+// @Failure 503 {object} map[string]interface{} "One or more services are unhealthy"
+// @Router /health [get]
+// @Router /api/gateway/health [get]
 func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 	healthStatus := h.gatewayService.HealthCheck(c.Request.Context())
 

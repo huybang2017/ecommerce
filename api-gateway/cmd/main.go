@@ -19,7 +19,28 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	
+	_ "api-gateway/docs" // Swagger docs
 )
+
+// @title Ecommerce Platform API
+// @version 1.0
+// @description Comprehensive API documentation for the Ecommerce Platform. All endpoints are accessed through the API Gateway. This is the single source of truth for all API documentation.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@example.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8000
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token. Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 func main() {
 	// Load configuration
@@ -146,9 +167,14 @@ func main() {
 
 	// Initialize handlers
 	gatewayHandler := handler.NewGatewayHandler(gatewayService, appLogger)
+	authHandler := handler.NewAuthHandler(gatewayService, appLogger)
+	userHandler := handler.NewUserHandler(gatewayService, appLogger)
+	addressHandler := handler.NewAddressHandler(gatewayService, appLogger)
+	productHandler := handler.NewProductHandler(gatewayService, appLogger)
+	categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
 
 	// Setup router
-	router := router.SetupRouter(gatewayHandler, cfg, appLogger)
+	router := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, cfg, appLogger)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{
@@ -184,4 +210,3 @@ func main() {
 
 	appLogger.Info("API Gateway exited gracefully")
 }
-

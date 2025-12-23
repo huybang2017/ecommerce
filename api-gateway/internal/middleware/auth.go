@@ -31,16 +31,29 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 			return
 		}
 
-		// Check if it's a Bearer token
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			logger.Warn("Invalid authorization header format")
+		// Normalize Authorization header: auto-add "Bearer " prefix if missing
+		// This handles cases where Swagger UI or clients send token directly
+		var tokenString string
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			// Already has Bearer prefix
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		} else if strings.HasPrefix(authHeader, "bearer ") {
+			// Case-insensitive check
+			tokenString = strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
+		} else {
+			// No Bearer prefix, assume it's just the token
+			tokenString = strings.TrimSpace(authHeader)
+			// Normalize the header for forwarding to backend services
+			authHeader = "Bearer " + tokenString
+		}
+
+		// Validate token is not empty
+		if tokenString == "" {
+			logger.Warn("Empty token in authorization header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
 			c.Abort()
 			return
 		}
-
-		tokenString := parts[1]
 
 		// Parse and validate the token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

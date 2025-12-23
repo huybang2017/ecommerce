@@ -7,12 +7,19 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
 // SetupRouter configures all API Gateway routes
 func SetupRouter(
 	gatewayHandler *handler.GatewayHandler,
+	authHandler *handler.AuthHandler,
+	userHandler *handler.UserHandler,
+	addressHandler *handler.AddressHandler,
+	productHandler *handler.ProductHandler,
+	categoryHandler *handler.CategoryHandler,
 	cfg *config.Config,
 	logger *zap.Logger,
 ) *gin.Engine {
@@ -40,6 +47,9 @@ func SetupRouter(
 	// Rate limiting middleware
 	router.Use(middleware.RateLimitMiddleware(&cfg.RateLimit, logger))
 
+	// Swagger documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// Health check endpoint (no auth required)
 	router.GET("/health", gatewayHandler.HealthCheck)
 	router.GET("/api/gateway/health", gatewayHandler.HealthCheck)
@@ -53,19 +63,19 @@ func SetupRouter(
 				products := v1.Group("/products")
 				{
 					// Public routes (no auth required)
-					products.GET("", gatewayHandler.ProxyRequest)
-					products.GET("/:id", gatewayHandler.ProxyRequest)
-					products.GET("/search", gatewayHandler.ProxyRequest)
-					products.POST("", gatewayHandler.ProxyRequest)
+					products.GET("", productHandler.ListProducts)
+					products.GET("/:id", productHandler.GetProduct)
+					products.GET("/search", productHandler.SearchProducts)
+					products.POST("", productHandler.CreateProduct) // Protected in handler
 
 					// Protected routes (auth required)
 					protected := products.Group("")
 					protected.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
 					{
-						protected.PUT("/:id", gatewayHandler.ProxyRequest)
-						protected.PATCH("/:id", gatewayHandler.ProxyRequest)
-						protected.PATCH("/:id/inventory", gatewayHandler.ProxyRequest)
-						protected.DELETE("/:id", gatewayHandler.ProxyRequest)
+						protected.PUT("/:id", productHandler.UpdateProduct)
+						protected.PATCH("/:id", productHandler.UpdateProduct)
+						protected.PATCH("/:id/inventory", productHandler.UpdateInventory)
+						protected.DELETE("/:id", productHandler.DeleteProduct)
 					}
 				}
 
@@ -73,22 +83,22 @@ func SetupRouter(
 				categories := v1.Group("/categories")
 				{
 					// Public routes (no auth required)
-					categories.GET("", gatewayHandler.ProxyRequest)
-					categories.GET("/:id", gatewayHandler.ProxyRequest)
-					categories.GET("/slug/:slug", gatewayHandler.ProxyRequest)
-					categories.GET("/:id/children", gatewayHandler.ProxyRequest)
-					categories.GET("/:id/products", gatewayHandler.ProxyRequest)
-					categories.POST("", gatewayHandler.ProxyRequest)
-					categories.PUT("/:id", gatewayHandler.ProxyRequest)
-					categories.DELETE("/:id", gatewayHandler.ProxyRequest)
+					categories.GET("", categoryHandler.ListCategories)
+					categories.GET("/:id", categoryHandler.GetCategory)
+					categories.GET("/slug/:slug", categoryHandler.GetCategoryBySlug)
+					categories.GET("/:id/children", categoryHandler.GetCategoryChildren)
+					categories.GET("/:id/products", categoryHandler.GetCategoryProducts)
+					categories.POST("", categoryHandler.CreateCategory)
+					categories.PUT("/:id", categoryHandler.UpdateCategory)
+					categories.DELETE("/:id", categoryHandler.DeleteCategory)
 				}
 
-				// Identity service routes
+				// Identity service routes - Auth
 				auth := v1.Group("/auth")
 				{
 					// Public routes (no auth required)
-					auth.POST("/register", gatewayHandler.ProxyRequest)
-					auth.POST("/login", gatewayHandler.ProxyRequest)
+					auth.POST("/register", authHandler.Register)
+					auth.POST("/login", authHandler.Login)
 				}
 
 				// Protected identity service routes
@@ -97,19 +107,19 @@ func SetupRouter(
 				{
 					users := protectedIdentity.Group("/users")
 					{
-						users.GET("/profile", gatewayHandler.ProxyRequest)
-						users.PUT("/profile", gatewayHandler.ProxyRequest)
-						users.PUT("/password", gatewayHandler.ProxyRequest)
+						users.GET("/profile", userHandler.GetProfile)
+						users.PUT("/profile", userHandler.UpdateProfile)
+						users.PUT("/password", userHandler.ChangePassword)
 					}
 
 					addresses := protectedIdentity.Group("/addresses")
 					{
-						addresses.GET("", gatewayHandler.ProxyRequest)
-						addresses.POST("", gatewayHandler.ProxyRequest)
-						addresses.GET("/:id", gatewayHandler.ProxyRequest)
-						addresses.PUT("/:id", gatewayHandler.ProxyRequest)
-						addresses.DELETE("/:id", gatewayHandler.ProxyRequest)
-						addresses.PUT("/:id/default", gatewayHandler.ProxyRequest)
+						addresses.GET("", addressHandler.GetAddresses)
+						addresses.POST("", addressHandler.CreateAddress)
+						addresses.GET("/:id", addressHandler.GetAddress)
+						addresses.PUT("/:id", addressHandler.UpdateAddress)
+						addresses.DELETE("/:id", addressHandler.DeleteAddress)
+						addresses.PUT("/:id/default", addressHandler.SetDefaultAddress)
 					}
 				}
 			}
