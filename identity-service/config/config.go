@@ -96,7 +96,7 @@ func setDefaults() {
 	viper.SetDefault("server.write_timeout", "30s")
 
 	viper.SetDefault("database.host", "localhost")
-	viper.SetDefault("database.port", 5432)
+	viper.SetDefault("database.port", 5433)
 	viper.SetDefault("database.user", "postgres")
 	viper.SetDefault("database.password", "postgres")
 	viper.SetDefault("database.dbname", "identity_service")
