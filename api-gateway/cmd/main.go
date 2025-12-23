@@ -50,13 +50,21 @@ func main() {
 		appLogger.Fatal("Product service configuration not found")
 	}
 
+	// Debug: Log config values
+	appLogger.Info("Product service config loaded", 
+		zap.String("base_url", productServiceConfig.BaseURL),
+		zap.String("health_check_path", productServiceConfig.HealthCheckPath),
+		zap.Int("routes_count", len(productServiceConfig.Routes)))
+
 	// Get base URL from config or environment variable
+	// Force use localhost for local development (override Docker hostname)
 	baseURL := productServiceConfig.BaseURL
-	if baseURL == "" {
-		// Fallback to environment variable or default
-		baseURL = "http://product-service:8080"
-		appLogger.Warn("Using default base URL for product service", zap.String("url", baseURL))
-	}
+	appLogger.Info("Product service config BaseURL from config", zap.String("base_url", baseURL))
+	
+	// Always override with localhost for local development
+	// In Docker, this should be set via environment variable
+	baseURL = "http://localhost:8080"
+	appLogger.Info("Product service base URL (forced localhost for local dev)", zap.String("base_url", baseURL))
 
 	productService := &domain.Service{
 		Name:            "product_service",
@@ -65,14 +73,35 @@ func main() {
 		Routes: []domain.Route{
 			{Path: "/api/v1/products", Methods: []string{"GET", "POST"}, RequireAuth: false},
 			{Path: "/api/v1/products/:id", Methods: []string{"GET"}, RequireAuth: false},
+			{Path: "/api/v1/products/:id", Methods: []string{"PUT", "DELETE"}, RequireAuth: true},
 			{Path: "/api/v1/products/search", Methods: []string{"GET"}, RequireAuth: false},
-			{Path: "/api/v1/products/:id", Methods: []string{"PUT", "PATCH", "DELETE"}, RequireAuth: true},
 			{Path: "/api/v1/products/:id/inventory", Methods: []string{"PATCH"}, RequireAuth: true},
+			{Path: "/api/v1/categories", Methods: []string{"GET", "POST"}, RequireAuth: false},
+			{Path: "/api/v1/categories/:id", Methods: []string{"GET", "PUT", "DELETE"}, RequireAuth: false},
+			{Path: "/api/v1/categories/slug/:slug", Methods: []string{"GET"}, RequireAuth: false},
+			{Path: "/api/v1/categories/:id/children", Methods: []string{"GET"}, RequireAuth: false},
+			{Path: "/api/v1/categories/:id/products", Methods: []string{"GET"}, RequireAuth: false},
 		},
 	}
 
+	// Debug: Log service details before registration
+	appLogger.Info("Registering product service", 
+		zap.String("name", productService.Name),
+		zap.String("base_url", productService.BaseURL),
+		zap.String("health_check_path", productService.HealthCheckPath),
+		zap.Int("routes_count", len(productService.Routes)))
+	
 	if err := serviceRegistry.RegisterService(productService); err != nil {
 		appLogger.Fatal("Failed to register product service", zap.Error(err))
+	}
+	
+	// Verify registration
+	registeredService, err := serviceRegistry.GetService("product_service")
+	if err == nil {
+		appLogger.Info("Product service registered successfully", 
+			zap.String("registered_base_url", registeredService.BaseURL))
+	} else {
+		appLogger.Error("Failed to verify product service registration", zap.Error(err))
 	}
 
 	// Register Identity Service

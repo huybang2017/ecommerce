@@ -179,6 +179,9 @@ func (h *GatewayHandler) getServiceName(path string) string {
 	if len(path) >= 12 && path[:12] == "/api/v1/prod" {
 		return "product_service"
 	}
+	if len(path) >= 15 && path[:15] == "/api/v1/categor" {
+		return "product_service"
+	}
 	if len(path) >= 12 && path[:12] == "/api/v1/auth" {
 		return "identity_service"
 	}

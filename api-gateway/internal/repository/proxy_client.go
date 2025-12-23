@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 	"api-gateway/internal/domain"
 )
@@ -54,6 +56,13 @@ func (p *proxyClient) ProxyRequest(
 	// Build the full URL
 	// Ensure base URL doesn't end with / and path starts with /
 	baseURL := service.BaseURL
+	// Debug: print which base URL is used
+	log.Printf("[PROXY DEBUG] service=%s baseURL=%s path=%s method=%s", service.Name, baseURL, path, method)
+	// Safety net: if baseURL still points to docker hostname, override to localhost for local dev
+	if strings.Contains(baseURL, "product-service") {
+		baseURL = "http://localhost:8080"
+		log.Printf("[PROXY DEBUG] overriding product-service hostname to %s", baseURL)
+	}
 	if len(baseURL) > 0 && baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
 	}

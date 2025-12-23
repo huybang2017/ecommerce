@@ -104,6 +104,39 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Fix: Manually unmarshal ServicesConfig because viper has issues with nested maps
+	// Read directly from viper and construct ServiceConfig manually
+	services := make(ServicesConfig)
+	
+	// Get all service keys
+	serviceKeys := []string{"product_service", "identity_service"}
+	for _, serviceKey := range serviceKeys {
+		servicePath := fmt.Sprintf("services.%s", serviceKey)
+		if viper.IsSet(servicePath) {
+			serviceConfig := ServiceConfig{
+				BaseURL:         viper.GetString(fmt.Sprintf("%s.base_url", servicePath)),
+				Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", servicePath)),
+				HealthCheckPath: viper.GetString(fmt.Sprintf("%s.health_check_path", servicePath)),
+			}
+			
+			// Unmarshal routes separately
+			routesPath := fmt.Sprintf("%s.routes", servicePath)
+			if viper.IsSet(routesPath) {
+				var routes []RouteConfig
+				if err := viper.UnmarshalKey(routesPath, &routes); err == nil {
+					serviceConfig.Routes = routes
+				}
+			}
+			
+			services[serviceKey] = serviceConfig
+		}
+	}
+	
+	// Override Services with manually constructed values
+	if len(services) > 0 {
+		config.Services = services
+	}
+
 	return config, nil
 }
 
@@ -134,7 +167,7 @@ func setDefaults() {
 
 	// Services defaults
 	// Note: In Docker, use service name. For local dev, use localhost
-	viper.SetDefault("services.product_service.base_url", "http://product-service:8080")
+	viper.SetDefault("services.product_service.base_url", "http://localhost:8080")
 	viper.SetDefault("services.product_service.timeout", "30s")
 	viper.SetDefault("services.product_service.health_check_path", "/health")
 

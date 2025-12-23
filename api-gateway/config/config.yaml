@@ -46,19 +46,40 @@ cors:
 # Define all backend microservices that the gateway will route to
 services:
   product_service:
-    base_url: "http://product-service:8080"
+    base_url: "http://localhost:8080"  # Use localhost for local development, "http://product-service:8080" for Docker
     timeout: 30s
     health_check_path: "/health"
     routes:
       - path: "/api/v1/products"
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
-        require_auth: false # Set to true to require authentication
+        methods: ["GET", "POST"]
+        require_auth: false # Public routes
+      - path: "/api/v1/products/:id"
+        methods: ["GET"]
+        require_auth: false # Public routes
+      - path: "/api/v1/products/:id"
+        methods: ["PUT", "DELETE"]
+        require_auth: true # Protected routes
       - path: "/api/v1/products/search"
         methods: ["GET"]
         require_auth: false
       - path: "/api/v1/products/:id/inventory"
         methods: ["PATCH"]
         require_auth: true
+      - path: "/api/v1/categories"
+        methods: ["GET", "POST"]
+        require_auth: false
+      - path: "/api/v1/categories/:id"
+        methods: ["GET", "PUT", "DELETE"]
+        require_auth: false
+      - path: "/api/v1/categories/slug/:slug"
+        methods: ["GET"]
+        require_auth: false
+      - path: "/api/v1/categories/:id/children"
+        methods: ["GET"]
+        require_auth: false
+      - path: "/api/v1/categories/:id/products"
+        methods: ["GET"]
+        require_auth: false
 
   identity_service:
     base_url: "http://localhost:8081"

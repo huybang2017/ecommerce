@@ -69,6 +69,20 @@ func SetupRouter(
 					}
 				}
 
+				// Category routes (Product Service)
+				categories := v1.Group("/categories")
+				{
+					// Public routes (no auth required)
+					categories.GET("", gatewayHandler.ProxyRequest)
+					categories.GET("/:id", gatewayHandler.ProxyRequest)
+					categories.GET("/slug/:slug", gatewayHandler.ProxyRequest)
+					categories.GET("/:id/children", gatewayHandler.ProxyRequest)
+					categories.GET("/:id/products", gatewayHandler.ProxyRequest)
+					categories.POST("", gatewayHandler.ProxyRequest)
+					categories.PUT("/:id", gatewayHandler.ProxyRequest)
+					categories.DELETE("/:id", gatewayHandler.ProxyRequest)
+				}
+
 				// Identity service routes
 				auth := v1.Group("/auth")
 				{
