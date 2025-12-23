@@ -1,0 +1,98 @@
+# API Gateway Configuration
+# This file contains default configuration values
+# Environment variables will override these values (using Viper)
+
+server:
+  port: 8000
+  mode: "debug" # debug, release, test
+  read_timeout: 30s
+  write_timeout: 30s
+
+# JWT Configuration for Authentication
+jwt:
+  secret: "your-secret-key-change-in-production"
+  expiration: 24h # Token expiration time
+  issuer: "api-gateway"
+
+# Rate Limiting Configuration
+rate_limit:
+  enabled: true
+  requests_per_minute: 100
+  burst: 20
+
+# CORS Configuration
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+    - "http://localhost:4173"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "PATCH"
+    - "OPTIONS"
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Accept"
+    - "Authorization"
+    - "X-Requested-With"
+  allow_credentials: true
+  max_age: 12h
+
+# Microservices Configuration
+# Define all backend microservices that the gateway will route to
+services:
+  product_service:
+    base_url: "http://product-service:8080"
+    timeout: 30s
+    health_check_path: "/health"
+    routes:
+      - path: "/api/v1/products"
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        require_auth: false # Set to true to require authentication
+      - path: "/api/v1/products/search"
+        methods: ["GET"]
+        require_auth: false
+      - path: "/api/v1/products/:id/inventory"
+        methods: ["PATCH"]
+        require_auth: true
+
+  identity_service:
+    base_url: "http://localhost:8081"
+    timeout: 30s
+    health_check_path: "/health"
+    routes:
+      - path: "/api/v1/auth/register"
+        methods: ["POST"]
+        require_auth: false
+      - path: "/api/v1/auth/login"
+        methods: ["POST"]
+        require_auth: false
+      - path: "/api/v1/users/profile"
+        methods: ["GET", "PUT"]
+        require_auth: true
+      - path: "/api/v1/users/password"
+        methods: ["PUT"]
+        require_auth: true
+      - path: "/api/v1/addresses"
+        methods: ["GET", "POST"]
+        require_auth: true
+      - path: "/api/v1/addresses/:id"
+        methods: ["GET", "PUT", "DELETE"]
+        require_auth: true
+      - path: "/api/v1/addresses/:id/default"
+        methods: ["PUT"]
+        require_auth: true
+
+# Logging Configuration
+logging:
+  level: "info" # debug, info, warn, error
+  encoding: "json" # json, console
+  output_paths:
+    - "stdout"
+  error_output_paths:
+    - "stderr"
+
