@@ -1,0 +1,54 @@
+package domain
+
+import (
+	"time"
+
+	"gorm.io/datatypes"
+)
+
+// Product represents the core domain entity
+// This is the business object that exists independently of infrastructure
+// Following Clean Architecture: domain layer has no external dependencies
+type Product struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Name        string    `gorm:"not null" json:"name"`
+	Description string    `json:"description"`
+	Price       float64   `gorm:"not null" json:"price"`
+	SKU         string    `gorm:"uniqueIndex;not null" json:"sku"`
+	CategoryID  *uint     `gorm:"index" json:"category_id,omitempty"` // Foreign key to categories
+	Category    *Category `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Status      string         `gorm:"default:'ACTIVE'" json:"status"` // ACTIVE, INACTIVE
+	Images      datatypes.JSON `gorm:"type:jsonb" json:"images"`         // JSON array of image URLs
+	Stock       int            `gorm:"default:0" json:"stock"`
+	IsActive    bool      `gorm:"default:true" json:"is_active"` // Deprecated: use Status instead
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// TableName specifies the table name for GORM
+func (Product) TableName() string {
+	return "products"
+}
+
+// ProductRepository defines the interface for product data access
+// This is part of the domain layer - it defines WHAT we need, not HOW
+// The implementation will be in the repository layer (infrastructure)
+type ProductRepository interface {
+	Create(product *Product) error
+	Update(product *Product) error
+	GetByID(id uint) (*Product, error)
+	GetBySKU(sku string) (*Product, error)
+	GetAll() ([]*Product, error)
+	ListProducts(filters map[string]interface{}, page, limit int) ([]*Product, int64, error)
+	GetProductsByCategory(categoryID uint, page, limit int) ([]*Product, int64, error)
+	Delete(id uint) error
+}
+
+// ProductSearchRepository defines the interface for product search operations
+// Separated from ProductRepository to follow Interface Segregation Principle
+type ProductSearchRepository interface {
+	IndexProduct(product *Product) error
+	SearchProducts(query string, filters map[string]interface{}) ([]*Product, error)
+	DeleteFromIndex(id uint) error
+}
+

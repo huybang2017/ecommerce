@@ -1,0 +1,318 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"product-service/internal/domain"
+	"time"
+
+	"go.uber.org/zap"
+)
+
+// ProductService contains the business logic for product operations
+// This is the service layer - it orchestrates between repositories
+// Following Clean Architecture: business logic is independent of infrastructure
+type ProductService struct {
+	productRepo      domain.ProductRepository
+	searchRepo       domain.ProductSearchRepository
+	cacheRepo        CacheRepository
+	eventPublisher   domain.EventPublisher
+	logger           *zap.Logger
+}
+
+// CacheRepository defines cache operations (abstraction for Redis)
+// This interface allows us to swap Redis for other caching solutions if needed
+type CacheRepository interface {
+	SetProduct(ctx context.Context, product *domain.Product, ttl time.Duration) error
+	GetProduct(ctx context.Context, id uint) (*domain.Product, error)
+	DeleteProduct(ctx context.Context, id uint) error
+	AcquireLock(ctx context.Context, lockKey string, ttl time.Duration) (bool, error)
+	ReleaseLock(ctx context.Context, lockKey string) error
+}
+
+// NewProductService creates a new product service with all dependencies
+// Dependency injection: we inject all repositories and external services
+func NewProductService(
+	productRepo domain.ProductRepository,
+	searchRepo domain.ProductSearchRepository,
+	cacheRepo CacheRepository,
+	eventPublisher domain.EventPublisher,
+	logger *zap.Logger,
+) *ProductService {
+	return &ProductService{
+		productRepo:    productRepo,
+		searchRepo:     searchRepo,
+		cacheRepo:      cacheRepo,
+		eventPublisher: eventPublisher,
+		logger:         logger,
+	}
+}
+
+// CreateProduct creates a new product with full integration
+// This demonstrates the orchestration pattern:
+// 1. Save to PostgreSQL (source of truth)
+// 2. Update Redis cache (fast reads)
+// 3. Index to Elasticsearch (search capability)
+// 4. Publish event to Kafka (event-driven architecture)
+func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Product) error {
+	// Business logic validation
+	if product.SKU == "" {
+		return errors.New("SKU is required")
+	}
+	if product.Name == "" {
+		return errors.New("name is required")
+	}
+	if product.Price < 0 {
+		return errors.New("price cannot be negative")
+	}
+
+	// Check if SKU already exists
+	existing, err := s.productRepo.GetBySKU(product.SKU)
+	if err == nil && existing != nil {
+		return errors.New("product with this SKU already exists")
+	}
+
+	// 1. Save to PostgreSQL (source of truth)
+	if err := s.productRepo.Create(product); err != nil {
+		s.logger.Error("failed to create product in database", zap.Error(err))
+		return fmt.Errorf("failed to create product: %w", err)
+	}
+
+	s.logger.Info("product created in database", zap.Uint("product_id", product.ID))
+
+	// 2. Update Redis cache (async - don't block on cache)
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := s.cacheRepo.SetProduct(cacheCtx, product, 1*time.Hour); err != nil {
+			s.logger.Warn("failed to cache product", zap.Error(err))
+		}
+	}()
+
+	// 3. Index to Elasticsearch (async - search is eventually consistent)
+	go func() {
+		if err := s.searchRepo.IndexProduct(product); err != nil {
+			s.logger.Warn("failed to index product in elasticsearch", zap.Error(err))
+		} else {
+			s.logger.Info("product indexed in elasticsearch", zap.Uint("product_id", product.ID))
+		}
+	}()
+
+	// 4. Publish event to Kafka (async - event-driven communication)
+	go func() {
+		event := &domain.ProductEvent{
+			EventType:   "product_created",
+			ProductID:   product.ID,
+			ProductData: product,
+			Timestamp:   time.Now(),
+		}
+
+		if err := s.eventPublisher.PublishProductEvent(event); err != nil {
+			s.logger.Warn("failed to publish product event", zap.Error(err))
+		} else {
+			s.logger.Info("product event published", zap.String("event_type", event.EventType))
+		}
+	}()
+
+	return nil
+}
+
+// UpdateProduct updates an existing product
+func (s *ProductService) UpdateProduct(ctx context.Context, product *domain.Product) error {
+	// Validate product exists
+	existing, err := s.productRepo.GetByID(product.ID)
+	if err != nil {
+		return errors.New("product not found")
+	}
+
+	// Business logic: preserve created_at
+	product.CreatedAt = existing.CreatedAt
+
+	// 1. Update in PostgreSQL
+	if err := s.productRepo.Update(product); err != nil {
+		s.logger.Error("failed to update product in database", zap.Error(err))
+		return fmt.Errorf("failed to update product: %w", err)
+	}
+
+	s.logger.Info("product updated in database", zap.Uint("product_id", product.ID))
+
+	// 2. Update cache
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := s.cacheRepo.SetProduct(cacheCtx, product, 1*time.Hour); err != nil {
+			s.logger.Warn("failed to update product cache", zap.Error(err))
+		}
+	}()
+
+	// 3. Update Elasticsearch index
+	go func() {
+		if err := s.searchRepo.IndexProduct(product); err != nil {
+			s.logger.Warn("failed to update product in elasticsearch", zap.Error(err))
+		}
+	}()
+
+	// 4. Publish update event
+	go func() {
+		event := &domain.ProductEvent{
+			EventType:   "product_updated",
+			ProductID:   product.ID,
+			ProductData: product,
+			Timestamp:   time.Now(),
+		}
+
+		if err := s.eventPublisher.PublishProductEvent(event); err != nil {
+			s.logger.Warn("failed to publish product update event", zap.Error(err))
+		}
+	}()
+
+	return nil
+}
+
+// GetProduct retrieves a product by ID with cache-first strategy
+// This demonstrates the cache-aside pattern
+func (s *ProductService) GetProduct(ctx context.Context, id uint) (*domain.Product, error) {
+	// 1. Try cache first (fast path)
+	product, err := s.cacheRepo.GetProduct(ctx, id)
+	if err == nil && product != nil {
+		s.logger.Debug("product retrieved from cache", zap.Uint("product_id", id))
+		return product, nil
+	}
+
+	// 2. Cache miss - get from database (slow path)
+	product, err = s.productRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("product not found: %w", err)
+	}
+
+	// 3. Populate cache for next time (async)
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := s.cacheRepo.SetProduct(cacheCtx, product, 1*time.Hour); err != nil {
+			s.logger.Warn("failed to cache product", zap.Error(err))
+		}
+	}()
+
+	return product, nil
+}
+
+// GetAllProducts retrieves all products
+func (s *ProductService) GetAllProducts(ctx context.Context) ([]*domain.Product, error) {
+	products, err := s.productRepo.GetAll()
+	if err != nil {
+		s.logger.Error("failed to get all products", zap.Error(err))
+		return nil, fmt.Errorf("failed to get all products: %w", err)
+	}
+
+	return products, nil
+}
+
+// ListProducts retrieves products with pagination and filters
+func (s *ProductService) ListProducts(ctx context.Context, filters map[string]interface{}, page, limit int) ([]*domain.Product, int64, error) {
+	// Set defaults
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100 // Max limit
+	}
+
+	products, total, err := s.productRepo.ListProducts(filters, page, limit)
+	if err != nil {
+		s.logger.Error("failed to list products", zap.Error(err))
+		return nil, 0, fmt.Errorf("failed to list products: %w", err)
+	}
+
+	return products, total, nil
+}
+
+// GetProductsByCategory retrieves products by category ID with pagination
+func (s *ProductService) GetProductsByCategory(ctx context.Context, categoryID uint, page, limit int) ([]*domain.Product, int64, error) {
+	// Set defaults
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100 // Max limit
+	}
+
+	products, total, err := s.productRepo.GetProductsByCategory(categoryID, page, limit)
+	if err != nil {
+		s.logger.Error("failed to get products by category", zap.Error(err))
+		return nil, 0, fmt.Errorf("failed to get products by category: %w", err)
+	}
+
+	return products, total, nil
+}
+
+// SearchProducts searches products using Elasticsearch
+func (s *ProductService) SearchProducts(ctx context.Context, query string, filters map[string]interface{}) ([]*domain.Product, error) {
+	products, err := s.searchRepo.SearchProducts(query, filters)
+	if err != nil {
+		s.logger.Error("failed to search products", zap.Error(err))
+		return nil, fmt.Errorf("failed to search products: %w", err)
+	}
+
+	return products, nil
+}
+
+// UpdateInventory updates product stock with distributed locking
+// This demonstrates using Redis for distributed locks to prevent race conditions
+func (s *ProductService) UpdateInventory(ctx context.Context, productID uint, quantity int) error {
+	lockKey := fmt.Sprintf("lock:inventory:%d", productID)
+	lockTTL := 10 * time.Second
+
+	// Acquire distributed lock
+	acquired, err := s.cacheRepo.AcquireLock(ctx, lockKey, lockTTL)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	if !acquired {
+		return errors.New("could not acquire lock - another operation in progress")
+	}
+
+	// Ensure lock is released
+	defer func() {
+		releaseCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		s.cacheRepo.ReleaseLock(releaseCtx, lockKey)
+	}()
+
+	// Get product
+	product, err := s.productRepo.GetByID(productID)
+	if err != nil {
+		return fmt.Errorf("product not found: %w", err)
+	}
+
+	// Update stock
+	product.Stock += quantity
+	if product.Stock < 0 {
+		return errors.New("insufficient stock")
+	}
+
+	// Save to database
+	if err := s.productRepo.Update(product); err != nil {
+		return fmt.Errorf("failed to update inventory: %w", err)
+	}
+
+	// Invalidate cache
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		s.cacheRepo.DeleteProduct(cacheCtx, productID)
+	}()
+
+	return nil
+}
+
