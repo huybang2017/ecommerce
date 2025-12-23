@@ -4,19 +4,12 @@ import (
 	"product-service/internal/handler"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-
-	_ "product-service/docs" // Import generated docs
 )
 
 // SetupRouter configures all API routes
 // This is the transport layer - it defines the HTTP API surface
 func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handler.CategoryHandler) *gin.Engine {
 	router := gin.Default()
-
-	// Swagger UI
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
