@@ -117,6 +117,21 @@ services:
         methods: ["GET"]
         require_auth: false
 
+  order_service:
+    base_url: "http://localhost:8083"
+    timeout: 30s
+    health_check_path: "/health"
+    routes:
+      - path: "/api/v1/cart"
+        methods: ["GET", "DELETE"]
+        require_auth: false # Cart can be accessed by guests (session-based)
+      - path: "/api/v1/cart/items"
+        methods: ["POST"]
+        require_auth: false
+      - path: "/api/v1/cart/items/:product_id"
+        methods: ["PUT", "DELETE"]
+        require_auth: false
+
 # Logging Configuration
 logging:
   level: "info" # debug, info, warn, error

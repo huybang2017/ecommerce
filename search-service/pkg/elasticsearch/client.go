@@ -124,3 +124,4 @@ func EnsureIndex(client *elasticsearch.Client, indexName string) error {
 }
 
 
+

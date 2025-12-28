@@ -125,3 +125,4 @@ func (h *SearchHandler) HealthCheck(c *gin.Context) {
 }
 
 
+

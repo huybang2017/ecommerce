@@ -67,3 +67,4 @@ func (s *SearchService) SearchProducts(ctx context.Context, req *domain.SearchRe
 }
 
 
+
