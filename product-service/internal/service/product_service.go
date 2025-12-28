@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"product-service/internal/domain"
 	"time"
 
@@ -74,12 +76,19 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Prod
 	}
 
 	// 1. Save to PostgreSQL (source of truth)
+	fmt.Fprintf(os.Stderr, "🟢🟢🟢 Service: About to create product in DB - Name: %s, SKU: %s\n", product.Name, product.SKU)
+	log.Printf("🟢 Service: About to create product in DB - Name: %s, SKU: %s", product.Name, product.SKU)
 	if err := s.productRepo.Create(product); err != nil {
+		fmt.Fprintf(os.Stderr, "❌❌❌ Service: Failed to create product in DB: %v\n", err)
+		log.Printf("❌ Service: Failed to create product in DB: %v", err)
 		s.logger.Error("failed to create product in database", zap.Error(err))
 		return fmt.Errorf("failed to create product: %w", err)
 	}
 
+	fmt.Fprintf(os.Stderr, "✅✅✅ Service: Product created in DB - ID: %d, Name: %s\n", product.ID, product.Name)
+	log.Printf("✅ Service: Product created in DB - ID: %d, Name: %s", product.ID, product.Name)
 	s.logger.Info("product created in database", zap.Uint("product_id", product.ID))
+	_ = s.logger.Sync()
 
 	// 2. Update Redis cache (async - don't block on cache)
 	go func() {
@@ -101,7 +110,32 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Prod
 	}()
 
 	// 4. Publish event to Kafka (async - event-driven communication)
+	// CRITICAL: Log BEFORE starting goroutine to confirm we reach this point
+	s.logger.Info("🔵🔵🔵 ABOUT TO START EVENT PUBLISHING GOROUTINE",
+		zap.Uint("product_id", product.ID),
+		zap.String("product_name", product.Name),
+		zap.Bool("eventPublisher_nil", s.eventPublisher == nil),
+	)
+	_ = s.logger.Sync()
+	
 	go func() {
+		// CRITICAL: Use Zap logger with Sync to ensure logs are flushed immediately
+		s.logger.Info("🚀🚀🚀 EVENT PUBLISHING GOROUTINE CALLED!",
+			zap.Uint("product_id", product.ID),
+			zap.String("product_name", product.Name),
+		)
+		_ = s.logger.Sync() // Force flush logs immediately
+		
+		// Check if eventPublisher is nil
+		if s.eventPublisher == nil {
+			s.logger.Error("❌❌❌ Event publisher is nil - cannot publish event",
+				zap.Uint("product_id", product.ID),
+				zap.String("product_name", product.Name),
+			)
+			_ = s.logger.Sync()
+			return
+		}
+
 		event := &domain.ProductEvent{
 			EventType:   "product_created",
 			ProductID:   product.ID,
@@ -109,10 +143,27 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Prod
 			Timestamp:   time.Now(),
 		}
 
+		s.logger.Info("📤 Publishing product event to Kafka",
+			zap.Uint("product_id", product.ID),
+			zap.String("event_type", event.EventType),
+			zap.String("product_name", product.Name),
+		)
+		_ = s.logger.Sync()
+
 		if err := s.eventPublisher.PublishProductEvent(event); err != nil {
-			s.logger.Warn("failed to publish product event", zap.Error(err))
+			s.logger.Error("❌❌❌ Failed to publish product event to Kafka",
+				zap.Uint("product_id", event.ProductID),
+				zap.String("event_type", event.EventType),
+				zap.Error(err),
+			)
+			_ = s.logger.Sync()
 		} else {
-			s.logger.Info("product event published", zap.String("event_type", event.EventType))
+			s.logger.Info("✅✅✅ Product event published to Kafka successfully",
+				zap.Uint("product_id", event.ProductID),
+				zap.String("event_type", event.EventType),
+				zap.String("product_name", product.Name),
+			)
+			_ = s.logger.Sync()
 		}
 	}()
 

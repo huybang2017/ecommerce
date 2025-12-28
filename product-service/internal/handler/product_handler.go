@@ -93,6 +93,13 @@ type CategoryResponse struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /products [post]
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
+	// CRITICAL: Log immediately when handler is called - use Zap logger with Sync
+	h.logger.Info("🎯🎯🎯 HANDLER CreateProduct CALLED!",
+		zap.String("method", c.Request.Method),
+		zap.String("path", c.Request.URL.Path),
+	)
+	_ = h.logger.Sync() // Force flush
+	
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
@@ -132,12 +139,23 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	// Call service layer (business logic)
+	h.logger.Info("🔵🔵🔵 Handler: Calling productService.CreateProduct",
+		zap.String("product_name", product.Name),
+		zap.String("product_sku", product.SKU),
+	)
+	_ = h.logger.Sync()
 	if err := h.productService.CreateProduct(c.Request.Context(), product); err != nil {
-		h.logger.Error("failed to create product", zap.Error(err))
+		h.logger.Error("❌❌❌ Handler: Failed to create product", zap.Error(err))
+		_ = h.logger.Sync()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	h.logger.Info("✅✅✅ Handler: Product created successfully",
+		zap.Uint("product_id", product.ID),
+		zap.String("product_name", product.Name),
+	)
+	_ = h.logger.Sync()
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "product created successfully",
 		"product": product,

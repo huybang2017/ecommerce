@@ -44,8 +44,8 @@ elasticsearch:
   timeout: 30s
 
 logging:
-  level: "info" # debug, info, warn, error
-  encoding: "json" # json, console
+  level: "debug" # debug, info, warn, error - changed to debug to see all logs
+  encoding: "console" # json, console - changed to console for easier reading
   output_paths:
     - "stdout"
   error_output_paths:

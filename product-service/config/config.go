@@ -53,11 +53,11 @@ type RedisConfig struct {
 
 // KafkaConfig holds Kafka producer/consumer configuration
 type KafkaConfig struct {
-	Brokers            []string
-	TopicProductUpdated string
-	WriteTimeout       time.Duration
-	ReadTimeout        time.Duration
-	RequiredAcks       int
+	Brokers            []string      `mapstructure:"brokers"`
+	TopicProductUpdated string       `mapstructure:"topic_product_updated"`
+	WriteTimeout       time.Duration `mapstructure:"write_timeout"`
+	ReadTimeout        time.Duration `mapstructure:"read_timeout"`
+	RequiredAcks       int           `mapstructure:"required_acks"`
 }
 
 // ElasticsearchConfig holds Elasticsearch connection configuration

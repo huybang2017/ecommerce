@@ -8,36 +8,42 @@ export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           <Link
             href="/"
-            className="text-xl font-bold text-gray-900 dark:text-gray-100"
+            className="text-2xl font-semibold tracking-tight text-neutral-900 transition-opacity hover:opacity-80"
           >
-            Ecommerce Store
+            Ecommerce
           </Link>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-8">
             <Link
               href="/"
-              className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
             >
               Home
             </Link>
             <Link
               href="/products"
-              className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
             >
               Products
             </Link>
+            <Link
+              href="/search"
+              className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+            >
+              Search
+            </Link>
             {isAuthenticated ? (
               <>
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-neutral-500">
                   {user?.email}
                 </span>
                 <button
                   onClick={logout}
-                  className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 >
                   Logout
                 </button>
@@ -46,13 +52,13 @@ export default function Header() {
               <>
                 <Link
                   href="/login"
-                  className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
                 >
                   Register
                 </Link>

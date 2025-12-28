@@ -108,6 +108,15 @@ services:
         methods: ["PUT"]
         require_auth: true
 
+  search_service:
+    base_url: "http://localhost:8002"
+    timeout: 30s
+    health_check_path: "/health"
+    routes:
+      - path: "/api/v1/search"
+        methods: ["GET"]
+        require_auth: false
+
 # Logging Configuration
 logging:
   level: "info" # debug, info, warn, error

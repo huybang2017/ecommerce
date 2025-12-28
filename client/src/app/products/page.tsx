@@ -47,25 +47,25 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white">
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-10">
+          <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
             All Products
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-4 text-lg text-neutral-600">
             Browse our complete collection
           </p>
         </div>
 
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-10">
+          <div className="flex flex-wrap gap-3">
             <Link
               href="/products"
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
                 !categoryId
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-neutral-900 text-white shadow-sm'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
               }`}
             >
               All
@@ -74,10 +74,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               <Link
                 key={category.id}
                 href={`/products?category_id=${category.id}`}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
                   categoryId === category.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-neutral-900 text-white shadow-sm'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                 }`}
               >
                 {category.name}
@@ -90,10 +90,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <Error message={error} />
         ) : (
           <>
-            <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="mb-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {products.length === 0 ? (
-                <div className="col-span-full text-center text-gray-500 dark:text-gray-400">
-                  No products found
+                <div className="col-span-full py-16 text-center">
+                  <p className="text-neutral-500">No products found</p>
                 </div>
               ) : (
                 products.map((product) => (
@@ -103,22 +103,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-3">
                 {page > 1 && (
                   <Link
                     href={`/products?page=${page - 1}${categoryId ? `&category_id=${categoryId}` : ''}`}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    className="rounded-lg border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:border-neutral-300"
                   >
                     Previous
                   </Link>
                 )}
-                <span className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className="px-5 py-2.5 text-sm font-medium text-neutral-600">
                   Page {page} of {totalPages}
                 </span>
                 {page < totalPages && (
                   <Link
                     href={`/products?page=${page + 1}${categoryId ? `&category_id=${categoryId}` : ''}`}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                    className="rounded-lg border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:border-neutral-300"
                   >
                     Next
                   </Link>

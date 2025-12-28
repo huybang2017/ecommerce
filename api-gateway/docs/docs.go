@@ -1399,6 +1399,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/search": {
+            "get": {
+                "description": "Search products by keyword with filters (category, price range, status) and sort options. Uses Elasticsearch for full-text search. This service indexes products from Kafka events and provides fast search capabilities.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "Search products",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword (searches in product name and description using Elasticsearch full-text search)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by category ID",
+                        "name": "category_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Minimum price",
+                        "name": "min_price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Maximum price",
+                        "name": "max_price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (ACTIVE, INACTIVE)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Sort field (price, name, created_at)",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order (asc, desc)",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results with products and pagination",
+                        "schema": {
+                            "$ref": "#/definitions/api-gateway_internal_models.SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/password": {
             "put": {
                 "security": [
@@ -1908,6 +2000,29 @@ const docTemplate = `{
                     "maxLength": 50,
                     "minLength": 3,
                     "example": "johndoe"
+                }
+            }
+        },
+        "api-gateway_internal_models.SearchResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "products": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api-gateway_internal_models.Product"
+                    }
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },

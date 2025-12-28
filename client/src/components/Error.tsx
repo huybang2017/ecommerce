@@ -6,10 +6,10 @@ interface ErrorProps {
 
 export default function Error({ message, onRetry, className = '' }: ErrorProps) {
   return (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      <div className="mb-4 text-red-500">
+    <div className={`flex flex-col items-center justify-center p-12 ${className}`}>
+      <div className="mb-6 text-red-500">
         <svg
-          className="h-12 w-12"
+          className="h-16 w-16"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -22,13 +22,13 @@ export default function Error({ message, onRetry, className = '' }: ErrorProps) 
           />
         </svg>
       </div>
-      <p className="mb-4 text-center text-gray-600 dark:text-gray-400">
+      <p className="mb-6 text-center text-lg font-medium text-neutral-600">
         {message}
       </p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          className="rounded-lg bg-neutral-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
         >
           Retry
         </button>

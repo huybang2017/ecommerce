@@ -40,3 +40,23 @@ export interface ApiError {
   message?: string;
 }
 
+// Search API types
+export interface SearchParams {
+  q?: string;
+  category_id?: number;
+  min_price?: number;
+  max_price?: number;
+  status?: string;
+  sort_field?: 'price' | 'name' | 'created_at';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface SearchResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+

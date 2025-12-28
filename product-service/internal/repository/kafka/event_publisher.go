@@ -73,7 +73,7 @@ func (p *eventPublisher) PublishProductEvent(event *domain.ProductEvent) error {
 	// Write message to Kafka
 	err = p.writer.WriteMessages(ctx, message)
 	if err != nil {
-		return fmt.Errorf("failed to write message to kafka: %w", err)
+		return fmt.Errorf("failed to write message to kafka (topic: %s): %w", p.topic, err)
 	}
 
 	return nil

@@ -155,6 +155,37 @@ func main() {
 		appLogger.Info("Identity service registered", zap.String("base_url", identityBaseURL))
 	}
 
+	// Register Search Service
+	// Debug: Log all service keys
+	serviceKeys := make([]string, 0, len(cfg.Services))
+	for k := range cfg.Services {
+		serviceKeys = append(serviceKeys, k)
+	}
+	appLogger.Info("Available services in config", zap.Strings("service_keys", serviceKeys))
+	searchServiceConfig, exists := cfg.Services["search_service"]
+	appLogger.Info("Search service config check", zap.Bool("exists", exists))
+	if exists {
+		searchBaseURL := searchServiceConfig.BaseURL
+		if searchBaseURL == "" {
+			searchBaseURL = "http://localhost:8002"
+			appLogger.Warn("Using default base URL for search service", zap.String("url", searchBaseURL))
+		}
+
+		searchService := &domain.Service{
+			Name:            "search_service",
+			BaseURL:         searchBaseURL,
+			HealthCheckPath: searchServiceConfig.HealthCheckPath,
+			Routes: []domain.Route{
+				{Path: "/api/v1/search", Methods: []string{"GET"}, RequireAuth: false},
+			},
+		}
+
+		if err := serviceRegistry.RegisterService(searchService); err != nil {
+			appLogger.Fatal("Failed to register search service", zap.Error(err))
+		}
+		appLogger.Info("Search service registered", zap.String("base_url", searchBaseURL))
+	}
+
 	// Initialize proxy client (use max timeout from all services)
 	maxTimeout := productServiceConfig.Timeout
 	if exists && identityServiceConfig.Timeout > maxTimeout {
@@ -172,9 +203,10 @@ func main() {
 	addressHandler := handler.NewAddressHandler(gatewayService, appLogger)
 	productHandler := handler.NewProductHandler(gatewayService, appLogger)
 	categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
+	searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
 
 	// Setup router
-	router := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, cfg, appLogger)
+	router := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cfg, appLogger)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{

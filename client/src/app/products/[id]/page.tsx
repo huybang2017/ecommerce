@@ -34,7 +34,7 @@ export default async function ProductDetailPage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-white">
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <Error message={error} />
         </main>
@@ -59,11 +59,11 @@ export default async function ProductDetailPage({
       : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white">
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <Link
           href="/products"
-          className="mb-6 inline-flex items-center text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          className="mb-8 inline-flex items-center text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
         >
           <svg
             className="mr-2 h-4 w-4"
@@ -81,11 +81,11 @@ export default async function ProductDetailPage({
           Back to Products
         </Link>
 
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-12 lg:grid-cols-2">
           {/* Product Images */}
           <div className="space-y-4">
             {images.length > 0 ? (
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+              <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
                 <img
                   src={images[0]}
                   alt={product.name}
@@ -93,8 +93,8 @@ export default async function ProductDetailPage({
                 />
               </div>
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-500">
-                <span>No Image Available</span>
+              <div className="flex aspect-square w-full items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400">
+                <span className="font-medium">No Image Available</span>
               </div>
             )}
             {images.length > 1 && (
@@ -102,7 +102,7 @@ export default async function ProductDetailPage({
                 {images.slice(1, 5).map((image, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+                    className="relative aspect-square overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50"
                   >
                     <img
                       src={image}
@@ -116,58 +116,58 @@ export default async function ProductDetailPage({
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-4xl font-semibold tracking-tight text-neutral-900">
                 {product.name}
               </h1>
               {product.category && (
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-3 text-base text-neutral-600">
                   Category: {product.category.name}
                 </p>
               )}
             </div>
 
             <div>
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-4xl font-semibold text-neutral-900">
                 {formatPrice(product.price)}
               </p>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              <p className="mt-2 text-sm font-medium text-neutral-500">
                 SKU: {product.sku}
               </p>
             </div>
 
             {product.description && (
               <div>
-                <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="mb-3 text-lg font-semibold text-neutral-900">
                   Description
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-neutral-600 leading-relaxed">
                   {product.description}
                 </p>
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50 p-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-neutral-700">
                   Status:
                 </span>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     product.status === 'ACTIVE'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                   }`}
                 >
                   {product.status}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-medium text-neutral-700">
                   Stock:
                 </span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm font-medium text-neutral-600">
                   {product.stock} units
                 </span>
               </div>
@@ -176,7 +176,7 @@ export default async function ProductDetailPage({
             <div className="pt-4">
               <button
                 disabled={product.status !== 'ACTIVE' || product.stock === 0}
-                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="w-full rounded-lg bg-neutral-900 px-6 py-4 text-base font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {product.status === 'ACTIVE' && product.stock > 0
                   ? 'Add to Cart'

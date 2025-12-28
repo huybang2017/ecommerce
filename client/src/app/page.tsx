@@ -16,13 +16,13 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white">
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
             Featured Products
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-4 text-lg text-neutral-600">
             Discover our latest collection
           </p>
         </div>
@@ -30,10 +30,10 @@ export default async function Home() {
         {error ? (
           <Error message={error} />
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.length === 0 ? (
-              <div className="col-span-full text-center text-gray-500 dark:text-gray-400">
-                No products available
+              <div className="col-span-full py-16 text-center">
+                <p className="text-neutral-500">No products available</p>
               </div>
             ) : (
               products.map((product) => (

@@ -20,6 +20,7 @@ func SetupRouter(
 	addressHandler *handler.AddressHandler,
 	productHandler *handler.ProductHandler,
 	categoryHandler *handler.CategoryHandler,
+	searchHandler *handler.SearchHandler,
 	cfg *config.Config,
 	logger *zap.Logger,
 ) *gin.Engine {
@@ -91,6 +92,12 @@ func SetupRouter(
 					categories.POST("", categoryHandler.CreateCategory)
 					categories.PUT("/:id", categoryHandler.UpdateCategory)
 					categories.DELETE("/:id", categoryHandler.DeleteCategory)
+				}
+
+				// Search routes (Search Service)
+				search := v1.Group("/search")
+				{
+					search.GET("", searchHandler.SearchProducts)
 				}
 
 				// Identity service routes - Auth

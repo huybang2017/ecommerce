@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -109,25 +110,36 @@ func LoadConfig(configPath string) (*Config, error) {
 	services := make(ServicesConfig)
 	
 	// Get all service keys
-	serviceKeys := []string{"product_service", "identity_service"}
+	serviceKeys := []string{"product_service", "identity_service", "search_service"}
 	for _, serviceKey := range serviceKeys {
 		servicePath := fmt.Sprintf("services.%s", serviceKey)
-		if viper.IsSet(servicePath) {
-			serviceConfig := ServiceConfig{
-				BaseURL:         viper.GetString(fmt.Sprintf("%s.base_url", servicePath)),
-				Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", servicePath)),
-				HealthCheckPath: viper.GetString(fmt.Sprintf("%s.health_check_path", servicePath)),
+		
+		// Check for environment variable override first (e.g., SERVICES_PRODUCT_SERVICE_BASE_URL)
+		envVarName := fmt.Sprintf("SERVICES_%s_BASE_URL", strings.ToUpper(strings.ReplaceAll(serviceKey, "_", "_")))
+		baseURL := os.Getenv(envVarName)
+		
+		serviceConfig := ServiceConfig{
+			BaseURL:         baseURL, // Use env var if set
+			Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", servicePath)),
+			HealthCheckPath: viper.GetString(fmt.Sprintf("%s.health_check_path", servicePath)),
+		}
+		
+		// If no env var, use config file value
+		if baseURL == "" {
+			serviceConfig.BaseURL = viper.GetString(fmt.Sprintf("%s.base_url", servicePath))
+		}
+		
+		// Unmarshal routes separately
+		routesPath := fmt.Sprintf("%s.routes", servicePath)
+		if viper.IsSet(routesPath) {
+			var routes []RouteConfig
+			if err := viper.UnmarshalKey(routesPath, &routes); err == nil {
+				serviceConfig.Routes = routes
 			}
-			
-			// Unmarshal routes separately
-			routesPath := fmt.Sprintf("%s.routes", servicePath)
-			if viper.IsSet(routesPath) {
-				var routes []RouteConfig
-				if err := viper.UnmarshalKey(routesPath, &routes); err == nil {
-					serviceConfig.Routes = routes
-				}
-			}
-			
+		}
+		
+		// Only add service if we have a base URL
+		if serviceConfig.BaseURL != "" {
 			services[serviceKey] = serviceConfig
 		}
 	}

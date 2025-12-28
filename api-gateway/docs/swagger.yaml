@@ -272,6 +272,22 @@ definitions:
     - password
     - username
     type: object
+  api-gateway_internal_models.SearchResponse:
+    properties:
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/api-gateway_internal_models.Product'
+        type: array
+      total:
+        example: 100
+        type: integer
+    type: object
   api-gateway_internal_models.SuccessResponse:
     properties:
       data: {}
@@ -1304,6 +1320,71 @@ paths:
       summary: Search products
       tags:
       - Products
+  /search:
+    get:
+      description: Search products by keyword with filters (category, price range,
+        status) and sort options. Uses Elasticsearch for full-text search. This service
+        indexes products from Kafka events and provides fast search capabilities.
+      parameters:
+      - description: Search keyword (searches in product name and description using
+          Elasticsearch full-text search)
+        in: query
+        name: q
+        type: string
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Minimum price
+        in: query
+        name: min_price
+        type: number
+      - description: Maximum price
+        in: query
+        name: max_price
+        type: number
+      - description: Filter by status (ACTIVE, INACTIVE)
+        in: query
+        name: status
+        type: string
+      - default: created_at
+        description: Sort field (price, name, created_at)
+        in: query
+        name: sort_field
+        type: string
+      - default: desc
+        description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results with products and pagination
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.SearchResponse'
+        "400":
+          description: Invalid request parameters
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+      summary: Search products
+      tags:
+      - Search
   /users/password:
     put:
       consumes:

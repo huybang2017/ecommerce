@@ -28,11 +28,15 @@ import (
 )
 
 func main() {
+	fmt.Fprintf(os.Stderr, "🚀🚀🚀 PRODUCT SERVICE MAIN() STARTED! 🚀🚀🚀\n")
+	log.Printf("🚀 PRODUCT SERVICE MAIN() STARTED!")
+	
 	// Load configuration
 	cfg, err := config.LoadConfig("./config")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+	fmt.Fprintf(os.Stderr, "✅ Config loaded - Topic: %s, Brokers: %v\n", cfg.Kafka.TopicProductUpdated, cfg.Kafka.Brokers)
 
 	// Initialize logger
 	appLogger, err := logger.NewLogger(&cfg.Logging)
@@ -78,12 +82,23 @@ func main() {
 	}
 
 	// Initialize Kafka event publisher
+	log.Printf("🔧 Initializing Kafka event publisher - brokers: %v, topic: %s", cfg.Kafka.Brokers, cfg.Kafka.TopicProductUpdated)
+	appLogger.Info("Initializing Kafka event publisher",
+		zap.Strings("brokers", cfg.Kafka.Brokers),
+		zap.String("topic", cfg.Kafka.TopicProductUpdated),
+	)
 	eventPublisher := kafka.NewEventPublisher(
 		cfg.Kafka.Brokers,
 		cfg.Kafka.TopicProductUpdated,
 		cfg.Kafka.WriteTimeout,
 		cfg.Kafka.RequiredAcks,
 	)
+	if eventPublisher == nil {
+		log.Printf("❌❌❌ Failed to create Kafka event publisher - eventPublisher is nil")
+		appLogger.Fatal("Failed to create Kafka event publisher")
+	}
+	log.Printf("✅✅✅ Kafka event publisher initialized successfully")
+	appLogger.Info("✅ Kafka event publisher initialized successfully")
 	defer eventPublisher.Close()
 
 	// Initialize repositories (Infrastructure Layer)
@@ -93,6 +108,7 @@ func main() {
 	cacheRepo := redis.NewCacheRepository(redisClientInstance)
 
 	// Initialize service (Business Logic Layer)
+	fmt.Fprintf(os.Stderr, "🔧 Creating ProductService with eventPublisher: %p\n", eventPublisher)
 	productService := service.NewProductService(
 		productRepo,
 		searchRepo,
@@ -100,14 +116,17 @@ func main() {
 		eventPublisher,
 		appLogger,
 	)
+	fmt.Fprintf(os.Stderr, "✅ ProductService created - eventPublisher injected: %p\n", eventPublisher)
 	categoryService := service.NewCategoryService(
 		categoryRepo,
 		appLogger,
 	)
 
 	// Initialize handlers (Transport Layer)
+	fmt.Fprintf(os.Stderr, "🔧 Creating handlers...\n")
 	productHandler := handler.NewProductHandler(productService, appLogger)
 	categoryHandler := handler.NewCategoryHandler(categoryService, appLogger)
+	fmt.Fprintf(os.Stderr, "✅ Handlers created - ProductHandler: %p, eventPublisher in service: %p\n", productHandler, productService)
 
 	// Setup router
 	router := router.SetupRouter(productHandler, categoryHandler)
@@ -122,15 +141,44 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				appLogger.Error("Server goroutine panicked", zap.Any("panic", r))
+				log.Printf("Server goroutine panicked: %v", r)
+			}
+		}()
 		appLogger.Info("Server starting", zap.Int("port", cfg.Server.Port))
+		log.Printf("Server starting on port %d", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			appLogger.Fatal("Failed to start server", zap.Error(err))
+			appLogger.Error("Server error", zap.Error(err))
+			log.Printf("Server error: %v", err)
+			// Don't use Fatal here - it will exit the entire program
+			// Instead, log the error and let the main goroutine handle shutdown
 		}
 	}()
+
+	// Give server a moment to start
+	time.Sleep(2 * time.Second)
+	
+	// Verify server is running
+	testCtx, testCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer testCancel()
+	testReq, _ := http.NewRequestWithContext(testCtx, "GET", fmt.Sprintf("http://localhost:%d/health", cfg.Server.Port), nil)
+	resp, err := http.DefaultClient.Do(testReq)
+	if err != nil {
+		appLogger.Warn("Server health check failed (may be starting)", zap.Error(err))
+		log.Printf("Server health check failed: %v", err)
+	} else {
+		resp.Body.Close()
+		appLogger.Info("Server is responding", zap.Int("port", cfg.Server.Port))
+		log.Printf("Server is responding on port %d", cfg.Server.Port)
+	}
 
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	appLogger.Info("Product Service is ready and waiting for requests", zap.Int("port", cfg.Server.Port))
+	log.Printf("Product Service is ready and waiting for requests on port %d", cfg.Server.Port)
 	<-quit
 
 	appLogger.Info("Shutting down server...")

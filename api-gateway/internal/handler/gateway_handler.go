@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"strings"
 	"api-gateway/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -199,19 +200,27 @@ func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 // getServiceName maps request paths to service names
 func (h *GatewayHandler) getServiceName(path string) string {
 	// Simple path-based routing
-	if len(path) >= 12 && path[:12] == "/api/v1/prod" {
+	// IMPORTANT: Order matters! More specific paths must be checked first
+	if strings.HasPrefix(path, "/api/v1/search") {
+		return "search_service"
+	}
+	if strings.HasPrefix(path, "/api/v1/products/search") {
+		// This is Product Service's search endpoint, not Search Service
 		return "product_service"
 	}
-	if len(path) >= 15 && path[:15] == "/api/v1/categor" {
+	if strings.HasPrefix(path, "/api/v1/products") {
 		return "product_service"
 	}
-	if len(path) >= 12 && path[:12] == "/api/v1/auth" {
+	if strings.HasPrefix(path, "/api/v1/categories") {
+		return "product_service"
+	}
+	if strings.HasPrefix(path, "/api/v1/auth") {
 		return "identity_service"
 	}
-	if len(path) >= 12 && path[:12] == "/api/v1/user" {
+	if strings.HasPrefix(path, "/api/v1/users") {
 		return "identity_service"
 	}
-	if len(path) >= 15 && path[:15] == "/api/v1/address" {
+	if strings.HasPrefix(path, "/api/v1/addresses") {
 		return "identity_service"
 	}
 	// Default to product_service for now

@@ -1,6 +1,6 @@
 // API client for Product Service via API Gateway
 
-import { Product, Category, ProductsResponse, ApiError } from './types';
+import { Product, Category, ProductsResponse, ApiError, SearchResponse, SearchParams } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -77,6 +77,35 @@ class ApiClient {
     return response.products;
   }
 
+  // Search Service API (Elasticsearch-based full-text search)
+  async searchProductsAdvanced(params: {
+    q?: string;
+    category_id?: number;
+    min_price?: number;
+    max_price?: number;
+    status?: string;
+    sort_field?: 'price' | 'name' | 'created_at';
+    sort_order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }): Promise<SearchResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.q) searchParams.append('q', params.q);
+    if (params.category_id) searchParams.append('category_id', params.category_id.toString());
+    if (params.min_price !== undefined) searchParams.append('min_price', params.min_price.toString());
+    if (params.max_price !== undefined) searchParams.append('max_price', params.max_price.toString());
+    if (params.status) searchParams.append('status', params.status);
+    if (params.sort_field) searchParams.append('sort_field', params.sort_field);
+    if (params.sort_order) searchParams.append('sort_order', params.sort_order);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/v1/search${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<SearchResponse>(endpoint);
+  }
+
   // Category APIs
   async getCategories(): Promise<Category[]> {
     return this.request<Category[]>('/api/v1/categories');
@@ -127,4 +156,7 @@ export const getProductsByCategory = (
   page?: number,
   limit?: number
 ) => apiClient.getProductsByCategory(categoryId, page, limit);
+
+export const searchProductsAdvanced = (params: SearchParams) =>
+  apiClient.searchProductsAdvanced(params);
 

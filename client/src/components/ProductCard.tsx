@@ -22,41 +22,41 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-md"
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <div className="relative aspect-square w-full overflow-hidden bg-neutral-50">
         {imageUrl.startsWith('http') ? (
           <img
             src={imageUrl}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
-            <span className="text-sm">No Image</span>
+          <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400">
+            <span className="text-sm font-medium">No Image</span>
           </div>
         )}
         {product.status === 'INACTIVE' && (
-          <div className="absolute top-2 right-2 rounded bg-red-500 px-2 py-1 text-xs font-semibold text-white">
+          <div className="absolute top-3 right-3 rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white">
             Out of Stock
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="mb-2 line-clamp-2 text-base font-semibold text-neutral-900 leading-tight">
           {product.name}
         </h3>
         {product.description && (
-          <p className="mb-3 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mb-4 line-clamp-2 text-sm text-neutral-500 leading-relaxed">
             {product.description}
           </p>
         )}
         <div className="mt-auto flex items-center justify-between">
-          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+          <span className="text-xl font-semibold text-neutral-900">
             {formatPrice(product.price)}
           </span>
           {product.stock > 0 && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs font-medium text-neutral-400">
               {product.stock} in stock
             </span>
           )}

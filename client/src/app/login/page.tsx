@@ -29,21 +29,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full bg-white rounded-xl border border-neutral-200 shadow-sm p-10">
+        <h1 className="text-3xl font-semibold text-center mb-8 text-neutral-900">
           Login
         </h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
               Email
             </label>
             <input
@@ -52,12 +52,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full px-4 py-3 border border-neutral-300 rounded-lg bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400"
+              placeholder="Enter your email"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
               Password
             </label>
             <input
@@ -66,22 +67,23 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full px-4 py-3 border border-neutral-300 rounded-lg bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:border-neutral-400"
+              placeholder="Enter your password"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-6 text-center text-sm text-neutral-600">
           Don't have an account?{' '}
-          <Link href="/register" className="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+          <Link href="/register" className="font-medium text-neutral-900 hover:text-neutral-700">
             Register
           </Link>
         </p>

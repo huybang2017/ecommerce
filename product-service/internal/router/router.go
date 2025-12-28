@@ -1,15 +1,44 @@
 package router
 
 import (
+	"fmt"
+	"log"
+	"os"
 	"product-service/internal/handler"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// RequestLogger middleware logs all incoming requests
+func RequestLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		method := c.Request.Method
+
+		// Log request
+		fmt.Fprintf(os.Stderr, "📥📥📥 REQUEST RECEIVED: %s %s\n", method, path)
+		log.Printf("📥 REQUEST RECEIVED: %s %s", method, path)
+
+		// Process request
+		c.Next()
+
+		// Log response
+		latency := time.Since(start)
+		status := c.Writer.Status()
+		fmt.Fprintf(os.Stderr, "📤📤📤 RESPONSE: %s %s - Status: %d - Latency: %v\n", method, path, status, latency)
+		log.Printf("📤 RESPONSE: %s %s - Status: %d - Latency: %v", method, path, status, latency)
+	}
+}
 
 // SetupRouter configures all API routes
 // This is the transport layer - it defines the HTTP API surface
 func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handler.CategoryHandler) *gin.Engine {
 	router := gin.Default()
+
+	// Add request logging middleware
+	router.Use(RequestLogger())
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

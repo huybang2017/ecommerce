@@ -185,3 +185,14 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// ==================== SEARCH MODELS ====================
+
+// SearchResponse represents search results with pagination
+type SearchResponse struct {
+	Products []Product `json:"products"`
+	Total    int64     `json:"total" example:"100"`
+	Page     int       `json:"page" example:"1"`
+	Limit    int       `json:"limit" example:"20"`
+}
+
+
