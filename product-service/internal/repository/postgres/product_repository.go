@@ -121,3 +121,24 @@ func (r *productRepository) Delete(id uint) error {
 	return r.db.Delete(&domain.Product{}, id).Error
 }
 
+// GetProductsByShopID retrieves products by shop ID with pagination
+func (r *productRepository) GetProductsByShopID(shopID uint, page, limit int) ([]*domain.Product, int64, error) {
+	var products []*domain.Product
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Count total
+	if err := r.db.Model(&domain.Product{}).Where("shop_id = ?", shopID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results with preloaded Category
+	if err := r.db.Preload("Category").Where("shop_id = ?", shopID).
+		Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
+}
+

@@ -25,7 +25,117 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
+
+// migrateProductsTable handles the migration of products table with special handling for shop_id
+// This is needed because we cannot add a NOT NULL column to a table with existing data
+func migrateProductsTable(db *gorm.DB, logger *zap.Logger) error {
+	// Check if shop_id column already exists
+	var count int64
+	err := db.Raw(`
+		SELECT COUNT(*) 
+		FROM information_schema.columns 
+		WHERE table_schema = CURRENT_SCHEMA() 
+		AND table_name = 'products' 
+		AND column_name = 'shop_id'
+	`).Scan(&count).Error
+	if err != nil {
+		return fmt.Errorf("failed to check shop_id column: %w", err)
+	}
+
+	if count == 0 {
+		// Step 1: Add shop_id column as nullable first
+		logger.Info("Adding shop_id column as nullable...")
+		if err := db.Exec(`ALTER TABLE products ADD COLUMN shop_id bigint`).Error; err != nil {
+			return fmt.Errorf("failed to add shop_id column: %w", err)
+		}
+
+		// Step 2: Update all existing products with default shop_id = 1
+		// NOTE: This assumes shop with id=1 exists (should be created by Identity Service)
+		logger.Info("Updating existing products with default shop_id = 1...")
+		if err := db.Exec(`UPDATE products SET shop_id = 1 WHERE shop_id IS NULL`).Error; err != nil {
+			logger.Warn("Failed to update products with shop_id, will set to 1 anyway", zap.Error(err))
+			// Continue even if update fails (might be no products yet)
+		}
+
+		// Step 3: Set NOT NULL constraint
+		logger.Info("Setting shop_id NOT NULL constraint...")
+		if err := db.Exec(`ALTER TABLE products ALTER COLUMN shop_id SET NOT NULL`).Error; err != nil {
+			return fmt.Errorf("failed to set shop_id NOT NULL: %w", err)
+		}
+
+		// Step 4: Add index
+		logger.Info("Adding index on shop_id...")
+		if err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_products_shop_id ON products(shop_id)`).Error; err != nil {
+			logger.Warn("Failed to create index on shop_id", zap.Error(err))
+			// Continue even if index creation fails (might already exist)
+		}
+	}
+
+	// Step 5: Handle base_price column (similar to shop_id)
+	var basePriceCount int64
+	err = db.Raw(`
+		SELECT COUNT(*) 
+		FROM information_schema.columns 
+		WHERE table_schema = CURRENT_SCHEMA() 
+		AND table_name = 'products' 
+		AND column_name = 'base_price'
+	`).Scan(&basePriceCount).Error
+	if err != nil {
+		return fmt.Errorf("failed to check base_price column: %w", err)
+	}
+
+	if basePriceCount == 0 {
+		// Step 5.1: Add base_price column as nullable first
+		logger.Info("Adding base_price column as nullable...")
+		if err := db.Exec(`ALTER TABLE products ADD COLUMN base_price decimal(15,2)`).Error; err != nil {
+			return fmt.Errorf("failed to add base_price column: %w", err)
+		}
+
+		// Step 5.2: Update all existing products with base_price = price (copy from existing price)
+		logger.Info("Updating existing products with base_price = price...")
+		if err := db.Exec(`UPDATE products SET base_price = price WHERE base_price IS NULL`).Error; err != nil {
+			logger.Warn("Failed to update products with base_price", zap.Error(err))
+			// Continue even if update fails (might be no products yet)
+		}
+
+		// Step 5.3: Set NOT NULL constraint
+		logger.Info("Setting base_price NOT NULL constraint...")
+		if err := db.Exec(`ALTER TABLE products ALTER COLUMN base_price SET NOT NULL`).Error; err != nil {
+			return fmt.Errorf("failed to set base_price NOT NULL: %w", err)
+		}
+	}
+
+	// Step 6: Handle sold_count column (default to 0)
+	var soldCountCount int64
+	err = db.Raw(`
+		SELECT COUNT(*) 
+		FROM information_schema.columns 
+		WHERE table_schema = CURRENT_SCHEMA() 
+		AND table_name = 'products' 
+		AND column_name = 'sold_count'
+	`).Scan(&soldCountCount).Error
+	if err != nil {
+		return fmt.Errorf("failed to check sold_count column: %w", err)
+	}
+
+	if soldCountCount == 0 {
+		// Step 6.1: Add sold_count column with default 0
+		logger.Info("Adding sold_count column with default 0...")
+		if err := db.Exec(`ALTER TABLE products ADD COLUMN sold_count integer DEFAULT 0 NOT NULL`).Error; err != nil {
+			return fmt.Errorf("failed to add sold_count column: %w", err)
+		}
+	}
+
+	// Now run AutoMigrate for Product (will handle other fields)
+	if err := db.AutoMigrate(&domain.Product{}); err != nil {
+		return fmt.Errorf("failed to auto-migrate Product: %w", err)
+	}
+
+	logger.Info("Products table migration completed")
+	return nil
+}
 
 func main() {
 	fmt.Fprintf(os.Stderr, "🚀🚀🚀 PRODUCT SERVICE MAIN() STARTED! 🚀🚀🚀\n")
@@ -58,7 +168,21 @@ func main() {
 	defer database.CloseDB()
 
 	// Run database migrations
-	if err := db.AutoMigrate(&domain.Product{}, &domain.Category{}); err != nil {
+	// NOTE: Special handling for shop_id column - must add nullable first, then update data, then set NOT NULL
+	if err := migrateProductsTable(db, appLogger); err != nil {
+		appLogger.Fatal("Failed to migrate products table", zap.Error(err))
+	}
+	
+	// AutoMigrate other tables
+	if err := db.AutoMigrate(
+		&domain.Category{},
+		&domain.Variation{},
+		&domain.VariationOption{},
+		&domain.ProductItem{},
+		&domain.SKUConfiguration{},
+		&domain.CategoryAttribute{},
+		&domain.ProductAttributeValue{},
+	); err != nil {
 		appLogger.Fatal("Failed to run migrations", zap.Error(err))
 	}
 	appLogger.Info("Database migrations completed")
@@ -104,10 +228,16 @@ func main() {
 	// Initialize repositories (Infrastructure Layer)
 	productRepo := postgres.NewProductRepository(db)
 	categoryRepo := postgres.NewCategoryRepository(db)
+	variationRepo := postgres.NewVariationRepository(db)
+	variationOptRepo := postgres.NewVariationOptionRepository(db)
+	productItemRepo := postgres.NewProductItemRepository(db)
+	skuConfigRepo := postgres.NewSKUConfigurationRepository(db)
+	categoryAttrRepo := postgres.NewCategoryAttributeRepository(db)
+	productAttrRepo := postgres.NewProductAttributeValueRepository(db)
 	searchRepo := elasticsearch.NewProductSearchRepository(esClientInstance, cfg.Elasticsearch.IndexName)
 	cacheRepo := redis.NewCacheRepository(redisClientInstance)
 
-	// Initialize service (Business Logic Layer)
+	// Initialize services (Business Logic Layer)
 	fmt.Fprintf(os.Stderr, "🔧 Creating ProductService with eventPublisher: %p\n", eventPublisher)
 	productService := service.NewProductService(
 		productRepo,
@@ -121,15 +251,38 @@ func main() {
 		categoryRepo,
 		appLogger,
 	)
+	productItemService := service.NewProductItemService(
+		productItemRepo,
+		variationRepo,
+		variationOptRepo,
+		skuConfigRepo,
+		productRepo,
+		appLogger,
+	)
+	attributeService := service.NewAttributeService(
+		categoryAttrRepo,
+		productAttrRepo,
+		categoryRepo,
+		productRepo,
+		appLogger,
+	)
+	stockService := service.NewStockService(
+		productItemRepo,
+		redisClientInstance,
+		appLogger,
+	)
 
 	// Initialize handlers (Transport Layer)
 	fmt.Fprintf(os.Stderr, "🔧 Creating handlers...\n")
 	productHandler := handler.NewProductHandler(productService, appLogger)
 	categoryHandler := handler.NewCategoryHandler(categoryService, appLogger)
+	skuHandler := handler.NewSKUHandler(productItemService, appLogger)
+	attrHandler := handler.NewAttributeHandler(attributeService, appLogger)
+	stockHandler := handler.NewStockHandler(stockService, appLogger)
 	fmt.Fprintf(os.Stderr, "✅ Handlers created - ProductHandler: %p, eventPublisher in service: %p\n", productHandler, productService)
 
 	// Setup router
-	router := router.SetupRouter(productHandler, categoryHandler)
+	router := router.SetupRouter(productHandler, categoryHandler, skuHandler, attrHandler, stockHandler)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{

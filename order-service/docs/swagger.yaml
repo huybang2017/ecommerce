@@ -1,0 +1,622 @@
+basePath: /api/v1
+definitions:
+  domain.Cart:
+    properties:
+      items:
+        additionalProperties:
+          $ref: '#/definitions/domain.CartItem'
+        description: Map of product_id -> CartItem
+        type: object
+      session_id:
+        description: 'Deprecated: No longer used, kept for backward compatibility'
+        type: string
+      total:
+        description: Total price of all items
+        type: number
+      updated_at:
+        description: Unix timestamp
+        type: integer
+      user_id:
+        description: User ID (required - authentication required)
+        type: string
+    type: object
+  domain.CartItem:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      sku:
+        type: string
+    type: object
+  domain.Order:
+    properties:
+      created_at:
+        description: Timestamps
+        type: string
+      discount:
+        description: GIỮ LẠI
+        type: number
+      earning_amount:
+        description: THÊM MỚI - Shop thực nhận
+        type: number
+      final_amount:
+        description: THÊM MỚI - Khách thực trả
+        type: number
+      id:
+        type: integer
+      items:
+        description: Order items
+        items:
+          $ref: '#/definitions/domain.OrderItem'
+        type: array
+      merchandise_subtotal:
+        description: Financial breakdown (theo db-diagram.db)
+        type: number
+      order_number:
+        description: Order identification
+        type: string
+      ordered_at:
+        description: THÊM MỚI
+        type: string
+      payment_method:
+        description: Payment & timestamps
+        type: string
+      platform_fee:
+        description: THÊM MỚI - Phí sàn
+        type: number
+      session_id:
+        description: GIỮ LẠI deprecated
+        type: string
+      shipping_address:
+        type: string
+      shipping_address_id:
+        description: THÊM MỚI - Reference address table
+        type: integer
+      shipping_city:
+        type: string
+      shipping_country:
+        type: string
+      shipping_discount:
+        description: THÊM MỚI - Mã freeship
+        type: number
+      shipping_fee:
+        description: Phí vận chuyển
+        type: number
+      shipping_name:
+        description: Shipping information (GIỮ LẠI)
+        type: string
+      shipping_phone:
+        type: string
+      shipping_postal_code:
+        type: string
+      shipping_province:
+        type: string
+      shop_id:
+        description: THÊM MỚI - Order từ shop (theo db-diagram.db)
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/domain.OrderStatus'
+        description: Status
+      subtotal:
+        description: GIỮ LẠI (sẽ sync với MerchandiseSubtotal)
+        type: number
+      tax:
+        description: GIỮ LẠI (không có trong diagram)
+        type: number
+      total_amount:
+        description: GIỮ LẠI để backward compatibility
+        type: number
+      updated_at:
+        type: string
+      user_id:
+        description: ĐỔI thành NOT NULL (bỏ guest orders)
+        type: integer
+      voucher_discount:
+        description: THÊM MỚI - Mã giảm giá
+        type: number
+    type: object
+  domain.OrderItem:
+    properties:
+      created_at:
+        description: Timestamps
+        type: string
+      id:
+        type: integer
+      order_id:
+        type: integer
+      price:
+        description: GIỮ LẠI backward compatibility (sync với PriceAtPurchase)
+        type: number
+      price_at_purchase:
+        description: THÊM MỚI - Đúng tên theo diagram
+        type: number
+      product_id:
+        description: GIỮ LẠI backward compatibility
+        type: integer
+      product_image:
+        description: GIỮ LẠI
+        type: string
+      product_item_id:
+        description: THÊM MỚI - Reference product_item (SKU)
+        type: integer
+      product_name:
+        description: GIỮ LẠI
+        type: string
+      product_sku:
+        description: GIỮ LẠI
+        type: string
+      quantity:
+        type: integer
+      subtotal:
+        description: GIỮ LẠI
+        type: number
+      updated_at:
+        type: string
+    type: object
+  domain.OrderStatus:
+    enum:
+    - pending
+    - paid
+    - processing
+    - shipped
+    - delivered
+    - cancelled
+    type: string
+    x-enum-comments:
+      OrderStatusCancelled: Order has been cancelled
+      OrderStatusDelivered: Order has been delivered
+      OrderStatusPaid: Payment completed
+      OrderStatusPending: Order created, waiting for payment
+      OrderStatusProcessing: Order is being processed
+      OrderStatusShipped: Order has been shipped
+    x-enum-descriptions:
+    - Order created, waiting for payment
+    - Payment completed
+    - Order is being processed
+    - Order has been shipped
+    - Order has been delivered
+    - Order has been cancelled
+    x-enum-varnames:
+    - OrderStatusPending
+    - OrderStatusPaid
+    - OrderStatusProcessing
+    - OrderStatusShipped
+    - OrderStatusDelivered
+    - OrderStatusCancelled
+  handler.AddItemRequest:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        minimum: 1
+        type: integer
+      sku:
+        type: string
+    required:
+    - name
+    - price
+    - product_id
+    - quantity
+    type: object
+  handler.UpdateItemRequest:
+    properties:
+      quantity:
+        minimum: 0
+        type: integer
+    required:
+    - quantity
+    type: object
+  service.CreateOrderRequest:
+    properties:
+      discount:
+        type: number
+      session_id:
+        type: string
+      shipping_address:
+        type: string
+      shipping_city:
+        type: string
+      shipping_country:
+        type: string
+      shipping_fee:
+        description: Optional
+        type: number
+      shipping_name:
+        description: Shipping information
+        type: string
+      shipping_phone:
+        type: string
+      shipping_postal_code:
+        type: string
+      shipping_province:
+        type: string
+      tax:
+        type: number
+      user_id:
+        type: integer
+    required:
+    - shipping_address
+    - shipping_city
+    - shipping_name
+    - shipping_phone
+    type: object
+host: localhost:8083
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Order Service API for e-commerce platform - Cart and Order management
+    endpoints
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Order Service API
+  version: "1.0"
+paths:
+  /cart:
+    delete:
+      description: Remove all items from the shopping cart
+      parameters:
+      - description: User ID (if authenticated)
+        in: query
+        name: user_id
+        type: string
+      - description: Session ID (if guest)
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart cleared successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Clear cart
+      tags:
+      - Cart
+    get:
+      description: Get the shopping cart for the current user or session
+      parameters:
+      - description: User ID (if authenticated)
+        in: query
+        name: user_id
+        type: string
+      - description: Session ID (if guest)
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart retrieved successfully
+          schema:
+            $ref: '#/definitions/domain.Cart'
+        "400":
+          description: Invalid request parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get cart
+      tags:
+      - Cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Add a product to the shopping cart
+      parameters:
+      - description: User ID (if authenticated)
+        in: query
+        name: user_id
+        type: string
+      - description: Session ID (if guest)
+        in: query
+        name: session_id
+        type: string
+      - description: Add Item Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item added successfully
+          schema:
+            $ref: '#/definitions/domain.Cart'
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add item to cart
+      tags:
+      - Cart
+  /cart/items/{product_id}:
+    delete:
+      description: Remove an item from the shopping cart
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: User ID (if authenticated)
+        in: query
+        name: user_id
+        type: string
+      - description: Session ID (if guest)
+        in: query
+        name: session_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item removed successfully
+          schema:
+            $ref: '#/definitions/domain.Cart'
+        "400":
+          description: Invalid request parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Item not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Remove item from cart
+      tags:
+      - Cart
+    put:
+      consumes:
+      - application/json
+      description: Update the quantity of an item in the cart
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: User ID (if authenticated)
+        in: query
+        name: user_id
+        type: string
+      - description: Session ID (if guest)
+        in: query
+        name: session_id
+        type: string
+      - description: Update Item Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item updated successfully
+          schema:
+            $ref: '#/definitions/domain.Cart'
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Item not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update item quantity
+      tags:
+      - Cart
+  /orders:
+    get:
+      description: Get list of orders for a user or session
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Session ID
+        in: query
+        name: session_id
+        type: string
+      - description: 'Limit (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Offset (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List orders
+      tags:
+      - Order
+    post:
+      consumes:
+      - application/json
+      description: Create a new order from the shopping cart
+      parameters:
+      - description: Order creation request
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Order created successfully
+          schema:
+            $ref: '#/definitions/domain.Order'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create order from cart
+      tags:
+      - Order
+  /orders/{id}:
+    get:
+      description: Get order details by order ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order retrieved successfully
+          schema:
+            $ref: '#/definitions/domain.Order'
+        "404":
+          description: Order not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get order by ID
+      tags:
+      - Order
+  /orders/number/{order_number}:
+    get:
+      description: Get order details by order number
+      parameters:
+      - description: Order Number
+        in: path
+        name: order_number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order retrieved successfully
+          schema:
+            $ref: '#/definitions/domain.Order'
+        "404":
+          description: Order not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get order by order number
+      tags:
+      - Order
+schemes:
+- http
+- https
+swagger: "2.0"

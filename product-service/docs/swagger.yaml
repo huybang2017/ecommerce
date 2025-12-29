@@ -1,0 +1,1143 @@
+definitions:
+  domain.CategoryAttribute:
+    properties:
+      attribute_name:
+        description: '"RAM", "Màn hình"'
+        type: string
+      category_id:
+        type: integer
+      id:
+        type: integer
+      input_type:
+        description: text, number, select, checkbox
+        type: string
+      is_filterable:
+        description: Hiển thị ở bộ lọc?
+        type: boolean
+      is_mandatory:
+        description: Bắt buộc điền?
+        type: boolean
+    type: object
+  domain.ProductItem:
+    properties:
+      id:
+        type: integer
+      image_url:
+        description: Image for this specific SKU
+        type: string
+      price:
+        description: Price for this SKU
+        type: number
+      product_id:
+        type: integer
+      qty_in_stock:
+        description: Stock for this SKU
+        type: integer
+      sku_code:
+        description: Unique SKU
+        type: string
+      status:
+        description: ACTIVE, OUT_OF_STOCK, DISABLED
+        type: string
+    type: object
+  handler.CategoryResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  handler.CreateCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+    required:
+    - name
+    type: object
+  handler.CreateProductRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      sku:
+        type: string
+      status:
+        type: string
+      stock:
+        type: integer
+    required:
+    - name
+    - price
+    - sku
+    type: object
+  handler.ProductResponse:
+    properties:
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      sku:
+        type: string
+      status:
+        type: string
+      stock:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  handler.UpdateCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+    type: object
+  handler.UpdateProductRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      images:
+        items:
+          type: string
+        type: array
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      status:
+        type: string
+      stock:
+        type: integer
+    type: object
+  service.CreateCategoryAttributeRequest:
+    properties:
+      attribute_name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      category_id:
+        type: integer
+      input_type:
+        description: text, number, select, checkbox
+        type: string
+      is_filterable:
+        type: boolean
+      is_mandatory:
+        type: boolean
+    required:
+    - attribute_name
+    - category_id
+    - input_type
+    type: object
+  service.CreateProductItemRequest:
+    properties:
+      image_url:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      qty_in_stock:
+        type: integer
+      sku_code:
+        type: string
+      variation_options:
+        description: List of variation_option_ids (e.g. [1, 5] = Size M + Color Red)
+        items:
+          type: integer
+        type: array
+    required:
+    - price
+    - product_id
+    - sku_code
+    type: object
+  service.SetProductAttributesRequest:
+    properties:
+      attributes:
+        additionalProperties:
+          type: string
+        description: map[attribute_id]value
+        type: object
+    required:
+    - attributes
+    type: object
+  service.UpdateProductItemRequest:
+    properties:
+      image_url:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      qty_in_stock:
+        type: integer
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /categories:
+    get:
+      description: Get a list of all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of categories
+          schema:
+            items:
+              $ref: '#/definitions/handler.CategoryResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all categories
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new category with name, slug, optional parent_id, and
+        description
+      parameters:
+      - description: Create Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Category created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new category
+      tags:
+      - Categories
+  /categories/{category_id}/attributes:
+    get:
+      description: Get all attributes for a category
+      parameters:
+      - description: Category ID
+        in: path
+        name: category_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.CategoryAttribute'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get category attributes
+      tags:
+      - attributes
+    post:
+      consumes:
+      - application/json
+      description: Create a new attribute for a category (e.g. RAM, Màn hình for Điện
+        thoại category)
+      parameters:
+      - description: Category ID
+        in: path
+        name: category_id
+        required: true
+        type: integer
+      - description: Attribute info
+        in: body
+        name: attribute
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateCategoryAttributeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CategoryAttribute'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a category attribute
+      tags:
+      - attributes
+  /categories/{category_id}/attributes/{attr_id}:
+    delete:
+      description: Delete a category attribute
+      parameters:
+      - description: Category ID
+        in: path
+        name: category_id
+        required: true
+        type: integer
+      - description: Attribute ID
+        in: path
+        name: attr_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete category attribute
+      tags:
+      - attributes
+  /categories/{id}:
+    delete:
+      description: Delete a category by its ID (cannot delete if has children)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid category ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Category not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error or category has children
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a category
+      tags:
+      - Categories
+    get:
+      description: Get a specific category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category details
+          schema:
+            $ref: '#/definitions/handler.CategoryResponse'
+        "400":
+          description: Invalid category ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Category not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a category by ID
+      tags:
+      - Categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or category ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Category not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update an existing category
+      tags:
+      - Categories
+  /categories/{id}/children:
+    get:
+      description: Get all child categories of a parent category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of child categories
+          schema:
+            items:
+              $ref: '#/definitions/handler.CategoryResponse'
+            type: array
+        "400":
+          description: Invalid category ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get child categories
+      tags:
+      - Categories
+  /categories/{id}/products:
+    get:
+      description: Get a paginated list of products filtered by category ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products with pagination
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid category ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get products by category
+      tags:
+      - Products
+  /categories/slug/{slug}:
+    get:
+      description: Get a specific category by its slug
+      parameters:
+      - description: Category Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Category details
+          schema:
+            $ref: '#/definitions/handler.CategoryResponse'
+        "400":
+          description: Slug is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Category not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a category by slug
+      tags:
+      - Categories
+  /product-items/{sku_code}:
+    get:
+      description: Get product item by SKU code
+      parameters:
+      - description: SKU Code
+        in: path
+        name: sku_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductItem'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get SKU by code
+      tags:
+      - skus
+  /products:
+    get:
+      description: Get a paginated list of products with optional filters (category_id,
+        status, min_price, max_price, search)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Filter by status (ACTIVE, INACTIVE)
+        in: query
+        name: status
+        type: string
+      - description: Minimum price
+        in: query
+        name: min_price
+        type: number
+      - description: Maximum price
+        in: query
+        name: max_price
+        type: number
+      - description: Search in name and description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of products with pagination
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List products with pagination and filters
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product with name, description, price, SKU, category,
+        status, images, and stock
+      parameters:
+      - description: Create Product Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new product
+      tags:
+      - Products
+  /products/{id}:
+    get:
+      description: Get a specific product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product details
+          schema:
+            $ref: '#/definitions/handler.ProductResponse'
+        "400":
+          description: Invalid product ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Product Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or product ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update an existing product
+      tags:
+      - Products
+  /products/{id}/inventory:
+    patch:
+      consumes:
+      - application/json
+      description: Update product stock quantity with distributed locking
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Inventory Request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Inventory updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request payload or product ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update product inventory
+      tags:
+      - Products
+  /products/{product_id}/attributes:
+    get:
+      description: Get all attribute values for a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get product attributes
+      tags:
+      - attributes
+    post:
+      consumes:
+      - application/json
+      description: Set attribute values for a product (replaces all existing values)
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Attributes map
+        in: body
+        name: attributes
+        required: true
+        schema:
+          $ref: '#/definitions/service.SetProductAttributesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Set product attributes
+      tags:
+      - attributes
+  /products/{product_id}/items:
+    get:
+      description: Get all product items (SKUs) for a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ProductItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all SKUs for a product
+      tags:
+      - skus
+    post:
+      consumes:
+      - application/json
+      description: Create a new SKU for a product with variation options
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Product item info
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProductItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.ProductItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new product item (SKU)
+      tags:
+      - skus
+  /products/{product_id}/items/{item_id}:
+    delete:
+      description: Delete product item (SKU) and its configurations
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a SKU
+      tags:
+      - skus
+    get:
+      description: Get product item (SKU) details by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a specific SKU
+      tags:
+      - skus
+    put:
+      consumes:
+      - application/json
+      description: Update product item (SKU) details
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      - description: Product item info
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateProductItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a SKU
+      tags:
+      - skus
+  /products/search:
+    get:
+      description: Search products by keyword and optional category filter using Elasticsearch
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Filter by category name
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Search products using Elasticsearch
+      tags:
+      - Products
+swagger: "2.0"
