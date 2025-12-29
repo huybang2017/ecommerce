@@ -11,6 +11,7 @@ func SetupRouter(
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
 	addressHandler *handler.AddressHandler,
+	shopHandler *handler.ShopHandler,
 	authMiddleware gin.HandlerFunc,
 ) *gin.Engine {
 	router := gin.Default()
@@ -52,6 +53,25 @@ func SetupRouter(
 				addresses.DELETE("/:id", addressHandler.DeleteAddress)
 				addresses.PUT("/:id/default", addressHandler.SetDefaultAddress)
 			}
+		}
+
+		// Shop routes
+		shops := v1.Group("/shops")
+		{
+			// Public routes
+			shops.GET("", shopHandler.ListShops)     // List all shops
+			shops.GET("/:id", shopHandler.GetShop)   // Get shop by ID
+		}
+
+		// Protected shop routes
+		protectedShops := v1.Group("/shops")
+		protectedShops.Use(authMiddleware)
+		{
+			protectedShops.POST("", shopHandler.CreateShop)              // Create shop (SELLER only)
+			protectedShops.GET("/my-shop", shopHandler.GetMyShop)        // Get my shop
+			protectedShops.PUT("/:id", shopHandler.UpdateShop)           // Update shop (owner or ADMIN)
+			protectedShops.DELETE("/:id", shopHandler.DeleteShop)        // Delete shop (ADMIN only)
+			protectedShops.PUT("/:id/status", shopHandler.UpdateShopStatus) // Update status (ADMIN only)
 		}
 	}
 

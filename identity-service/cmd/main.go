@@ -50,7 +50,7 @@ func main() {
 	defer database.CloseDB()
 
 	// Run database migrations
-	if err := db.AutoMigrate(&domain.User{}, &domain.Address{}); err != nil {
+	if err := db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Shop{}); err != nil {
 		appLogger.Fatal("Failed to run migrations", zap.Error(err))
 	}
 	appLogger.Info("Database migrations completed")
@@ -58,22 +58,25 @@ func main() {
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
 	addressRepo := postgres.NewAddressRepository(db)
+	shopRepo := postgres.NewShopRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, appLogger, cfg.JWT.Secret)
 	userService := service.NewUserService(userRepo, appLogger)
 	addressService := service.NewAddressService(addressRepo, appLogger)
+	shopService := service.NewShopService(shopRepo, userRepo, appLogger)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService, appLogger)
 	userHandler := handler.NewUserHandler(userService, appLogger)
 	addressHandler := handler.NewAddressHandler(addressService, appLogger)
+	shopHandler := handler.NewShopHandler(shopService, appLogger)
 
 	// Initialize middleware
 	authMiddleware := middleware.AuthMiddleware(authService)
 
 	// Setup router
-	router := router.SetupRouter(authHandler, userHandler, addressHandler, authMiddleware)
+	router := router.SetupRouter(authHandler, userHandler, addressHandler, shopHandler, authMiddleware)
 
 	// Create HTTP server
 	srv := &http.Server{

@@ -1,0 +1,788 @@
+definitions:
+  domain.Shop:
+    properties:
+      cover_url:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_official:
+        type: boolean
+      logo_url:
+        type: string
+      name:
+        type: string
+      owner_user_id:
+        description: 1 User = 1 Shop
+        type: integer
+      rating:
+        type: number
+      response_rate:
+        type: integer
+      status:
+        description: ACTIVE, SUSPENDED
+        type: string
+      updated_at:
+        type: string
+    type: object
+  service.ChangePasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  service.CreateAddressRequest:
+    properties:
+      address_line:
+        type: string
+      city:
+        type: string
+      district:
+        type: string
+      is_default:
+        type: boolean
+      label:
+        type: string
+      phone_number:
+        type: string
+      recipient_name:
+        type: string
+      ward:
+        type: string
+    required:
+    - address_line
+    - city
+    - district
+    - phone_number
+    - recipient_name
+    type: object
+  service.CreateShopRequest:
+    properties:
+      cover_url:
+        type: string
+      description:
+        type: string
+      logo_url:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      owner_user_id:
+        type: integer
+    required:
+    - name
+    - owner_user_id
+    type: object
+  service.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  service.RegisterRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone_number:
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    - username
+    type: object
+  service.UpdateAddressRequest:
+    properties:
+      address_line:
+        type: string
+      city:
+        type: string
+      district:
+        type: string
+      is_default:
+        type: boolean
+      label:
+        type: string
+      phone_number:
+        type: string
+      recipient_name:
+        type: string
+      ward:
+        type: string
+    type: object
+  service.UpdateProfileRequest:
+    properties:
+      avatar_url:
+        type: string
+      full_name:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  service.UpdateShopRequest:
+    properties:
+      cover_url:
+        type: string
+      description:
+        type: string
+      logo_url:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /addresses:
+    get:
+      consumes:
+      - application/json
+      description: Get all addresses for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of addresses
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all addresses
+      tags:
+      - addresses
+    post:
+      consumes:
+      - application/json
+      description: Create a new address for the current user
+      parameters:
+      - description: Address data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Address created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new address
+      tags:
+      - addresses
+  /addresses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an address for the current user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete address
+      tags:
+      - addresses
+    get:
+      consumes:
+      - application/json
+      description: Get a specific address by ID for the current user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address details
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Address not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get address by ID
+      tags:
+      - addresses
+    put:
+      consumes:
+      - application/json
+      description: Update an existing address for the current user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Address update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update address
+      tags:
+      - addresses
+  /addresses/{id}/default:
+    put:
+      consumes:
+      - application/json
+      description: Set an address as the default address for the current user
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Default address set successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set default address
+      tags:
+      - addresses
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with email and password, receive JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with email, password, username, and full name
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Email or username already exists
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /shops:
+    get:
+      description: Get all shops with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all shops
+      tags:
+      - shops
+    post:
+      consumes:
+      - application/json
+      description: Create a new shop for a SELLER user (1 User = 1 Shop)
+      parameters:
+      - description: Shop info
+        in: body
+        name: shop
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateShopRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Shop'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new shop
+      tags:
+      - shops
+  /shops/{id}:
+    delete:
+      description: Soft delete shop by setting status to SUSPENDED (ADMIN only)
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete shop
+      tags:
+      - shops
+    get:
+      description: Get shop details by shop ID
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Shop'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get shop by ID
+      tags:
+      - shops
+    put:
+      consumes:
+      - application/json
+      description: Update shop information (only shop owner or ADMIN)
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Shop info
+        in: body
+        name: shop
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateShopRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Shop'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update shop
+      tags:
+      - shops
+  /shops/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update shop status (ADMIN only)
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status
+        in: body
+        name: status
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update shop status
+      tags:
+      - shops
+  /shops/my-shop:
+    get:
+      description: Get the shop of the authenticated user (1 User = 1 Shop)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Shop'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get my shop
+      tags:
+      - shops
+  /users/password:
+    put:
+      consumes:
+      - application/json
+      description: Change user's password
+      parameters:
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - invalid old password or weak new password
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - users
+  /users/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get current user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update current user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - users
+swagger: "2.0"
