@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"order-service/internal/domain"
+	"order-service/pkg/product_client"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -11,15 +13,31 @@ import (
 // CartService contains the business logic for cart operations
 // This is the service layer - it orchestrates between repositories
 type CartService struct {
-	cartRepo domain.CartRepository
-	logger   *zap.Logger
+	cartRepo       domain.CartRepository
+	productClient  ProductClientInterface // THÊM MỚI - For marketplace: get shop_id
+	logger         *zap.Logger
+}
+
+// ProductClientInterface defines interface for Product Service client
+// This allows for easier testing and dependency injection
+type ProductClientInterface interface {
+	GetProductByID(productID uint) (*ProductInfo, error)
+}
+
+// ProductInfo represents product information needed for cart
+type ProductInfo struct {
+	ID     uint
+	ShopID uint
+	Name   string
+	Price  float64
 }
 
 // NewCartService creates a new cart service with dependencies
-func NewCartService(cartRepo domain.CartRepository, logger *zap.Logger) *CartService {
+func NewCartService(cartRepo domain.CartRepository, productClient ProductClientInterface, logger *zap.Logger) *CartService {
 	return &CartService{
-		cartRepo: cartRepo,
-		logger:   logger,
+		cartRepo:      cartRepo,
+		productClient: productClient,
+		logger:        logger,
 	}
 }
 
@@ -41,7 +59,8 @@ func (s *CartService) GetCart(ctx context.Context, userID string) (*domain.Cart,
 
 // AddItem adds a product to the cart
 // Business rule: Cart requires authentication - only user_id is accepted
-func (s *CartService) AddItem(ctx context.Context, userID string, productID uint, name string, price float64, quantity int, image, sku string) (*domain.Cart, error) {
+// Marketplace: Fetches shop_id from Product Service
+func (s *CartService) AddItem(ctx context.Context, userID string, productID uint, name string, price float64, quantity int, image, sku string, productItemID uint) (*domain.Cart, error) {
 	if userID == "" {
 		return nil, errors.New("user_id is required - authentication required")
 	}
@@ -50,6 +69,21 @@ func (s *CartService) AddItem(ctx context.Context, userID string, productID uint
 	}
 	if price < 0 {
 		return nil, errors.New("price cannot be negative")
+	}
+
+	// MARKETPLACE: Get shop_id from Product Service
+	var shopID uint
+	if s.productClient != nil {
+		product, err := s.productClient.GetProductByID(productID)
+		if err != nil {
+			s.logger.Warn("failed to get product info, using default shop_id", zap.Uint("product_id", productID), zap.Error(err))
+			shopID = 1 // Fallback to default shop
+		} else {
+			shopID = product.ShopID
+		}
+	} else {
+		s.logger.Warn("product client not available, using default shop_id")
+		shopID = 1 // Fallback
 	}
 
 	// Get existing cart
@@ -67,17 +101,31 @@ func (s *CartService) AddItem(ctx context.Context, userID string, productID uint
 	if existingItem, exists := cart.Items[productID]; exists {
 		// Update quantity
 		existingItem.Quantity += quantity
+		// Update shop_id if not set (backward compatibility)
+		if existingItem.ShopID == 0 {
+			existingItem.ShopID = shopID
+		}
 	} else {
-		// Add new item
+		// Add new item with shop_id (marketplace)
 		cart.Items[productID] = &domain.CartItem{
-			ProductID: productID,
-			Name:      name,
-			Price:     price,
-			Quantity:  quantity,
-			Image:     image,
-			SKU:       sku,
+			ProductID:     productID,
+			ProductItemID: productItemID, // SKU ID
+			ShopID:        shopID,         // THÊM MỚI - Shop ID from Product Service
+			Name:          name,
+			Price:         price,
+			Quantity:      quantity,
+			Image:         image,
+			SKU:           sku,
 		}
 	}
+
+	// Recalculate total
+	total := float64(0)
+	for _, item := range cart.Items {
+		total += item.Price * float64(item.Quantity)
+	}
+	cart.Total = total
+	cart.UpdatedAt = time.Now().Unix()
 
 	// Save cart
 	err = s.cartRepo.SaveCart(cart)
@@ -176,4 +224,21 @@ func (s *CartService) ClearCart(ctx context.Context, userID string) error {
 	return nil
 }
 
+// ProductClientAdapter adapts product_client.ProductClient to ProductClientInterface
+type ProductClientAdapter struct {
+	Client *product_client.ProductClient
+}
 
+// GetProductByID implements ProductClientInterface
+func (a *ProductClientAdapter) GetProductByID(productID uint) (*ProductInfo, error) {
+	product, err := a.Client.GetProductByIDInternal(productID)
+	if err != nil {
+		return nil, err
+	}
+	return &ProductInfo{
+		ID:     product.ID,
+		ShopID: product.ShopID,
+		Name:   product.Name,
+		Price:  product.BasePrice,
+	}, nil
+}

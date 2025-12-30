@@ -17,6 +17,7 @@ import (
 	"order-service/internal/service"
 	"order-service/pkg/database"
 	"order-service/pkg/logger"
+	"order-service/pkg/product_client"
 	redisClient "order-service/pkg/redis"
 	"syscall"
 	"time"
@@ -103,8 +104,13 @@ func main() {
 	cartRepo := redis.NewCartRepository(redisClientInstance)
 	orderRepo := postgres.NewOrderRepository(db)
 
+	// Initialize Product Service client (for marketplace - get shop_id)
+	productClientRaw := product_client.NewProductClient(cfg.ProductService.BaseURL)
+	productClient := &service.ProductClientAdapter{Client: productClientRaw} // Adapter for interface
+	appLogger.Info("Product Service client initialized", zap.String("base_url", cfg.ProductService.BaseURL))
+
 	// Initialize services
-	cartService := service.NewCartService(cartRepo, appLogger)
+	cartService := service.NewCartService(cartRepo, productClient, appLogger)
 	orderService := service.NewOrderService(orderRepo, cartRepo, eventPublisher, appLogger)
 
 	// Initialize handlers

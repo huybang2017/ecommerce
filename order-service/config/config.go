@@ -11,11 +11,18 @@ import (
 
 // Config holds all configuration for the Order Service
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	Kafka    KafkaConfig
-	Logging  LoggingConfig
+	Server        ServerConfig
+	Database      DatabaseConfig
+	Redis         RedisConfig
+	Kafka         KafkaConfig
+	Logging       LoggingConfig
+	ProductService ProductServiceConfig
+}
+
+// ProductServiceConfig holds Product Service client configuration
+type ProductServiceConfig struct {
+	BaseURL string        `mapstructure:"base_url"`
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 // KafkaConfig holds Kafka configuration
@@ -136,6 +143,10 @@ func setDefaults() {
 	viper.SetDefault("logging.encoding", "json")
 	viper.SetDefault("logging.output_paths", []string{"stdout"})
 	viper.SetDefault("logging.error_output_paths", []string{"stderr"})
+
+	// Product Service defaults
+	viper.SetDefault("product_service.base_url", "http://localhost:8000")
+	viper.SetDefault("product_service.timeout", "10s")
 }
 
 // GetDSN returns the PostgreSQL Data Source Name

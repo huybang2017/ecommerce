@@ -51,20 +51,20 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 		// Product routes
 		products := v1.Group("/products")
 		{
-			products.GET("", productHandler.ListProducts)          // List products with pagination and filters
+			products.GET("", productHandler.ListProducts) // List products with pagination and filters
 			products.POST("", productHandler.CreateProduct)
 			products.GET("/search", productHandler.SearchProducts) // Search (must be before /:id)
-			
+
 			// Product detail routes - MUST be first (before nested routes)
 			products.GET("/:id", productHandler.GetProduct)
 			products.PUT("/:id", productHandler.UpdateProduct)
 			products.PATCH("/:id/inventory", productHandler.UpdateInventory)
-			
+
 			// SKU routes (Product Items) - Use /:id/items (nested under product)
-			products.GET("/:id/items", skuHandler.GetProductItems)           // List all SKUs for a product
-			products.POST("/:id/items", skuHandler.CreateProductItem)        // Create new SKU
-			products.GET("/:id/items/:item_id", skuHandler.GetProductItem)   // Get specific SKU
-			products.PUT("/:id/items/:item_id", skuHandler.UpdateProductItem) // Update SKU
+			products.GET("/:id/items", skuHandler.GetProductItems)               // List all SKUs for a product
+			products.POST("/:id/items", skuHandler.CreateProductItem)            // Create new SKU
+			products.GET("/:id/items/:item_id", skuHandler.GetProductItem)       // Get specific SKU
+			products.PUT("/:id/items/:item_id", skuHandler.UpdateProductItem)    // Update SKU
 			products.DELETE("/:id/items/:item_id", skuHandler.DeleteProductItem) // Delete SKU
 
 			// Product attributes (EAV) - Use /:id/attributes
@@ -91,20 +91,19 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 		}
 
 		// Product item by SKU code (standalone route)
-		v1.GET("/product-items/:sku_code", skuHandler.GetProductItemBySKU)
+		v1.GET("/product-items/:id", skuHandler.GetProductItemBySKU)
 
 		// Stock management routes
 		productItems := v1.Group("/product-items")
 		{
-			productItems.GET("/:id/stock", stockHandler.GetStock)         // Get stock
-			productItems.PUT("/:id/stock", stockHandler.UpdateStock)      // Update stock (shop owner)
-			productItems.POST("/check-stock", stockHandler.CheckStock)    // Check stock availability
+			productItems.GET("/:id/stock", stockHandler.GetStock)          // Get stock
+			productItems.PUT("/:id/stock", stockHandler.UpdateStock)       // Update stock (shop owner)
+			productItems.POST("/check-stock", stockHandler.CheckStock)     // Check stock availability
 			productItems.POST("/reserve-stock", stockHandler.ReserveStock) // Reserve stock (checkout)
-			productItems.POST("/deduct-stock", stockHandler.DeductStock)  // Deduct stock (payment confirmed)
+			productItems.POST("/deduct-stock", stockHandler.DeductStock)   // Deduct stock (payment confirmed)
 			productItems.POST("/release-stock", stockHandler.ReleaseStock) // Release reservation (cancel/failed)
 		}
 	}
 
 	return router
 }
-

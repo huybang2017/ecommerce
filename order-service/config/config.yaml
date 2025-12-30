@@ -43,4 +43,9 @@ logging:
   error_output_paths:
     - "stderr"
 
+# Product Service integration (for marketplace - get shop_id)
+product_service:
+  base_url: "http://localhost:8000"  # Through API Gateway
+  timeout: 10s
+
 

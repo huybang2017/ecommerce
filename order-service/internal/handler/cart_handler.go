@@ -28,12 +28,13 @@ func NewCartHandler(cartService *service.CartService, logger *zap.Logger) *CartH
 
 // AddItemRequest represents the request body for adding an item to cart
 type AddItemRequest struct {
-	ProductID uint    `json:"product_id" binding:"required"`
-	Name      string  `json:"name" binding:"required"`
-	Price     float64 `json:"price" binding:"required,min=0"`
-	Quantity  int     `json:"quantity" binding:"required,min=1"`
-	Image     string  `json:"image,omitempty"`
-	SKU       string  `json:"sku,omitempty"`
+	ProductID     uint   `json:"product_id" binding:"required"`
+	ProductItemID uint   `json:"product_item_id,omitempty"` // THÊM MỚI - SKU ID
+	Name          string `json:"name" binding:"required"`
+	Price         float64 `json:"price" binding:"required,min=0"`
+	Quantity      int     `json:"quantity" binding:"required,min=1"`
+	Image         string  `json:"image,omitempty"`
+	SKU           string  `json:"sku,omitempty"`
 }
 
 // UpdateItemRequest represents the request body for updating item quantity
@@ -117,6 +118,7 @@ func (h *CartHandler) AddItem(c *gin.Context) {
 		req.Quantity,
 		req.Image,
 		req.SKU,
+		req.ProductItemID, // THÊM MỚI - SKU ID
 	)
 	if err != nil {
 		h.logger.Error("failed to add item to cart", zap.Error(err))

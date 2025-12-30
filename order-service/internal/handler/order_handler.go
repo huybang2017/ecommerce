@@ -26,13 +26,13 @@ func NewOrderHandler(orderService *service.OrderService, logger *zap.Logger) *Or
 }
 
 // CreateOrder handles POST /orders
-// @Summary Create order from cart
-// @Description Create a new order from the shopping cart
+// @Summary Create order(s) from cart (Marketplace - Multi-shop)
+// @Description Create shop_order(s) from the shopping cart. If cart contains items from multiple shops, creates multiple shop_orders (1 per shop).
 // @Tags Order
 // @Accept json
 // @Produce json
 // @Param order body service.CreateOrderRequest true "Order creation request"
-// @Success 201 {object} domain.Order "Order created successfully"
+// @Success 201 {object} service.CreateOrderResponse "Order(s) created successfully (can be multiple shop_orders)"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /orders [post]
@@ -56,19 +56,19 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		}
 	}
 
-	// Get session_id from query if not in body
+	// Get session_id from query if not in body (deprecated)
 	if req.SessionID == "" {
 		req.SessionID = c.Query("session_id")
 	}
 
-	order, err := h.orderService.CreateOrder(&req)
+	response, err := h.orderService.CreateOrder(&req)
 	if err != nil {
-		h.logger.Error("failed to create order", zap.Error(err))
+		h.logger.Error("failed to create order(s)", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, order)
+	c.JSON(http.StatusCreated, response)
 }
 
 // GetOrder handles GET /orders/:id

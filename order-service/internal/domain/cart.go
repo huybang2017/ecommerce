@@ -2,12 +2,14 @@ package domain
 
 // CartItem represents a single item in the shopping cart
 type CartItem struct {
-	ProductID uint    `json:"product_id"`
-	Name      string  `json:"name"`
-	Price     float64 `json:"price"`
-	Quantity  int     `json:"quantity"`
-	Image     string  `json:"image,omitempty"`
-	SKU       string  `json:"sku,omitempty"`
+	ProductID   uint    `json:"product_id"`
+	ProductItemID uint  `json:"product_item_id,omitempty"` // SKU ID (theo db-diagram.db)
+	ShopID      uint    `json:"shop_id"`                    // THÊM MỚI - Shop ID (marketplace)
+	Name        string  `json:"name"`
+	Price       float64 `json:"price"`
+	Quantity    int     `json:"quantity"`
+	Image       string  `json:"image,omitempty"`
+	SKU         string  `json:"sku,omitempty"`
 }
 
 // Cart represents a shopping cart
