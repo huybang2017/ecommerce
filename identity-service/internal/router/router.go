@@ -29,6 +29,8 @@ func SetupRouter(
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken) // Refresh access token
+			auth.POST("/logout", authHandler.Logout)        // Logout (will need middleware for user_id)
 		}
 
 		// Protected routes (authentication required)
@@ -59,22 +61,21 @@ func SetupRouter(
 		shops := v1.Group("/shops")
 		{
 			// Public routes
-			shops.GET("", shopHandler.ListShops)     // List all shops
-			shops.GET("/:id", shopHandler.GetShop)   // Get shop by ID
+			shops.GET("", shopHandler.ListShops)   // List all shops
+			shops.GET("/:id", shopHandler.GetShop) // Get shop by ID
 		}
 
 		// Protected shop routes
 		protectedShops := v1.Group("/shops")
 		protectedShops.Use(authMiddleware)
 		{
-			protectedShops.POST("", shopHandler.CreateShop)              // Create shop (SELLER only)
-			protectedShops.GET("/my-shop", shopHandler.GetMyShop)        // Get my shop
-			protectedShops.PUT("/:id", shopHandler.UpdateShop)           // Update shop (owner or ADMIN)
-			protectedShops.DELETE("/:id", shopHandler.DeleteShop)        // Delete shop (ADMIN only)
+			protectedShops.POST("", shopHandler.CreateShop)                 // Create shop (SELLER only)
+			protectedShops.GET("/my-shop", shopHandler.GetMyShop)           // Get my shop
+			protectedShops.PUT("/:id", shopHandler.UpdateShop)              // Update shop (owner or ADMIN)
+			protectedShops.DELETE("/:id", shopHandler.DeleteShop)           // Delete shop (ADMIN only)
 			protectedShops.PUT("/:id/status", shopHandler.UpdateShopStatus) // Update status (ADMIN only)
 		}
 	}
 
 	return router
 }
-

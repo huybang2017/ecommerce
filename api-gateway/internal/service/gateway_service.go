@@ -1,12 +1,13 @@
 package service
 
 import (
+	"api-gateway/internal/domain"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"api-gateway/internal/domain"
+
 	"go.uber.org/zap"
 )
 
@@ -39,12 +40,16 @@ func (s *GatewayService) RouteRequest(
 	method string,
 	headers map[string]string,
 	body []byte,
-) ([]byte, int, error) {
+) (*domain.ProxyResponse, error) {
 	// Get the service from registry
 	service, err := s.serviceRegistry.GetService(serviceName)
 	if err != nil {
 		s.logger.Error("Service not found", zap.String("service", serviceName), zap.Error(err))
-		return nil, http.StatusNotFound, fmt.Errorf("service %s not found: %w", serviceName, err)
+		return &domain.ProxyResponse{
+			Body:       []byte(fmt.Sprintf(`{"error":"service %s not found"}`, serviceName)),
+			StatusCode: http.StatusNotFound,
+			Headers:    make(map[string][]string),
+		}, fmt.Errorf("service %s not found: %w", serviceName, err)
 	}
 
 	// Note: Authentication is already validated by middleware in the router
@@ -63,7 +68,7 @@ func (s *GatewayService) RouteRequest(
 	)
 
 	// Proxy the request to the backend service
-	responseBody, statusCode, err := s.proxyClient.ProxyRequest(service, path, method, headers, body)
+	proxyResponse, err := s.proxyClient.ProxyRequest(service, path, method, headers, body)
 	if err != nil {
 		s.logger.Error("Failed to proxy request",
 			zap.String("service", serviceName),
@@ -71,10 +76,14 @@ func (s *GatewayService) RouteRequest(
 			zap.String("base_url", service.BaseURL),
 			zap.Error(err),
 		)
-		return nil, http.StatusBadGateway, fmt.Errorf("failed to proxy request: %w", err)
+		return &domain.ProxyResponse{
+			Body:       []byte(`{"error":"failed to proxy request"}`),
+			StatusCode: http.StatusBadGateway,
+			Headers:    make(map[string][]string),
+		}, fmt.Errorf("failed to proxy request: %w", err)
 	}
 
-	return responseBody, statusCode, nil
+	return proxyResponse, nil
 }
 
 // findRoute finds a matching route for the given path and method
@@ -95,15 +104,15 @@ func (s *GatewayService) pathMatches(pattern string, path string) bool {
 	if pattern == path {
 		return true
 	}
-	
+
 	// Basic pattern matching for path parameters (e.g., /products/:id)
 	patternParts := s.splitPath(pattern)
 	pathParts := s.splitPath(path)
-	
+
 	if len(patternParts) != len(pathParts) {
 		return false
 	}
-	
+
 	for i, patternPart := range patternParts {
 		// If pattern part starts with :, it's a parameter, so it matches any value
 		if len(patternPart) > 0 && patternPart[0] == ':' {
@@ -114,7 +123,7 @@ func (s *GatewayService) pathMatches(pattern string, path string) bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -171,4 +180,3 @@ func ReadRequestBody(r *http.Request) ([]byte, error) {
 	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	return body, nil
 }
-

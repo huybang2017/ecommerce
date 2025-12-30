@@ -39,6 +39,10 @@ cors:
     - "Accept"
     - "Authorization"
     - "X-Requested-With"
+    - "Cookie"
+    - "Set-Cookie"
+  expose_headers:
+    - "Set-Cookie"
   allow_credentials: true
   max_age: 12h
 
@@ -46,7 +50,7 @@ cors:
 # Define all backend microservices that the gateway will route to
 services:
   product_service:
-    base_url: "http://localhost:8080"  # Use localhost for local development, "http://product-service:8080" for Docker
+    base_url: "http://localhost:8080" # Use localhost for local development, "http://product-service:8080" for Docker
     timeout: 30s
     health_check_path: "/health"
     routes:
@@ -92,6 +96,12 @@ services:
       - path: "/api/v1/auth/login"
         methods: ["POST"]
         require_auth: false
+      - path: "/api/v1/auth/refresh"
+        methods: ["POST"]
+        require_auth: false
+      - path: "/api/v1/auth/logout"
+        methods: ["POST"]
+        require_auth: true
       - path: "/api/v1/users/profile"
         methods: ["GET", "PUT"]
         require_auth: true
@@ -105,6 +115,18 @@ services:
         methods: ["GET", "PUT", "DELETE"]
         require_auth: true
       - path: "/api/v1/addresses/:id/default"
+        methods: ["PUT"]
+        require_auth: true
+      - path: "/api/v1/shops"
+        methods: ["GET", "POST"]
+        require_auth: false # GET is public, POST requires auth (handled by middleware)
+      - path: "/api/v1/shops/my-shop"
+        methods: ["GET"]
+        require_auth: true
+      - path: "/api/v1/shops/:id"
+        methods: ["GET", "PUT", "DELETE"]
+        require_auth: false # GET is public, PUT/DELETE require auth
+      - path: "/api/v1/shops/:id/status"
         methods: ["PUT"]
         require_auth: true
 
@@ -131,6 +153,15 @@ services:
       - path: "/api/v1/cart/items/:product_id"
         methods: ["PUT", "DELETE"]
         require_auth: false
+      - path: "/api/v1/orders"
+        methods: ["GET", "POST"]
+        require_auth: false # Orders can be created by guests (session-based)
+      - path: "/api/v1/orders/:id"
+        methods: ["GET"]
+        require_auth: false
+      - path: "/api/v1/orders/number/:order_number"
+        methods: ["GET"]
+        require_auth: false
 
 # Logging Configuration
 logging:
@@ -140,4 +171,3 @@ logging:
     - "stdout"
   error_output_paths:
     - "stderr"
-

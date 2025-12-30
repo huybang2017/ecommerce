@@ -50,7 +50,7 @@ func main() {
 	defer database.CloseDB()
 
 	// Run database migrations
-	if err := db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Shop{}); err != nil {
+	if err := db.AutoMigrate(&domain.User{}, &domain.Address{}, &domain.Shop{}, &domain.RefreshToken{}); err != nil {
 		appLogger.Fatal("Failed to run migrations", zap.Error(err))
 	}
 	appLogger.Info("Database migrations completed")
@@ -59,9 +59,10 @@ func main() {
 	userRepo := postgres.NewUserRepository(db)
 	addressRepo := postgres.NewAddressRepository(db)
 	shopRepo := postgres.NewShopRepository(db)
+	refreshTokenRepo := postgres.NewRefreshTokenRepository(db)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, appLogger, cfg.JWT.Secret)
+	authService := service.NewAuthService(userRepo, refreshTokenRepo, appLogger, cfg.JWT.Secret)
 	userService := service.NewUserService(userRepo, appLogger)
 	addressService := service.NewAddressService(addressRepo, appLogger)
 	shopService := service.NewShopService(shopRepo, userRepo, appLogger)
@@ -111,5 +112,3 @@ func main() {
 
 	appLogger.Info("Server exited gracefully")
 }
-
-

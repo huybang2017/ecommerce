@@ -47,14 +47,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api-gateway_internal_models.AddressInfo"
+                                "$ref": "#/definitions/models.AddressInfo"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -83,7 +83,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.CreateAddressRequest"
+                            "$ref": "#/definitions/models.CreateAddressRequest"
                         }
                     }
                 ],
@@ -91,19 +91,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Address created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AddressInfo"
+                            "$ref": "#/definitions/models.AddressInfo"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -140,19 +140,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Address details",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AddressInfo"
+                            "$ref": "#/definitions/models.AddressInfo"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Address not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -188,7 +188,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UpdateAddressRequest"
+                            "$ref": "#/definitions/models.UpdateAddressRequest"
                         }
                     }
                 ],
@@ -196,25 +196,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Address updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AddressInfo"
+                            "$ref": "#/definitions/models.AddressInfo"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Address not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -249,19 +249,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Address deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Address not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -298,19 +298,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Address set as default",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AddressInfo"
+                            "$ref": "#/definitions/models.AddressInfo"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Address not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -603,7 +603,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate user with email and password, receive JWT token",
+                "description": "Authenticate user with email and password. Returns access_token in response body (15 min, store in memory) and sets refresh_token as HttpOnly cookie (7 days). The Gateway forwards credentials to Identity Service which validates them and returns tokens. Frontend should store access_token in memory (NOT localStorage) and send it via Authorization header. refresh_token cookie is sent automatically by browser.",
                 "consumes": [
                     "application/json"
                 ],
@@ -611,31 +611,139 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "Login user",
                 "parameters": [
                     {
-                        "description": "Login Request",
+                        "description": "Login credentials (email and password)",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.LoginRequest"
+                            "$ref": "#/definitions/models.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Login successful",
+                        "description": "Login successful. Response contains access_token (15min, store in memory) and user info. refresh_token sent as HttpOnly cookie (7 days)",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AuthResponse"
+                            "$ref": "#/definitions/models.LoginResponse"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "refresh_token=\u003cjwt\u003e; Path=/; Max-Age=604800; HttpOnly"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - invalid input format",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials",
+                        "description": "Invalid credentials - wrong email or password",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revoke all refresh tokens for the authenticated user and clear refresh_token cookie. Requires valid access_token in Authorization header (Bearer token). The Gateway forwards the request to Identity Service which revokes all refresh tokens from the database. Frontend should discard the access_token from memory.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_access_token\u003e",
+                        "description": "Bearer \u003caccess_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logout successful. All refresh tokens revoked and refresh_token cookie cleared. Frontend should discard access_token from memory",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "refresh_token=; Path=/; Max-Age=-1; HttpOnly (cleared)"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error - failed to revoke tokens",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Use refresh_token from HttpOnly cookie to obtain a new access_token. The Gateway automatically forwards the cookie to Identity Service which validates the refresh token and issues a new access_token (15 min) in response body. The refresh_token cookie remains unchanged. Frontend should update the access_token in memory.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "refresh_token=\u003cyour_refresh_token\u003e",
+                        "description": "refresh_token cookie (HttpOnly, automatically sent by browser)",
+                        "name": "Cookie",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully. New access_token returned in body (store in memory). refresh_token cookie unchanged",
+                        "schema": {
+                            "$ref": "#/definitions/models.RefreshResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid, expired, or revoked refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -643,7 +751,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Register a new user account with email, password, username, and full name",
+                "description": "Register a new user account. Returns access_token in response body (store in memory) and sets refresh_token as HttpOnly cookie (7 days). The Gateway forwards the request to Identity Service which validates data, creates user, and returns tokens. Frontend should store access_token in memory (NOT localStorage) for security.",
                 "consumes": [
                     "application/json"
                 ],
@@ -651,37 +759,43 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "Register Request",
+                        "description": "Registration data (email, password, username, full_name)",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.RegisterRequest"
+                            "$ref": "#/definitions/models.RegisterRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "User registered successfully",
+                        "description": "User registered successfully. Response contains access_token (15min, store in memory) and user info. refresh_token sent as HttpOnly cookie (7 days)",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.AuthResponse"
+                            "$ref": "#/definitions/models.RegisterResponse"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "refresh_token=\u003cjwt\u003e; Path=/; Max-Age=604800; HttpOnly"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Bad request",
+                        "description": "Bad request - invalid input format",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "User already exists",
+                        "description": "User already exists - email or username taken",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -706,7 +820,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api-gateway_internal_models.Category"
+                                "$ref": "#/definitions/models.Category"
                             }
                         }
                     }
@@ -731,7 +845,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.CreateCategoryRequest"
+                            "$ref": "#/definitions/models.CreateCategoryRequest"
                         }
                     }
                 ],
@@ -739,13 +853,13 @@ const docTemplate = `{
                     "201": {
                         "description": "Category created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -777,13 +891,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Category details",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.Category"
+                            "$ref": "#/definitions/models.Category"
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -815,13 +929,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Category details",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.Category"
+                            "$ref": "#/definitions/models.Category"
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -852,7 +966,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UpdateCategoryRequest"
+                            "$ref": "#/definitions/models.UpdateCategoryRequest"
                         }
                     }
                 ],
@@ -860,19 +974,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Category updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -902,13 +1016,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Category deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -942,14 +1056,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api-gateway_internal_models.Category"
+                                "$ref": "#/definitions/models.Category"
                             }
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -995,13 +1109,13 @@ const docTemplate = `{
                     "200": {
                         "description": "List of products in category",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ProductsResponse"
+                            "$ref": "#/definitions/models.ProductsResponse"
                         }
                     },
                     "404": {
                         "description": "Category not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1080,13 +1194,13 @@ const docTemplate = `{
                     "200": {
                         "description": "List of products",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ProductsResponse"
+                            "$ref": "#/definitions/models.ProductsResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1115,7 +1229,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.CreateProductRequest"
+                            "$ref": "#/definitions/models.CreateProductRequest"
                         }
                     }
                 ],
@@ -1123,19 +1237,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Product created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1175,14 +1289,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api-gateway_internal_models.Product"
+                                "$ref": "#/definitions/models.Product"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1214,13 +1328,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Product details",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.Product"
+                            "$ref": "#/definitions/models.Product"
                         }
                     },
                     "404": {
                         "description": "Product not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1256,7 +1370,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UpdateProductRequest"
+                            "$ref": "#/definitions/models.UpdateProductRequest"
                         }
                     }
                 ],
@@ -1264,25 +1378,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Product updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Product not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1317,19 +1431,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Product deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Product not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1375,25 +1489,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Inventory updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Product not found",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1473,19 +1587,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Search results with products and pagination",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SearchResponse"
+                            "$ref": "#/definitions/models.SearchResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request parameters",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1516,7 +1630,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ChangePasswordRequest"
+                            "$ref": "#/definitions/models.ChangePasswordRequest"
                         }
                     }
                 ],
@@ -1524,19 +1638,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Password changed successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.SuccessResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1564,13 +1678,13 @@ const docTemplate = `{
                     "200": {
                         "description": "User profile",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UserInfo"
+                            "$ref": "#/definitions/models.UserInfo"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1599,7 +1713,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UpdateProfileRequest"
+                            "$ref": "#/definitions/models.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -1607,19 +1721,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.UserInfo"
+                            "$ref": "#/definitions/models.UserInfo"
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/api-gateway_internal_models.ErrorResponse"
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1627,7 +1741,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api-gateway_internal_models.AddressInfo": {
+        "models.AddressInfo": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1664,37 +1778,13 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.AuthData": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "user": {
-                    "$ref": "#/definitions/api-gateway_internal_models.UserInfo"
-                }
-            }
-        },
-        "api-gateway_internal_models.AuthResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/api-gateway_internal_models.AuthData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "login successful"
-                }
-            }
-        },
-        "api-gateway_internal_models.Category": {
+        "models.Category": {
             "type": "object",
             "properties": {
                 "children": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api-gateway_internal_models.Category"
+                        "$ref": "#/definitions/models.Category"
                     }
                 },
                 "created_at": {
@@ -1714,7 +1804,7 @@ const docTemplate = `{
                     "example": "Electronics"
                 },
                 "parent": {
-                    "$ref": "#/definitions/api-gateway_internal_models.Category"
+                    "$ref": "#/definitions/models.Category"
                 },
                 "parent_id": {
                     "type": "integer",
@@ -1730,7 +1820,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.ChangePasswordRequest": {
+        "models.ChangePasswordRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -1748,7 +1838,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.CreateAddressRequest": {
+        "models.CreateAddressRequest": {
             "type": "object",
             "required": [
                 "city",
@@ -1784,7 +1874,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.CreateCategoryRequest": {
+        "models.CreateCategoryRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -1808,7 +1898,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.CreateProductRequest": {
+        "models.CreateProductRequest": {
             "type": "object",
             "required": [
                 "description",
@@ -1858,7 +1948,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.ErrorResponse": {
+        "models.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -1871,7 +1961,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.LoginRequest": {
+        "models.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -1888,11 +1978,27 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.Product": {
+        "models.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "message": {
+                    "type": "string",
+                    "example": "login successful"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.UserInfo"
+                }
+            }
+        },
+        "models.Product": {
             "type": "object",
             "properties": {
                 "category": {
-                    "$ref": "#/definitions/api-gateway_internal_models.Category"
+                    "$ref": "#/definitions/models.Category"
                 },
                 "category_id": {
                     "type": "integer",
@@ -1946,7 +2052,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.ProductsResponse": {
+        "models.ProductsResponse": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -1960,7 +2066,7 @@ const docTemplate = `{
                 "products": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api-gateway_internal_models.Product"
+                        "$ref": "#/definitions/models.Product"
                     }
                 },
                 "total": {
@@ -1969,7 +2075,23 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.RegisterRequest": {
+        "models.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "message": {
+                    "type": "string",
+                    "example": "token refreshed successfully"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.UserInfo"
+                }
+            }
+        },
+        "models.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -2003,7 +2125,23 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.SearchResponse": {
+        "models.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "message": {
+                    "type": "string",
+                    "example": "user registered successfully"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.UserInfo"
+                }
+            }
+        },
+        "models.SearchResponse": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -2017,7 +2155,7 @@ const docTemplate = `{
                 "products": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api-gateway_internal_models.Product"
+                        "$ref": "#/definitions/models.Product"
                     }
                 },
                 "total": {
@@ -2026,7 +2164,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.SuccessResponse": {
+        "models.SuccessResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -2036,7 +2174,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.UpdateAddressRequest": {
+        "models.UpdateAddressRequest": {
             "type": "object",
             "properties": {
                 "city": {
@@ -2065,7 +2203,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.UpdateCategoryRequest": {
+        "models.UpdateCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2086,7 +2224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.UpdateProductRequest": {
+        "models.UpdateProductRequest": {
             "type": "object",
             "properties": {
                 "category_id": {
@@ -2125,7 +2263,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.UpdateProfileRequest": {
+        "models.UpdateProfileRequest": {
             "type": "object",
             "properties": {
                 "full_name": {
@@ -2138,7 +2276,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api-gateway_internal_models.UserInfo": {
+        "models.UserInfo": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2174,22 +2312,28 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token. Example: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
+            "description": "Type \"Bearer\" followed by a space and JWT access token. Example: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "CookieAuth": {
+            "description": "HttpOnly cookie containing JWT access token. Automatically set after login/register. Used for authentication in browser-based applications.",
+            "type": "apiKey",
+            "name": "access_token",
+            "in": "cookie"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "2.0",
 	Host:             "localhost:8000",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Ecommerce Platform API",
-	Description:      "Comprehensive API documentation for the Ecommerce Platform. All endpoints are accessed through the API Gateway. This is the single source of truth for all API documentation.",
+	Title:            "Ecommerce Platform API Gateway",
+	Description:      "Comprehensive API documentation for the Ecommerce Platform. All endpoints are accessed through the API Gateway which acts as a reverse proxy to backend microservices (Identity Service, Product Service, Order Service, etc.). The Gateway automatically forwards cookies, headers, and user context to backend services.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

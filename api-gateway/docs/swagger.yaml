@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  api-gateway_internal_models.AddressInfo:
+  models.AddressInfo:
     properties:
       city:
         example: Ho Chi Minh City
@@ -27,27 +27,11 @@ definitions:
         example: 1
         type: integer
     type: object
-  api-gateway_internal_models.AuthData:
-    properties:
-      token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-      user:
-        $ref: '#/definitions/api-gateway_internal_models.UserInfo'
-    type: object
-  api-gateway_internal_models.AuthResponse:
-    properties:
-      data:
-        $ref: '#/definitions/api-gateway_internal_models.AuthData'
-      message:
-        example: login successful
-        type: string
-    type: object
-  api-gateway_internal_models.Category:
+  models.Category:
     properties:
       children:
         items:
-          $ref: '#/definitions/api-gateway_internal_models.Category'
+          $ref: '#/definitions/models.Category'
         type: array
       created_at:
         example: "2025-12-23T10:00:00Z"
@@ -62,7 +46,7 @@ definitions:
         example: Electronics
         type: string
       parent:
-        $ref: '#/definitions/api-gateway_internal_models.Category'
+        $ref: '#/definitions/models.Category'
       parent_id:
         example: 0
         type: integer
@@ -73,7 +57,7 @@ definitions:
         example: "2025-12-23T10:00:00Z"
         type: string
     type: object
-  api-gateway_internal_models.ChangePasswordRequest:
+  models.ChangePasswordRequest:
     properties:
       new_password:
         example: newpassword123
@@ -86,7 +70,7 @@ definitions:
     - new_password
     - old_password
     type: object
-  api-gateway_internal_models.CreateAddressRequest:
+  models.CreateAddressRequest:
     properties:
       city:
         example: Ho Chi Minh City
@@ -113,7 +97,7 @@ definitions:
     - state
     - street
     type: object
-  api-gateway_internal_models.CreateCategoryRequest:
+  models.CreateCategoryRequest:
     properties:
       description:
         example: Electronic devices and gadgets
@@ -130,7 +114,7 @@ definitions:
     required:
     - name
     type: object
-  api-gateway_internal_models.CreateProductRequest:
+  models.CreateProductRequest:
     properties:
       category_id:
         example: 1
@@ -167,7 +151,7 @@ definitions:
     - price
     - sku
     type: object
-  api-gateway_internal_models.ErrorResponse:
+  models.ErrorResponse:
     properties:
       error:
         example: Bad request
@@ -176,7 +160,7 @@ definitions:
         example: Invalid input
         type: string
     type: object
-  api-gateway_internal_models.LoginRequest:
+  models.LoginRequest:
     properties:
       email:
         example: user@example.com
@@ -188,10 +172,21 @@ definitions:
     - email
     - password
     type: object
-  api-gateway_internal_models.Product:
+  models.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      message:
+        example: login successful
+        type: string
+      user:
+        $ref: '#/definitions/models.UserInfo'
+    type: object
+  models.Product:
     properties:
       category:
-        $ref: '#/definitions/api-gateway_internal_models.Category'
+        $ref: '#/definitions/models.Category'
       category_id:
         example: 1
         type: integer
@@ -230,7 +225,7 @@ definitions:
         example: "2025-12-23T10:00:00Z"
         type: string
     type: object
-  api-gateway_internal_models.ProductsResponse:
+  models.ProductsResponse:
     properties:
       limit:
         example: 20
@@ -240,13 +235,24 @@ definitions:
         type: integer
       products:
         items:
-          $ref: '#/definitions/api-gateway_internal_models.Product'
+          $ref: '#/definitions/models.Product'
         type: array
       total:
         example: 100
         type: integer
     type: object
-  api-gateway_internal_models.RegisterRequest:
+  models.RefreshResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      message:
+        example: token refreshed successfully
+        type: string
+      user:
+        $ref: '#/definitions/models.UserInfo'
+    type: object
+  models.RegisterRequest:
     properties:
       email:
         example: user@example.com
@@ -272,7 +278,18 @@ definitions:
     - password
     - username
     type: object
-  api-gateway_internal_models.SearchResponse:
+  models.RegisterResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      message:
+        example: user registered successfully
+        type: string
+      user:
+        $ref: '#/definitions/models.UserInfo'
+    type: object
+  models.SearchResponse:
     properties:
       limit:
         example: 20
@@ -282,20 +299,20 @@ definitions:
         type: integer
       products:
         items:
-          $ref: '#/definitions/api-gateway_internal_models.Product'
+          $ref: '#/definitions/models.Product'
         type: array
       total:
         example: 100
         type: integer
     type: object
-  api-gateway_internal_models.SuccessResponse:
+  models.SuccessResponse:
     properties:
       data: {}
       message:
         example: Operation successful
         type: string
     type: object
-  api-gateway_internal_models.UpdateAddressRequest:
+  models.UpdateAddressRequest:
     properties:
       city:
         example: Ho Chi Minh City
@@ -316,7 +333,7 @@ definitions:
         example: 123 Main St
         type: string
     type: object
-  api-gateway_internal_models.UpdateCategoryRequest:
+  models.UpdateCategoryRequest:
     properties:
       description:
         example: Updated description
@@ -331,7 +348,7 @@ definitions:
         example: electronics-updated
         type: string
     type: object
-  api-gateway_internal_models.UpdateProductRequest:
+  models.UpdateProductRequest:
     properties:
       category_id:
         example: 1
@@ -359,7 +376,7 @@ definitions:
         example: 60
         type: integer
     type: object
-  api-gateway_internal_models.UpdateProfileRequest:
+  models.UpdateProfileRequest:
     properties:
       full_name:
         example: John Doe Updated
@@ -368,7 +385,7 @@ definitions:
         example: "+1234567890"
         type: string
     type: object
-  api-gateway_internal_models.UserInfo:
+  models.UserInfo:
     properties:
       email:
         example: user@example.com
@@ -398,14 +415,15 @@ info:
     email: support@example.com
     name: API Support
   description: Comprehensive API documentation for the Ecommerce Platform. All endpoints
-    are accessed through the API Gateway. This is the single source of truth for all
-    API documentation.
+    are accessed through the API Gateway which acts as a reverse proxy to backend
+    microservices (Identity Service, Product Service, Order Service, etc.). The Gateway
+    automatically forwards cookies, headers, and user context to backend services.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Ecommerce Platform API
-  version: "1.0"
+  title: Ecommerce Platform API Gateway
+  version: "2.0"
 paths:
   /addresses:
     get:
@@ -419,12 +437,12 @@ paths:
           description: List of addresses
           schema:
             items:
-              $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+              $ref: '#/definitions/models.AddressInfo'
             type: array
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get all addresses
@@ -440,22 +458,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.CreateAddressRequest'
+          $ref: '#/definitions/models.CreateAddressRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Address created successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+            $ref: '#/definitions/models.AddressInfo'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new address
@@ -478,15 +496,15 @@ paths:
         "200":
           description: Address deleted successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Address not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete an address
@@ -508,15 +526,15 @@ paths:
         "200":
           description: Address details
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+            $ref: '#/definitions/models.AddressInfo'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Address not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get address by ID
@@ -537,26 +555,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.UpdateAddressRequest'
+          $ref: '#/definitions/models.UpdateAddressRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Address updated successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+            $ref: '#/definitions/models.AddressInfo'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Address not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update an address
@@ -579,15 +597,15 @@ paths:
         "200":
           description: Address set as default
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AddressInfo'
+            $ref: '#/definitions/models.AddressInfo'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Address not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Set default address
@@ -798,59 +816,155 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user with email and password, receive JWT token
+      description: Authenticate user with email and password. Returns access_token
+        in response body (15 min, store in memory) and sets refresh_token as HttpOnly
+        cookie (7 days). The Gateway forwards credentials to Identity Service which
+        validates them and returns tokens. Frontend should store access_token in memory
+        (NOT localStorage) and send it via Authorization header. refresh_token cookie
+        is sent automatically by browser.
       parameters:
-      - description: Login Request
+      - description: Login credentials (email and password)
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Login successful
+          description: Login successful. Response contains access_token (15min, store
+            in memory) and user info. refresh_token sent as HttpOnly cookie (7 days)
+          headers:
+            Set-Cookie:
+              description: refresh_token=<jwt>; Path=/; Max-Age=604800; HttpOnly
+              type: string
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AuthResponse'
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad request - invalid input format
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
-          description: Invalid credentials
+          description: Invalid credentials - wrong email or password
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Login user
       tags:
-      - Auth
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke all refresh tokens for the authenticated user and clear
+        refresh_token cookie. Requires valid access_token in Authorization header
+        (Bearer token). The Gateway forwards the request to Identity Service which
+        revokes all refresh tokens from the database. Frontend should discard the
+        access_token from memory.
+      parameters:
+      - default: Bearer <your_access_token>
+        description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful. All refresh tokens revoked and refresh_token
+            cookie cleared. Frontend should discard access_token from memory
+          headers:
+            Set-Cookie:
+              description: refresh_token=; Path=/; Max-Age=-1; HttpOnly (cleared)
+              type: string
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized - missing or invalid access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error - failed to revoke tokens
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Authentication
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Use refresh_token from HttpOnly cookie to obtain a new access_token.
+        The Gateway automatically forwards the cookie to Identity Service which validates
+        the refresh token and issues a new access_token (15 min) in response body.
+        The refresh_token cookie remains unchanged. Frontend should update the access_token
+        in memory.
+      parameters:
+      - default: refresh_token=<your_refresh_token>
+        description: refresh_token cookie (HttpOnly, automatically sent by browser)
+        in: header
+        name: Cookie
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully. New access_token returned in
+            body (store in memory). refresh_token cookie unchanged
+          schema:
+            $ref: '#/definitions/models.RefreshResponse'
+        "401":
+          description: Invalid, expired, or revoked refresh token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Authentication
   /auth/register:
     post:
       consumes:
       - application/json
-      description: Register a new user account with email, password, username, and
-        full name
+      description: Register a new user account. Returns access_token in response body
+        (store in memory) and sets refresh_token as HttpOnly cookie (7 days). The
+        Gateway forwards the request to Identity Service which validates data, creates
+        user, and returns tokens. Frontend should store access_token in memory (NOT
+        localStorage) for security.
       parameters:
-      - description: Register Request
+      - description: Registration data (email, password, username, full_name)
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.RegisterRequest'
+          $ref: '#/definitions/models.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: User registered successfully
+          description: User registered successfully. Response contains access_token
+            (15min, store in memory) and user info. refresh_token sent as HttpOnly
+            cookie (7 days)
+          headers:
+            Set-Cookie:
+              description: refresh_token=<jwt>; Path=/; Max-Age=604800; HttpOnly
+              type: string
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.AuthResponse'
+            $ref: '#/definitions/models.RegisterResponse'
         "400":
-          description: Bad request
+          description: Bad request - invalid input format
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "409":
-          description: User already exists
+          description: User already exists - email or username taken
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Register a new user
       tags:
-      - Auth
+      - Authentication
   /categories:
     get:
       consumes:
@@ -863,7 +977,7 @@ paths:
           description: List of categories
           schema:
             items:
-              $ref: '#/definitions/api-gateway_internal_models.Category'
+              $ref: '#/definitions/models.Category'
             type: array
       summary: Get all categories
       tags:
@@ -878,18 +992,18 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.CreateCategoryRequest'
+          $ref: '#/definitions/models.CreateCategoryRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Category created successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a new category
       tags:
       - Categories
@@ -910,11 +1024,11 @@ paths:
         "200":
           description: Category deleted successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Delete a category
       tags:
       - Categories
@@ -934,11 +1048,11 @@ paths:
         "200":
           description: Category details
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.Category'
+            $ref: '#/definitions/models.Category'
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get category by ID
       tags:
       - Categories
@@ -957,22 +1071,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.UpdateCategoryRequest'
+          $ref: '#/definitions/models.UpdateCategoryRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Category updated successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Update an existing category
       tags:
       - Categories
@@ -994,12 +1108,12 @@ paths:
           description: List of child categories
           schema:
             items:
-              $ref: '#/definitions/api-gateway_internal_models.Category'
+              $ref: '#/definitions/models.Category'
             type: array
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get child categories
       tags:
       - Categories
@@ -1030,11 +1144,11 @@ paths:
         "200":
           description: List of products in category
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ProductsResponse'
+            $ref: '#/definitions/models.ProductsResponse'
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get products by category
       tags:
       - Categories
@@ -1055,11 +1169,11 @@ paths:
         "200":
           description: Category details
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.Category'
+            $ref: '#/definitions/models.Category'
         "404":
           description: Category not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get category by slug
       tags:
       - Categories
@@ -1114,11 +1228,11 @@ paths:
         "200":
           description: List of products
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ProductsResponse'
+            $ref: '#/definitions/models.ProductsResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: List products with pagination and filters
       tags:
       - Products
@@ -1132,22 +1246,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.CreateProductRequest'
+          $ref: '#/definitions/models.CreateProductRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Product created successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new product
@@ -1170,15 +1284,15 @@ paths:
         "200":
           description: Product deleted successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Product not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a product
@@ -1200,11 +1314,11 @@ paths:
         "200":
           description: Product details
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.Product'
+            $ref: '#/definitions/models.Product'
         "404":
           description: Product not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Get product by ID
       tags:
       - Products
@@ -1223,26 +1337,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.UpdateProductRequest'
+          $ref: '#/definitions/models.UpdateProductRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Product updated successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Product not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update an existing product
@@ -1271,19 +1385,19 @@ paths:
         "200":
           description: Inventory updated successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Product not found
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update product inventory
@@ -1311,12 +1425,12 @@ paths:
           description: List of matching products
           schema:
             items:
-              $ref: '#/definitions/api-gateway_internal_models.Product'
+              $ref: '#/definitions/models.Product'
             type: array
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Search products
       tags:
       - Products
@@ -1373,15 +1487,15 @@ paths:
         "200":
           description: Search results with products and pagination
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SearchResponse'
+            $ref: '#/definitions/models.SearchResponse'
         "400":
           description: Invalid request parameters
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Search products
       tags:
       - Search
@@ -1396,22 +1510,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.ChangePasswordRequest'
+          $ref: '#/definitions/models.ChangePasswordRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Password changed successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.SuccessResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Change user password
@@ -1428,11 +1542,11 @@ paths:
         "200":
           description: User profile
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.UserInfo'
+            $ref: '#/definitions/models.UserInfo'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get user profile
@@ -1448,22 +1562,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api-gateway_internal_models.UpdateProfileRequest'
+          $ref: '#/definitions/models.UpdateProfileRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Profile updated successfully
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.UserInfo'
+            $ref: '#/definitions/models.UserInfo'
         "400":
           description: Bad request
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/api-gateway_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update user profile
@@ -1471,9 +1585,15 @@ paths:
       - Users
 securityDefinitions:
   BearerAuth:
-    description: 'Type "Bearer" followed by a space and JWT token. Example: "Bearer
-      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+    description: 'Type "Bearer" followed by a space and JWT access token. Example:
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
     in: header
     name: Authorization
+    type: apiKey
+  CookieAuth:
+    description: HttpOnly cookie containing JWT access token. Automatically set after
+      login/register. Used for authentication in browser-based applications.
+    in: cookie
+    name: access_token
     type: apiKey
 swagger: "2.0"

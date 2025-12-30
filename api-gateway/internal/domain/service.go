@@ -3,10 +3,10 @@ package domain
 // Service represents a backend microservice
 // This is the domain model for service routing
 type Service struct {
-	Name           string
-	BaseURL        string
+	Name            string
+	BaseURL         string
 	HealthCheckPath string
-	Routes         []Route
+	Routes          []Route
 }
 
 // Route represents a route pattern for a service
@@ -24,10 +24,16 @@ type ServiceRegistry interface {
 	RegisterService(service *Service) error
 }
 
+// ProxyResponse contains the full response from a proxied request
+type ProxyResponse struct {
+	Body       []byte
+	StatusCode int
+	Headers    map[string][]string
+}
+
 // ProxyClient defines the interface for proxying requests to services
 // This abstraction allows different proxy implementations
 type ProxyClient interface {
-	ProxyRequest(service *Service, path string, method string, headers map[string]string, body []byte) ([]byte, int, error)
+	ProxyRequest(service *Service, path string, method string, headers map[string]string, body []byte) (*ProxyResponse, error)
 	HealthCheck(service *Service) error
 }
-

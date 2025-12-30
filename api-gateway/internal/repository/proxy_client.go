@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"api-gateway/internal/domain"
 	"bytes"
 	"fmt"
 	"io"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"api-gateway/internal/domain"
 )
 
 func min(a, b int) int {
@@ -52,7 +52,7 @@ func (p *proxyClient) ProxyRequest(
 	method string,
 	headers map[string]string,
 	body []byte,
-) ([]byte, int, error) {
+) (*domain.ProxyResponse, error) {
 	// Build the full URL
 	// Ensure base URL doesn't end with / and path starts with /
 	baseURL := service.BaseURL
@@ -82,7 +82,7 @@ func (p *proxyClient) ProxyRequest(
 	}
 
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// CRITICAL: Set ALL headers from map to request
@@ -93,14 +93,14 @@ func (p *proxyClient) ProxyRequest(
 		}
 		req.Header.Set(key, value)
 	}
-	
+
 	// CRITICAL: Double-check Authorization header is set
 	// If it's in the headers map, ensure it's in the request
 	if authVal, exists := headers["Authorization"]; exists && authVal != "" {
 		// Force set it again to be absolutely sure
 		req.Header.Set("Authorization", authVal)
 		fmt.Printf("[PROXY] ✅ Set Authorization: %s...\n", authVal[:min(50, len(authVal))])
-		
+
 		// Verify it's actually in the request
 		if finalAuth := req.Header.Get("Authorization"); finalAuth != "" {
 			fmt.Printf("[PROXY] ✅ Verified Authorization in request\n")
@@ -121,17 +121,27 @@ func (p *proxyClient) ProxyRequest(
 	// Execute the request
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	return respBody, resp.StatusCode, nil
+	// CRITICAL: Capture ALL response headers, especially Set-Cookie
+	responseHeaders := make(map[string][]string)
+	for key, values := range resp.Header {
+		responseHeaders[key] = values
+	}
+
+	return &domain.ProxyResponse{
+		Body:       respBody,
+		StatusCode: resp.StatusCode,
+		Headers:    responseHeaders,
+	}, nil
 }
 
 // HealthCheck checks if a service is healthy

@@ -17,13 +17,36 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required" example:"password123"`
 }
 
-// AuthResponse represents the authentication response
+// LoginResponse represents the login response with access_token in body
+// refresh_token is sent via HttpOnly cookie, NOT in response body
+type LoginResponse struct {
+	Message     string    `json:"message" example:"login successful"`
+	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	User        *UserInfo `json:"user"`
+}
+
+// RegisterResponse represents the registration response with access_token in body
+// refresh_token is sent via HttpOnly cookie, NOT in response body
+type RegisterResponse struct {
+	Message     string    `json:"message" example:"user registered successfully"`
+	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	User        *UserInfo `json:"user"`
+}
+
+// RefreshResponse represents the refresh token response with new access_token
+type RefreshResponse struct {
+	Message     string    `json:"message" example:"token refreshed successfully"`
+	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+	User        *UserInfo `json:"user"`
+}
+
+// AuthResponse represents the authentication response (DEPRECATED - use LoginResponse/RegisterResponse)
 type AuthResponse struct {
 	Message string   `json:"message" example:"login successful"`
 	Data    AuthData `json:"data"`
 }
 
-// AuthData contains token and user info
+// AuthData contains token and user info (DEPRECATED)
 type AuthData struct {
 	Token string    `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 	User  *UserInfo `json:"user"`
@@ -92,19 +115,19 @@ type AddressInfo struct {
 
 // Product represents a product
 type Product struct {
-	ID          uint     `json:"id" example:"1"`
-	Name        string   `json:"name" example:"iPhone 15 Pro"`
-	Description string   `json:"description" example:"Latest iPhone with A17 Pro chip"`
-	Price       float64  `json:"price" example:"999.99"`
-	SKU         string   `json:"sku" example:"IPH15P-001"`
-	CategoryID  *uint    `json:"category_id,omitempty" example:"1"`
+	ID          uint      `json:"id" example:"1"`
+	Name        string    `json:"name" example:"iPhone 15 Pro"`
+	Description string    `json:"description" example:"Latest iPhone with A17 Pro chip"`
+	Price       float64   `json:"price" example:"999.99"`
+	SKU         string    `json:"sku" example:"IPH15P-001"`
+	CategoryID  *uint     `json:"category_id,omitempty" example:"1"`
 	Category    *Category `json:"category,omitempty"`
-	Status      string   `json:"status" example:"ACTIVE"`
-	Images      []string `json:"images,omitempty"`
-	Stock       int      `json:"stock" example:"50"`
-	IsActive    bool     `json:"is_active" example:"true"`
-	CreatedAt   string   `json:"created_at" example:"2025-12-23T10:00:00Z"`
-	UpdatedAt   string   `json:"updated_at" example:"2025-12-23T10:00:00Z"`
+	Status      string    `json:"status" example:"ACTIVE"`
+	Images      []string  `json:"images,omitempty"`
+	Stock       int       `json:"stock" example:"50"`
+	IsActive    bool      `json:"is_active" example:"true"`
+	CreatedAt   string    `json:"created_at" example:"2025-12-23T10:00:00Z"`
+	UpdatedAt   string    `json:"updated_at" example:"2025-12-23T10:00:00Z"`
 }
 
 // CreateProductRequest represents the request body for creating a product
@@ -194,5 +217,3 @@ type SearchResponse struct {
 	Page     int       `json:"page" example:"1"`
 	Limit    int       `json:"limit" example:"20"`
 }
-
-

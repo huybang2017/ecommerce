@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"api-gateway/internal/service"
 	"context"
 	"net/http"
 	"strings"
-	"api-gateway/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -65,7 +65,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		zap.String("auth_header_in_request", c.Request.Header.Get("Authorization")),
 		zap.Bool("auth_in_context", hasAuthInContext),
 	)
-	
+
 	// Extract service name from path
 	serviceName := h.getServiceName(c.Request.URL.Path)
 
@@ -79,7 +79,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 
 	// Collect headers - CRITICAL: Always include Authorization header
 	headers := make(map[string]string)
-	
+
 	// FIRST: Copy ALL headers from request (including Authorization)
 	// This ensures we don't miss any headers
 	for key, values := range c.Request.Header {
@@ -92,7 +92,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 			headers[key] = values[0]
 		}
 	}
-	
+
 	// CRITICAL: Ensure Authorization header is present
 	// Priority 1: Get from context (preserved by middleware)
 	var authHeader string
@@ -104,7 +104,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 			h.logger.Debug("Got Authorization from context", zap.String("header_preview", authStr[:min(30, len(authStr))]))
 		}
 	}
-	
+
 	// Priority 2: Get from Request.Header if not in context
 	if authHeader == "" {
 		authHeader = c.Request.Header.Get("Authorization")
@@ -113,12 +113,34 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 			h.logger.Debug("Got Authorization from Request.Header", zap.String("header_preview", authHeader[:min(30, len(authHeader))]))
 		}
 	}
-	
+
 	// Final check: Log if Authorization is missing
 	if headers["Authorization"] == "" {
 		h.logger.Warn("No Authorization header found in handler", zap.Strings("available_headers", getHeaderKeys(headers)))
 	} else {
 		h.logger.Debug("Authorization header ready for forwarding", zap.String("header_preview", headers["Authorization"][:min(30, len(headers["Authorization"]))]))
+	}
+
+	// CRITICAL: Forward user context headers to backend microservices
+	// This allows backend services to know WHO is making the request without re-validating JWT
+	// This is the BFF (Backend For Frontend) pattern
+	if userID, exists := c.Get("user_id"); exists {
+		if userIDStr, ok := userID.(string); ok {
+			headers["X-User-Id"] = userIDStr
+			h.logger.Debug("Forwarding X-User-Id header", zap.String("user_id", userIDStr))
+		}
+	}
+
+	if email, exists := c.Get("email"); exists {
+		if emailStr, ok := email.(string); ok {
+			headers["X-User-Email"] = emailStr
+		}
+	}
+
+	if role, exists := c.Get("role"); exists {
+		if roleStr, ok := role.(string); ok {
+			headers["X-User-Role"] = roleStr
+		}
 	}
 
 	// Get user_id from gin.Context (set by auth middleware) and add to context
@@ -127,17 +149,28 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		ctx = context.WithValue(ctx, "user_id", userID)
 	}
 
+	// Build path with query parameters
+	fullPath := c.Request.URL.Path
+	if c.Request.URL.RawQuery != "" {
+		fullPath = fullPath + "?" + c.Request.URL.RawQuery
+	}
+
 	// Route the request
-	responseBody, statusCode, err := h.gatewayService.RouteRequest(
+	proxyResponse, err := h.gatewayService.RouteRequest(
 		ctx,
 		serviceName,
-		c.Request.URL.Path,
+		fullPath,
 		c.Request.Method,
 		headers,
 		body,
 	)
 
 	if err != nil {
+		statusCode := http.StatusBadGateway
+		if proxyResponse != nil {
+			statusCode = proxyResponse.StatusCode
+		}
+
 		if statusCode == http.StatusUnauthorized {
 			c.JSON(statusCode, gin.H{"error": err.Error()})
 			return
@@ -149,17 +182,43 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 			zap.String("service", serviceName),
 		)
 		c.JSON(statusCode, gin.H{
-			"error": "Internal server error",
+			"error":   "Internal server error",
 			"message": err.Error(),
 		})
 		return
 	}
 
-	// Set response headers
-	c.Header("Content-Type", "application/json")
+	// CRITICAL: Forward ALL response headers from backend to client
+	// This is essential for Set-Cookie headers in authentication
+	h.logger.Info("Forwarding response headers",
+		zap.Int("header_count", len(proxyResponse.Headers)),
+		zap.Strings("header_keys", func() []string {
+			keys := make([]string, 0, len(proxyResponse.Headers))
+			for k := range proxyResponse.Headers {
+				keys = append(keys, k)
+			}
+			return keys
+		}()),
+	)
 
-	// Write response
-	c.Data(statusCode, "application/json", responseBody)
+	for headerKey, headerValues := range proxyResponse.Headers {
+		for _, headerValue := range headerValues {
+			h.logger.Info("Setting response header",
+				zap.String("key", headerKey),
+				zap.String("value", headerValue),
+			)
+			c.Writer.Header().Add(headerKey, headerValue)
+		}
+	}
+
+	// Get Content-Type from backend response headers
+	contentType := "application/json"
+	if ctValues, ok := proxyResponse.Headers["Content-Type"]; ok && len(ctValues) > 0 {
+		contentType = ctValues[0]
+	}
+
+	// Write response with backend's content type
+	c.Data(proxyResponse.StatusCode, contentType, proxyResponse.Body)
 }
 
 // HealthCheck returns the health status of the gateway and all services
@@ -184,14 +243,14 @@ func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 
 	if allHealthy {
 		c.JSON(http.StatusOK, gin.H{
-			"status":  "healthy",
-			"gateway": "ok",
+			"status":   "healthy",
+			"gateway":  "ok",
 			"services": healthStatus,
 		})
 	} else {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"status":  "degraded",
-			"gateway": "ok",
+			"status":   "degraded",
+			"gateway":  "ok",
 			"services": healthStatus,
 		})
 	}
@@ -222,6 +281,15 @@ func (h *GatewayHandler) getServiceName(path string) string {
 	}
 	if strings.HasPrefix(path, "/api/v1/addresses") {
 		return "identity_service"
+	}
+	if strings.HasPrefix(path, "/api/v1/shops") { // THÊM MỚI - Shop routes
+		return "identity_service"
+	}
+	if strings.HasPrefix(path, "/api/v1/cart") {
+		return "order_service"
+	}
+	if strings.HasPrefix(path, "/api/v1/orders") {
+		return "order_service"
 	}
 	// Default to product_service for now
 	return "product_service"

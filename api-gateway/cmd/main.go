@@ -1,12 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
 	"api-gateway/config"
 	"api-gateway/internal/domain"
 	"api-gateway/internal/handler"
@@ -14,18 +8,24 @@ import (
 	"api-gateway/internal/router"
 	"api-gateway/internal/service"
 	"api-gateway/pkg/logger"
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	
+
 	_ "api-gateway/docs" // Swagger docs
 )
 
-// @title Ecommerce Platform API
-// @version 1.0
-// @description Comprehensive API documentation for the Ecommerce Platform. All endpoints are accessed through the API Gateway. This is the single source of truth for all API documentation.
+// @title Ecommerce Platform API Gateway
+// @version 2.0
+// @description Comprehensive API documentation for the Ecommerce Platform. All endpoints are accessed through the API Gateway which acts as a reverse proxy to backend microservices (Identity Service, Product Service, Order Service, etc.). The Gateway automatically forwards cookies, headers, and user context to backend services.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -40,7 +40,12 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Type "Bearer" followed by a space and JWT token. Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+// @description Type "Bearer" followed by a space and JWT access token. Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+// @securityDefinitions.apikey CookieAuth
+// @in cookie
+// @name access_token
+// @description HttpOnly cookie containing JWT access token. Automatically set after login/register. Used for authentication in browser-based applications.
 
 func main() {
 	// Load configuration
@@ -58,6 +63,15 @@ func main() {
 
 	appLogger.Info("Starting API Gateway...")
 
+	// Debug: Log CORS configuration
+	appLogger.Info("CORS Configuration",
+		zap.Strings("allowed_origins", cfg.CORS.AllowedOrigins),
+		zap.Strings("allowed_methods", cfg.CORS.AllowedMethods),
+		zap.Strings("allowed_headers", cfg.CORS.AllowedHeaders),
+		zap.Strings("expose_headers", cfg.CORS.ExposeHeaders),
+		zap.Bool("allow_credentials", cfg.CORS.AllowCredentials),
+	)
+
 	// Set Gin mode based on config
 	gin.SetMode(cfg.Server.Mode)
 
@@ -72,7 +86,7 @@ func main() {
 	}
 
 	// Debug: Log config values
-	appLogger.Info("Product service config loaded", 
+	appLogger.Info("Product service config loaded",
 		zap.String("base_url", productServiceConfig.BaseURL),
 		zap.String("health_check_path", productServiceConfig.HealthCheckPath),
 		zap.Int("routes_count", len(productServiceConfig.Routes)))
@@ -81,7 +95,7 @@ func main() {
 	// Force use localhost for local development (override Docker hostname)
 	baseURL := productServiceConfig.BaseURL
 	appLogger.Info("Product service config BaseURL from config", zap.String("base_url", baseURL))
-	
+
 	// Always override with localhost for local development
 	// In Docker, this should be set via environment variable
 	baseURL = "http://localhost:8080"
@@ -106,20 +120,20 @@ func main() {
 	}
 
 	// Debug: Log service details before registration
-	appLogger.Info("Registering product service", 
+	appLogger.Info("Registering product service",
 		zap.String("name", productService.Name),
 		zap.String("base_url", productService.BaseURL),
 		zap.String("health_check_path", productService.HealthCheckPath),
 		zap.Int("routes_count", len(productService.Routes)))
-	
+
 	if err := serviceRegistry.RegisterService(productService); err != nil {
 		appLogger.Fatal("Failed to register product service", zap.Error(err))
 	}
-	
+
 	// Verify registration
 	registeredService, err := serviceRegistry.GetService("product_service")
 	if err == nil {
-		appLogger.Info("Product service registered successfully", 
+		appLogger.Info("Product service registered successfully",
 			zap.String("registered_base_url", registeredService.BaseURL))
 	} else {
 		appLogger.Error("Failed to verify product service registration", zap.Error(err))
@@ -184,6 +198,33 @@ func main() {
 			appLogger.Fatal("Failed to register search service", zap.Error(err))
 		}
 		appLogger.Info("Search service registered", zap.String("base_url", searchBaseURL))
+	}
+
+	// Order Service
+	orderServiceConfig, exists := cfg.Services["order_service"]
+	if exists {
+		orderBaseURL := orderServiceConfig.BaseURL
+		// Force use localhost for local development
+		orderBaseURL = "http://localhost:8083"
+		appLogger.Info("Order service config loaded",
+			zap.String("base_url", orderBaseURL),
+			zap.String("health_check_path", orderServiceConfig.HealthCheckPath))
+
+		orderService := &domain.Service{
+			Name:            "order_service",
+			BaseURL:         orderBaseURL,
+			HealthCheckPath: orderServiceConfig.HealthCheckPath,
+			Routes: []domain.Route{
+				{Path: "/api/v1/cart", Methods: []string{"GET", "DELETE"}, RequireAuth: false},
+				{Path: "/api/v1/cart/items", Methods: []string{"POST"}, RequireAuth: false},
+				{Path: "/api/v1/cart/items/:product_id", Methods: []string{"PUT", "DELETE"}, RequireAuth: false},
+			},
+		}
+
+		if err := serviceRegistry.RegisterService(orderService); err != nil {
+			appLogger.Fatal("Failed to register order service", zap.Error(err))
+		}
+		appLogger.Info("Order service registered", zap.String("base_url", orderBaseURL))
 	}
 
 	// Initialize proxy client (use max timeout from all services)

@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"api-gateway/config"
 	"fmt"
 	"net/http"
 	"strings"
-	"api-gateway/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -20,37 +20,40 @@ func min(a, b int) int {
 
 // AuthMiddleware validates JWT tokens for protected routes
 // This implements authentication for the API Gateway
+// Supports both Cookie-based (preferred) and Authorization header authentication
 func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get the Authorization header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			logger.Warn("Missing authorization header")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
-			c.Abort()
-			return
-		}
-
-		// Normalize Authorization header: auto-add "Bearer " prefix if missing
-		// This handles cases where Swagger UI or clients send token directly
 		var tokenString string
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			// Already has Bearer prefix
-			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
-		} else if strings.HasPrefix(authHeader, "bearer ") {
-			// Case-insensitive check
-			tokenString = strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
+
+		// PRIORITY 1: Try to get token from HttpOnly cookie (most secure)
+		if cookieToken, err := c.Cookie("access_token"); err == nil && cookieToken != "" {
+			tokenString = cookieToken
+			logger.Debug("Token found in cookie")
 		} else {
-			// No Bearer prefix, assume it's just the token
-			tokenString = strings.TrimSpace(authHeader)
-			// Normalize the header for forwarding to backend services
-			authHeader = "Bearer " + tokenString
+			// PRIORITY 2: Fallback to Authorization header (for compatibility)
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				logger.Warn("Missing authorization credentials (no cookie or header)")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization credentials"})
+				c.Abort()
+				return
+			}
+
+			// Normalize Authorization header: auto-add "Bearer " prefix if missing
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			} else if strings.HasPrefix(authHeader, "bearer ") {
+				tokenString = strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
+			} else {
+				tokenString = strings.TrimSpace(authHeader)
+			}
+			logger.Debug("Token found in Authorization header")
 		}
 
 		// Validate token is not empty
 		if tokenString == "" {
-			logger.Warn("Empty token in authorization header")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+			logger.Warn("Empty token")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization credentials"})
 			c.Abort()
 			return
 		}
@@ -86,7 +89,11 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 			if userIDFloat, ok := claims["user_id"].(float64); ok {
 				userID := fmt.Sprintf("%.0f", userIDFloat)
 				c.Set("user_id", userID)
-				logger.Debug("User authenticated", zap.String("user_id", userID), zap.String("email", claims["email"].(string)))
+
+				// Also set as uint for backend services compatibility
+				c.Set("user_id_uint", uint(userIDFloat))
+
+				logger.Debug("User authenticated", zap.String("user_id", userID))
 			}
 			if email, ok := claims["email"].(string); ok {
 				c.Set("email", email)
@@ -96,12 +103,11 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 			}
 		}
 
-		// CRITICAL: Preserve Authorization header in context for forwarding to backend services
-		// This ensures the header is available even if something modifies c.Request.Header
-		// IMPORTANT: Use the original authHeader variable, not c.Request.Header.Get again
-		// because c.Request.Header might have been modified
-		c.Set("auth_header", authHeader)
-		logger.Debug("Preserved Authorization header in context", zap.String("header_preview", authHeader[:min(30, len(authHeader))]))
+		// Store token for forwarding to backend services
+		// Create Bearer token format for header forwarding
+		bearerToken := "Bearer " + tokenString
+		c.Set("auth_header", bearerToken)
+		logger.Debug("Authentication successful")
 
 		c.Next()
 	}
@@ -143,4 +149,3 @@ func OptionalAuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.Handl
 		c.Next()
 	}
 }
-
