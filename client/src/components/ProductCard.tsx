@@ -1,12 +1,43 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/types';
+import { useCartContext as useCart } from '@/contexts/CartContext';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { addItem } = useCart();
+  const [adding, setAdding] = useState(false);
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (product.status !== 'ACTIVE' || product.stock === 0) return;
+
+    setAdding(true);
+    try {
+      await addItem({
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        image: product.images && Array.isArray(product.images) && product.images.length > 0 
+          ? product.images[0] 
+          : undefined,
+        sku: product.sku,
+      });
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    } finally {
+      setAdding(false);
+    }
+  };
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -51,15 +82,24 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.description}
           </p>
         )}
-        <div className="mt-auto flex items-center justify-between">
-          <span className="text-xl font-semibold text-neutral-900">
-            {formatPrice(product.price)}
-          </span>
-          {product.stock > 0 && (
-            <span className="text-xs font-medium text-neutral-400">
-              {product.stock} in stock
+        <div className="mt-auto space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xl font-semibold text-neutral-900">
+              {formatPrice(product.price)}
             </span>
-          )}
+            {product.stock > 0 && (
+              <span className="text-xs font-medium text-neutral-400">
+                {product.stock} in stock
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={product.status !== 'ACTIVE' || product.stock === 0 || adding}
+            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {adding ? 'Adding...' : product.status === 'ACTIVE' && product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+          </button>
         </div>
       </div>
     </Link>

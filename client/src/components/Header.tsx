@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCartContext as useCart } from '@/contexts/CartContext';
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { itemCount } = useCart();
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
@@ -35,6 +37,23 @@ export default function Header() {
               className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
             >
               Search
+            </Link>
+            <Link
+              href="/cart"
+              className="relative text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+            >
+              Cart
+              {itemCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/orders"
+              className="text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+            >
+              Orders
             </Link>
             {isAuthenticated ? (
               <>

@@ -1,100 +1,76 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginRequest, RegisterRequest, AuthResponse } from '@/lib/auth-types';
-import { authApi } from '@/lib/auth-api';
+import React, { createContext, useContext, ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import {
+  useProfile,
+  useLogin,
+  useLogout,
+  useRegister,
+  User,
+  LoginRequest,
+  RegisterRequest,
+} from "@/hooks/useAuth";
+import { getAccessToken } from "@/lib/axios-client";
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  refreshUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    if (storedToken) {
-      setToken(storedToken);
-      // Try to fetch user profile
-      authApi
-        .getProfile(storedToken)
-        .then((userData) => {
-          setUser(userData);
-        })
-        .catch(() => {
-          // Token might be invalid, clear it
-          localStorage.removeItem('auth_token');
-          setToken(null);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  // CRITICAL: Don't fetch profile on public pages to prevent refresh loop
+  const isPublicPage = pathname === "/login" || pathname === "/register";
+  const hasToken = !!getAccessToken();
+  const shouldFetchProfile = !isPublicPage && hasToken;
+
+  // Use React Query hooks - only fetch if authenticated
+  const {
+    data: user,
+    isLoading: loading,
+    refetch,
+  } = useProfile(shouldFetchProfile);
+
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  const logoutMutation = useLogout();
 
   const login = async (credentials: LoginRequest) => {
-    const response: AuthResponse = await authApi.login(credentials);
-    if (response.token) {
-      setToken(response.token);
-      localStorage.setItem('auth_token', response.token);
-      
-      // Fetch user profile
-      if (response.user) {
-        setUser(response.user);
-      } else {
-        const userData = await authApi.getProfile(response.token);
-        setUser(userData);
-      }
-    } else {
-      throw new Error(response.message || 'Login failed');
-    }
+    await loginMutation.mutateAsync(credentials);
+    // User will be automatically set in cache by mutation onSuccess
   };
 
   const register = async (data: RegisterRequest) => {
-    const response: AuthResponse = await authApi.register(data);
-    if (response.token) {
-      setToken(response.token);
-      localStorage.setItem('auth_token', response.token);
-      
-      // Fetch user profile
-      if (response.user) {
-        setUser(response.user);
-      } else {
-        const userData = await authApi.getProfile(response.token);
-        setUser(userData);
-      }
-    } else {
-      throw new Error(response.message || 'Registration failed');
-    }
+    await registerMutation.mutateAsync(data);
+    // User will be automatically set in cache by mutation onSuccess
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('auth_token');
+  const logout = async () => {
+    await logoutMutation.mutateAsync();
+    // Cache will be cleared by mutation onSuccess
+  };
+
+  const refreshUser = () => {
+    refetch();
   };
 
   const value: AuthContextType = {
-    user,
-    token,
+    user: user || null,
     loading,
     login,
     register,
     logout,
-    isAuthenticated: !!token && !!user,
+    isAuthenticated: !!user,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -103,8 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
-

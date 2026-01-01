@@ -1,28 +1,33 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get callback URL from query params (for redirect after login)
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await login({ email, password });
-      router.push('/');
+      // Redirect to callback URL or home
+      router.push(callbackUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -43,7 +48,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Email
             </label>
             <input
@@ -58,7 +66,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Password
             </label>
             <input
@@ -77,13 +88,16 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-600">
-          Don't have an account?{' '}
-          <Link href="/register" className="font-medium text-neutral-900 hover:text-neutral-700">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-neutral-900 hover:text-neutral-700"
+          >
             Register
           </Link>
         </p>
@@ -91,4 +105,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

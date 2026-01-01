@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { searchProductsAdvanced, getCategories } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
@@ -8,7 +8,7 @@ import { ProductCardSkeleton } from '@/components/Loading';
 import Error from '@/components/Error';
 import { Product, Category, SearchResponse } from '@/lib/types';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -329,6 +329,22 @@ export default function SearchPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white">
+        <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-24">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900"></div>
+          </div>
+        </main>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }
 

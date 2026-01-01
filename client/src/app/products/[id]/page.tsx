@@ -1,8 +1,12 @@
+'use client';
+
 import { getProduct } from '@/lib/api';
 import Error from '@/components/Error';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { useCartContext as useCart } from '@/contexts/CartContext';
+import { useState, useEffect } from 'react';
+import { Product } from '@/lib/types';
 
 interface ProductDetailPageProps {
   params: Promise<{
@@ -10,26 +14,85 @@ interface ProductDetailPageProps {
   }>;
 }
 
-export default async function ProductDetailPage({
+export default function ProductDetailPage({
   params,
 }: ProductDetailPageProps) {
-  const { id } = await params;
-  const productId = parseInt(id, 10);
+  const router = useRouter();
+  const { addItem } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [productId, setProductId] = useState<number | null>(null);
 
-  if (isNaN(productId)) {
-    notFound();
-  }
+  useEffect(() => {
+    async function loadProduct() {
+      const resolvedParams = await params;
+      const id = parseInt(resolvedParams.id, 10);
+      
+      if (isNaN(id)) {
+        setError('Invalid product ID');
+        setLoading(false);
+        return;
+      }
 
-  let product;
-  let error: string | null = null;
+      setProductId(id);
 
-  try {
-    product = await getProduct(productId);
-  } catch (err: any) {
-    if (err?.message?.includes('404')) {
-      notFound();
+      try {
+        const productData = await getProduct(id);
+        setProduct(productData);
+      } catch (err: any) {
+        if (err?.message?.includes('404')) {
+          notFound();
+        }
+        setError(err?.message || 'Failed to load product');
+      } finally {
+        setLoading(false);
+      }
     }
-    error = err?.message || 'Failed to load product';
+
+    loadProduct();
+  }, [params]);
+
+  const handleAddToCart = async () => {
+    if (!product || product.status !== 'ACTIVE' || product.stock === 0) return;
+
+    setAdding(true);
+    try {
+      await addItem({
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        image: product.images && Array.isArray(product.images) && product.images.length > 0 
+          ? product.images[0] 
+          : undefined,
+        sku: product.sku,
+      });
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-24">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900"></div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (error) {
@@ -45,13 +108,6 @@ export default async function ProductDetailPage({
   if (!product) {
     notFound();
   }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
 
   const images =
     product.images && Array.isArray(product.images) && product.images.length > 0
@@ -175,10 +231,13 @@ export default async function ProductDetailPage({
 
             <div className="pt-4">
               <button
-                disabled={product.status !== 'ACTIVE' || product.stock === 0}
+                onClick={handleAddToCart}
+                disabled={product.status !== 'ACTIVE' || product.stock === 0 || adding}
                 className="w-full rounded-lg bg-neutral-900 px-6 py-4 text-base font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {product.status === 'ACTIVE' && product.stock > 0
+                {adding 
+                  ? 'Adding...' 
+                  : product.status === 'ACTIVE' && product.stock > 0
                   ? 'Add to Cart'
                   : 'Out of Stock'}
               </button>
@@ -189,4 +248,3 @@ export default async function ProductDetailPage({
     </div>
   );
 }
-

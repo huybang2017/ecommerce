@@ -1,162 +1,121 @@
-// API client for Product Service via API Gateway
+/**
+ * LEGACY API FILE
+ * This file provides backward compatibility for pages still using old API functions.
+ * TODO: Refactor all pages to use React Query hooks directly from @/hooks
+ */
 
-import { Product, Category, ProductsResponse, ApiError, SearchResponse, SearchParams } from './types';
+import apiClient from "./axios-client";
+import { Product, Category } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// ==================== PRODUCTS ====================
 
-class ApiClient {
-  private baseUrl: string;
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
-      });
-
-      if (!response.ok) {
-        const error: ApiError = await response.json().catch(() => ({
-          error: 'Unknown error',
-          message: `HTTP ${response.status}: ${response.statusText}`,
-        }));
-        throw new Error(error.message || error.error || 'Request failed');
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Network error or invalid response');
-    }
-  }
-
-  // Product APIs
-  async getProducts(params?: {
-    page?: number;
-    limit?: number;
-    category_id?: number;
-    status?: string;
-  }): Promise<ProductsResponse> {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.category_id) searchParams.append('category_id', params.category_id.toString());
-    if (params?.status) searchParams.append('status', params.status);
-
-    const queryString = searchParams.toString();
-    const endpoint = `/api/v1/products${queryString ? `?${queryString}` : ''}`;
-    
-    return this.request<ProductsResponse>(endpoint);
-  }
-
-  async getProduct(id: number): Promise<Product> {
-    return this.request<Product>(`/api/v1/products/${id}`);
-  }
-
-  async searchProducts(query: string, category?: string): Promise<Product[]> {
-    const searchParams = new URLSearchParams();
-    searchParams.append('q', query);
-    if (category) searchParams.append('category', category);
-
-    const response = await this.request<{ products: Product[]; count: number }>(
-      `/api/v1/products/search?${searchParams.toString()}`
-    );
-    return response.products;
-  }
-
-  // Search Service API (Elasticsearch-based full-text search)
-  async searchProductsAdvanced(params: {
-    q?: string;
-    category_id?: number;
-    min_price?: number;
-    max_price?: number;
-    status?: string;
-    sort_field?: 'price' | 'name' | 'created_at';
-    sort_order?: 'asc' | 'desc';
-    page?: number;
-    limit?: number;
-  }): Promise<SearchResponse> {
-    const searchParams = new URLSearchParams();
-    if (params.q) searchParams.append('q', params.q);
-    if (params.category_id) searchParams.append('category_id', params.category_id.toString());
-    if (params.min_price !== undefined) searchParams.append('min_price', params.min_price.toString());
-    if (params.max_price !== undefined) searchParams.append('max_price', params.max_price.toString());
-    if (params.status) searchParams.append('status', params.status);
-    if (params.sort_field) searchParams.append('sort_field', params.sort_field);
-    if (params.sort_order) searchParams.append('sort_order', params.sort_order);
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.limit) searchParams.append('limit', params.limit.toString());
-
-    const queryString = searchParams.toString();
-    const endpoint = `/api/v1/search${queryString ? `?${queryString}` : ''}`;
-    
-    return this.request<SearchResponse>(endpoint);
-  }
-
-  // Category APIs
-  async getCategories(): Promise<Category[]> {
-    return this.request<Category[]>('/api/v1/categories');
-  }
-
-  async getCategory(id: number): Promise<Category> {
-    return this.request<Category>(`/api/v1/categories/${id}`);
-  }
-
-  async getProductsByCategory(
-    categoryId: number,
-    page?: number,
-    limit?: number
-  ): Promise<ProductsResponse> {
-    const searchParams = new URLSearchParams();
-    if (page) searchParams.append('page', page.toString());
-    if (limit) searchParams.append('limit', limit.toString());
-
-    const queryString = searchParams.toString();
-    const endpoint = `/api/v1/categories/${categoryId}/products${queryString ? `?${queryString}` : ''}`;
-    
-    return this.request<ProductsResponse>(endpoint);
-  }
-}
-
-// Export singleton instance
-export const apiClient = new ApiClient(API_BASE_URL);
-
-// Export convenience functions
-export const getProducts = (params?: {
+export interface GetProductsParams {
   page?: number;
   limit?: number;
   category_id?: number;
   status?: string;
-}) => apiClient.getProducts(params);
+  sort_by?: string;
+  order?: string;
+}
 
-export const getProduct = (id: number) => apiClient.getProduct(id);
+export interface ProductsResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
-export const searchProducts = (query: string, category?: string) =>
-  apiClient.searchProducts(query, category);
+export async function getProducts(
+  params: GetProductsParams = {}
+): Promise<ProductsResponse> {
+  const { data } = await apiClient.get<ProductsResponse>("/api/v1/products", {
+    params,
+  });
+  return data;
+}
 
-export const getCategories = () => apiClient.getCategories();
+export async function getProduct(id: number): Promise<Product> {
+  const { data } = await apiClient.get<Product>(`/api/v1/products/${id}`);
+  return data;
+}
 
-export const getCategory = (id: number) => apiClient.getCategory(id);
+// ==================== CATEGORIES ====================
 
-export const getProductsByCategory = (
-  categoryId: number,
-  page?: number,
-  limit?: number
-) => apiClient.getProductsByCategory(categoryId, page, limit);
+export async function getCategories(): Promise<Category[]> {
+  const { data } = await apiClient.get<Category[]>("/api/v1/categories");
+  return data;
+}
 
-export const searchProductsAdvanced = (params: SearchParams) =>
-  apiClient.searchProductsAdvanced(params);
+export async function getCategory(id: number): Promise<Category> {
+  const { data } = await apiClient.get<Category>(`/api/v1/categories/${id}`);
+  return data;
+}
 
+// ==================== SEARCH ====================
+
+export interface SearchParams {
+  q?: string;
+  category_id?: number;
+  min_price?: number;
+  max_price?: number;
+  page?: number;
+  limit?: number;
+}
+
+export async function searchProductsAdvanced(
+  params: SearchParams
+): Promise<ProductsResponse> {
+  const { data } = await apiClient.get<ProductsResponse>("/api/v1/search", {
+    params,
+  });
+  return data;
+}
+
+// ==================== ORDERS ====================
+
+export interface Order {
+  id: number;
+  user_id: number;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  items?: OrderItem[];
+}
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  price: number;
+  product?: Product;
+}
+
+export interface CreateOrderRequest {
+  items: Array<{
+    product_id: number;
+    quantity: number;
+  }>;
+  shipping_address_id?: number;
+}
+
+export async function listOrders(): Promise<Order[]> {
+  const { data } = await apiClient.get<Order[]>("/api/v1/orders");
+  return data;
+}
+
+export async function getOrder(id: number): Promise<Order> {
+  const { data } = await apiClient.get<Order>(`/api/v1/orders/${id}`);
+  return data;
+}
+
+export async function createOrder(request: CreateOrderRequest): Promise<Order> {
+  const { data } = await apiClient.post<Order>("/api/v1/orders", request);
+  return data;
+}
+
+export async function cancelOrder(id: number): Promise<Order> {
+  const { data } = await apiClient.post<Order>(`/api/v1/orders/${id}/cancel`);
+  return data;
+}
