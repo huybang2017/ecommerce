@@ -25,6 +25,12 @@ func getHeaderKeys(m map[string]string) []string {
 	return keys
 }
 
+// isCORSHeader checks if a header is a CORS-related header (case-insensitive)
+func isCORSHeader(key string) bool {
+	lower := strings.ToLower(key)
+	return strings.HasPrefix(lower, "access-control-")
+}
+
 // GatewayHandler handles HTTP requests for the API Gateway
 type GatewayHandler struct {
 	gatewayService *service.GatewayService
@@ -57,6 +63,13 @@ func NewGatewayHandler(gatewayService *service.GatewayService, logger *zap.Logge
 // @Router /api/v1/{path} [patch]
 // @Router /api/v1/{path} [delete]
 func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
+	// FIX 1: CRITICAL - OPTIONS should never reach here (handled by CORS middleware)
+	if c.Request.Method == "OPTIONS" {
+		h.logger.Error("OPTIONS request reached ProxyRequest - CORS middleware may have failed!")
+		c.AbortWithStatus(204)
+		return
+	}
+
 	// DEBUG: Log incoming request immediately
 	_, hasAuthInContext := c.Get("auth_header")
 	h.logger.Info("ProxyRequest called",
@@ -188,7 +201,8 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL: Forward ALL response headers from backend to client
+	// CRITICAL: Forward response headers from backend to client
+	// EXCEPT CORS headers which are handled by Gateway middleware
 	// This is essential for Set-Cookie headers in authentication
 	h.logger.Info("Forwarding response headers",
 		zap.Int("header_count", len(proxyResponse.Headers)),
@@ -201,7 +215,16 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		}()),
 	)
 
+	// FIX 2: Skip ALL CORS headers from backend (case-insensitive)
 	for headerKey, headerValues := range proxyResponse.Headers {
+		// Skip CORS headers - Gateway middleware handles them
+		if isCORSHeader(headerKey) {
+			h.logger.Debug("Skipping CORS header from backend",
+				zap.String("key", headerKey),
+			)
+			continue
+		}
+
 		for _, headerValue := range headerValues {
 			h.logger.Info("Setting response header",
 				zap.String("key", headerKey),
@@ -216,6 +239,13 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 	if ctValues, ok := proxyResponse.Headers["Content-Type"]; ok && len(ctValues) > 0 {
 		contentType = ctValues[0]
 	}
+
+	// FIX 3: Verify CORS headers are present before sending response
+	h.logger.Info("Final response headers before c.Data()",
+		zap.String("Access-Control-Allow-Origin", c.Writer.Header().Get("Access-Control-Allow-Origin")),
+		zap.String("Access-Control-Allow-Credentials", c.Writer.Header().Get("Access-Control-Allow-Credentials")),
+		zap.Int("status_code", proxyResponse.StatusCode),
+	)
 
 	// Write response with backend's content type
 	c.Data(proxyResponse.StatusCode, contentType, proxyResponse.Body)

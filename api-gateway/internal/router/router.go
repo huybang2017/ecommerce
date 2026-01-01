@@ -5,7 +5,6 @@ import (
 	"api-gateway/internal/handler"
 	"api-gateway/internal/middleware"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -24,32 +23,14 @@ func SetupRouter(
 	cfg *config.Config,
 	logger *zap.Logger,
 ) *gin.Engine {
-	router := gin.Default()
+	// Use gin.New() instead of gin.Default() to avoid default middlewares
+	router := gin.New()
 
-	// Debug: Log CORS config
-	logger.Info("Setting up CORS",
-		zap.Int("allowed_origins_count", len(cfg.CORS.AllowedOrigins)),
-		zap.Strings("allowed_origins", cfg.CORS.AllowedOrigins),
-		zap.Bool("allow_credentials", cfg.CORS.AllowCredentials),
-	)
+	// Add recovery middleware
+	router.Use(gin.Recovery())
 
-	// CORS middleware - MUST be first to handle preflight requests
-	if len(cfg.CORS.AllowedOrigins) > 0 {
-		corsConfig := cors.Config{
-			AllowOrigins:     cfg.CORS.AllowedOrigins,
-			AllowMethods:     cfg.CORS.AllowedMethods,
-			AllowHeaders:     cfg.CORS.AllowedHeaders,
-			ExposeHeaders:    cfg.CORS.ExposeHeaders,
-			AllowCredentials: cfg.CORS.AllowCredentials,
-			MaxAge:           cfg.CORS.MaxAge,
-		}
-		logger.Info("Using custom CORS config")
-		router.Use(cors.New(corsConfig))
-	} else {
-		// Default CORS config if not specified
-		logger.Warn("Using default CORS config - allowed_origins is empty!")
-		router.Use(cors.Default())
-	}
+	// CRITICAL: Custom CORS middleware MUST be first
+	router.Use(middleware.CORSMiddleware(&cfg.CORS, logger))
 
 	// Skip logging OPTIONS requests (CORS preflight) to reduce noise
 	router.Use(middleware.SkipOptionsLoggingMiddleware(logger))
@@ -163,8 +144,9 @@ func SetupRouter(
 		}
 	}
 
-	// Catch-all route for any unmatched paths
-	router.NoRoute(gatewayHandler.ProxyRequest)
+	// REMOVED: NoRoute catch-all prevents CORS middleware from working properly
+	// If you need fallback routing, handle it in specific route groups
+	// router.NoRoute(gatewayHandler.ProxyRequest)
 
 	return router
 }
