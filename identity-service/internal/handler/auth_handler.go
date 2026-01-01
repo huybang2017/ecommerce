@@ -49,8 +49,19 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// ONLY set HttpOnly cookie for refresh_token (long-lived, 7 days)
+	// Set HttpOnly session_id cookie (session-based auth, 7 days)
 	// access_token is returned in response body for frontend to store in memory
+	c.SetCookie(
+		"session_id",
+		response.SessionID,
+		604800, // 7 days
+		"/",
+		"",
+		false, // secure (true in production)
+		true,  // httpOnly
+	)
+
+	// Also set refresh_token cookie for backward compatibility (deprecated)
 	c.SetCookie(
 		"refresh_token",
 		response.RefreshToken,
@@ -93,8 +104,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// ONLY set HttpOnly cookie for refresh_token (long-lived, 7 days)
+	// Set HttpOnly session_id cookie (session-based auth, 7 days)
 	// access_token is returned in response body for frontend to store in memory
+	c.SetCookie(
+		"session_id",
+		response.SessionID,
+		604800, // 7 days
+		"/",
+		"",
+		false, // secure (true in production with HTTPS)
+		true,  // httpOnly (prevents JavaScript access)
+	)
+
+	// Also set refresh_token cookie for backward compatibility (deprecated)
 	c.SetCookie(
 		"refresh_token",       // name
 		response.RefreshToken, // value
@@ -116,23 +138,43 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // RefreshToken handles POST /auth/refresh
 // @Summary Refresh access token
-// @Description Use refresh token from cookie to get a new access token
+// @Description Use session_id from cookie to get a new access token
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Success 200 {object} map[string]interface{} "Token refreshed successfully"
-// @Failure 401 {object} map[string]interface{} "Invalid or expired refresh token"
+// @Failure 401 {object} map[string]interface{} "Invalid or expired session"
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	// Get refresh token from cookie
-	refreshToken, err := c.Cookie("access_token")
-	if err != nil || refreshToken == "" {
-		h.logger.Warn("refresh token not found in cookie")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token required"})
+	// Try to get session_id from cookie first (new session-based approach)
+	sessionID, err := c.Cookie("session_id")
+	if err == nil && sessionID != "" {
+		// Use session-based refresh
+		response, err := h.authService.RefreshAccessTokenBySession(sessionID)
+		if err != nil {
+			h.logger.Error("failed to refresh token by session", zap.Error(err))
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Return new access_token in response body
+		c.JSON(http.StatusOK, gin.H{
+			"message":      "token refreshed successfully",
+			"access_token": response.AccessToken,
+			"user":         response.User,
+		})
 		return
 	}
 
-	// Refresh access token
+	// Fallback: Try refresh_token from cookie (legacy approach)
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken == "" {
+		h.logger.Warn("neither session_id nor refresh_token found in cookie")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session or refresh token required"})
+		return
+	}
+
+	// Use legacy refresh token approach
 	response, err := h.authService.RefreshAccessToken(refreshToken)
 	if err != nil {
 		h.logger.Error("failed to refresh token", zap.Error(err))
@@ -151,7 +193,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 // Logout handles POST /auth/logout
 // @Summary Logout user
-// @Description Revoke all refresh tokens and clear cookies
+// @Description Revoke session and clear cookies
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -160,6 +202,27 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // @Failure 401 {object} map[string]interface{} "Unauthorized"
 // @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
+	// Try to get session_id from cookie first (new session-based approach)
+	sessionID, err := c.Cookie("session_id")
+	if err == nil && sessionID != "" {
+		// Delete session from Redis
+		if err := h.authService.LogoutBySession(sessionID); err != nil {
+			h.logger.Error("failed to logout session", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to logout"})
+			return
+		}
+
+		// Clear both session_id and refresh_token cookies
+		c.SetCookie("session_id", "", -1, "/", "", false, true)
+		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "logout successful",
+		})
+		return
+	}
+
+	// Fallback: Legacy logout using user_id (revoke all refresh tokens)
 	// Get user ID from context (set by auth middleware)
 	userID, exists := c.Get("user_id")
 	if !exists {

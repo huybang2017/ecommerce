@@ -8,10 +8,12 @@ import (
 	"identity-service/internal/handler"
 	"identity-service/internal/middleware"
 	"identity-service/internal/repository/postgres"
+	redisRepo "identity-service/internal/repository/redis"
 	"identity-service/internal/router"
 	"identity-service/internal/service"
 	"identity-service/pkg/database"
 	"identity-service/pkg/logger"
+	redisClient "identity-service/pkg/redis"
 	"log"
 	"net/http"
 	"os"
@@ -55,14 +57,22 @@ func main() {
 	}
 	appLogger.Info("Database migrations completed")
 
+	// Initialize Redis client (Singleton)
+	redisClientInstance, err := redisClient.GetClient(&cfg.Redis)
+	if err != nil {
+		appLogger.Fatal("Failed to connect to Redis", zap.Error(err))
+	}
+	defer redisClient.CloseClient()
+
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
 	addressRepo := postgres.NewAddressRepository(db)
 	shopRepo := postgres.NewShopRepository(db)
 	refreshTokenRepo := postgres.NewRefreshTokenRepository(db)
+	sessionRepo := redisRepo.NewSessionRedisRepository(redisClientInstance, appLogger)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, refreshTokenRepo, appLogger, cfg.JWT.Secret)
+	authService := service.NewAuthService(userRepo, refreshTokenRepo, sessionRepo, appLogger, cfg.JWT.Secret)
 	userService := service.NewUserService(userRepo, appLogger)
 	addressService := service.NewAddressService(addressRepo, appLogger)
 	shopService := service.NewShopService(shopRepo, userRepo, appLogger)

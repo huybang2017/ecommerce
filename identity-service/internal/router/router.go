@@ -7,6 +7,7 @@ import (
 )
 
 // SetupRouter configures all API routes
+// NOTE: CORS is handled by API Gateway, not here
 func SetupRouter(
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
