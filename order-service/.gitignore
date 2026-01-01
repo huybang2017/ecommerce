@@ -1,0 +1,101 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+main
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Configuration files (if they contain secrets)
+# config/config.yaml  # Uncomment if config contains sensitive data
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Log files
+*.log
+logs/
+tmp/
+
+# Build artifacts
+*.out
+*.prof
+coverage.txt
+coverage.html
+
+# Air live reload
+tmp/
+
+# Database files (if running locally)
+*.db
+*.sqlite
+*.sqlite3
+
+# Swagger generated files (if regenerated automatically)
+# docs/docs.go
+# docs/swagger.json
+# docs/swagger.yaml
+
+# OS specific
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+temp/
+.cache/
+
+# Redis dump files
+dump.rdb
+
+# JWT secrets (if stored in files)
+*.pem
+*.key
+!config/*.key  # Allow key files in config if needed
+
+# Test coverage
+coverage.out
+*.coverprofile
+
+# Compiled Object files, Static and Dynamic libs
+*.o
+*.a
+
+# Go mod download cache
+go.sum.backup
+
+# Session files
+sessions/
+
+# Certificates
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# Private keys
+private/
+secrets/
