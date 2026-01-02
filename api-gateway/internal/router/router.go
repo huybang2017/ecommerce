@@ -6,6 +6,7 @@ import (
 	"api-gateway/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
@@ -22,6 +23,7 @@ func SetupRouter(
 	searchHandler *handler.SearchHandler,
 	cfg *config.Config,
 	logger *zap.Logger,
+	redisClient *redis.Client,
 ) *gin.Engine {
 	// Use gin.New() instead of gin.Default() to avoid default middlewares
 	router := gin.New()
@@ -65,7 +67,7 @@ func SetupRouter(
 
 				// Protected routes (auth required)
 				protected := products.Group("")
-				protected.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
+				protected.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
 				{
 					protected.PUT("/:id", productHandler.UpdateProduct)
 					protected.PATCH("/:id", productHandler.UpdateProduct)
@@ -115,14 +117,14 @@ func SetupRouter(
 
 			// Logout requires auth to get user_id
 			authProtected := v1.Group("/auth")
-			authProtected.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
+			authProtected.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
 			{
 				authProtected.POST("/logout", authHandler.Logout)
 			}
 
 			// Protected identity service routes
 			protectedIdentity := v1.Group("")
-			protectedIdentity.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
+			protectedIdentity.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
 			{
 				users := protectedIdentity.Group("/users")
 				{

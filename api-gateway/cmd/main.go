@@ -8,6 +8,7 @@ import (
 	"api-gateway/internal/router"
 	"api-gateway/internal/service"
 	"api-gateway/pkg/logger"
+	"api-gateway/pkg/redis"
 	"context"
 	"fmt"
 	"log"
@@ -74,6 +75,13 @@ func main() {
 
 	// Set Gin mode based on config
 	gin.SetMode(cfg.Server.Mode)
+
+	// 👇 THÊM REDIS CLIENT INITIALIZATION TẠI ĐÂY (sau logger, trước SetupRouter)
+	redisClient, err := redis.GetClient(&cfg.Redis)
+	if err != nil {
+		appLogger.Fatal("Failed to initialize Redis client", zap.Error(err))
+	}
+	defer redis.CloseClient()
 
 	// Initialize service registry
 	serviceRegistry := repository.NewServiceRegistry()
@@ -247,12 +255,12 @@ func main() {
 	searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
 
 	// Setup router
-	router := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cfg, appLogger)
+	r := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cfg, appLogger, redisClient)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler:      router,
+		Handler:      r,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}

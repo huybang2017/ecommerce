@@ -18,6 +18,7 @@ type Config struct {
 	CORS      CORSConfig
 	Services  ServicesConfig
 	Logging   LoggingConfig
+	Redis     RedisConfig
 }
 
 // ServerConfig holds HTTP server configuration
@@ -76,6 +77,16 @@ type LoggingConfig struct {
 	Encoding         string
 	OutputPaths      []string
 	ErrorOutputPaths []string
+}
+
+// RedisConfig holds Redis configuration
+type RedisConfig struct {
+	Host         string `mapstructure:"host"`
+	Port         int    `mapstructure:"port"`
+	Password     string `mapstructure:"password"`
+	DB           int    `mapstructure:"db"`
+	PoolSize     int    `mapstructure:"pool_size"`
+	MinIdleConns int    `mapstructure:"min_idle_conns"`
 }
 
 // LoadConfig reads configuration from config.yaml and environment variables
@@ -179,6 +190,14 @@ func setDefaults() {
 	viper.SetDefault("cors.allow_credentials", true)
 	viper.SetDefault("cors.max_age", "12h")
 
+	// Redis defaults
+	viper.SetDefault("redis.host", "localhost")
+	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.db", 0)
+	viper.SetDefault("redis.pool_size", 10)
+	viper.SetDefault("redis.min_idle_conns", 5)
+
 	// Services defaults
 	// Note: In Docker, use service name. For local dev, use localhost
 	viper.SetDefault("services.product_service.base_url", "http://localhost:8080")
@@ -190,4 +209,9 @@ func setDefaults() {
 	viper.SetDefault("logging.encoding", "json")
 	viper.SetDefault("logging.output_paths", []string{"stdout"})
 	viper.SetDefault("logging.error_output_paths", []string{"stderr"})
+}
+
+// GetAddress returns the Redis address
+func (c *RedisConfig) GetAddress() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
