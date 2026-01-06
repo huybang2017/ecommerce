@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"order-service/config"
 	"order-service/internal/domain"
 	"order-service/internal/handler"
@@ -19,6 +17,8 @@ import (
 	"order-service/pkg/logger"
 	"order-service/pkg/product_client"
 	redisClient "order-service/pkg/redis"
+	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
@@ -49,6 +49,12 @@ func main() {
 	cfg, err := config.LoadConfig("./config")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// TEMPORARY FIX: Override product service base URL if empty
+	if cfg.ProductService.BaseURL == "" {
+		cfg.ProductService.BaseURL = "http://localhost:8080"
+		log.Println("[WARN] ProductService.BaseURL was empty, using default: http://localhost:8080")
 	}
 
 	// Initialize logger
@@ -101,17 +107,26 @@ func main() {
 	appLogger.Info("Kafka event publisher initialized successfully")
 
 	// Initialize repositories
-	cartRepo := redis.NewCartRepository(redisClientInstance)
+	cartRepo := redis.NewCartRepository(redisClientInstance, appLogger)
 	orderRepo := postgres.NewOrderRepository(db)
 
-	// Initialize Product Service client (for marketplace - get shop_id)
+	// Initialize Product Service client
 	productClientRaw := product_client.NewProductClient(cfg.ProductService.BaseURL)
-	productClient := &service.ProductClientAdapter{Client: productClientRaw} // Adapter for interface
-	appLogger.Info("Product Service client initialized", zap.String("base_url", cfg.ProductService.BaseURL))
+
+	// Create adapters for CartService and OrderService (different DTOs)
+	cartProductClient := &service.CartProductClientAdapter{Client: productClientRaw}
+	orderProductClient := &service.OrderProductClientAdapter{Client: productClientRaw}
+
+	log.Printf("[DEBUG] Product Service base URL: %s\n", cfg.ProductService.BaseURL)
+
+	appLogger.Info("Product Service client initialized",
+		zap.String("base_url", cfg.ProductService.BaseURL),
+		zap.Duration("timeout", cfg.ProductService.Timeout),
+	)
 
 	// Initialize services
-	cartService := service.NewCartService(cartRepo, productClient, appLogger)
-	orderService := service.NewOrderService(orderRepo, cartRepo, eventPublisher, appLogger)
+	cartService := service.NewCartService(cartRepo, cartProductClient, appLogger)
+	orderService := service.NewOrderService(orderRepo, cartRepo, orderProductClient, eventPublisher, appLogger)
 
 	// Initialize handlers
 	cartHandler := handler.NewCartHandler(cartService, appLogger)
@@ -153,5 +168,3 @@ func main() {
 
 	appLogger.Info("Server exited gracefully")
 }
-
-

@@ -1,0 +1,22 @@
+{
+  "user_id": "1",
+  "items": [
+    {
+      "product_item_id": 24,
+      "quantity": 2,
+      "is_selected": true,
+      "shop_id": 1,
+      "product_name": "Adidas Originals T-Shirt",
+      "sku_code": "ADIDAS-TS-XL-BLK",
+      "image_url": "https://example.com/adidas-tshirt.jpg",
+      "price": 29.99
+    }
+  ],
+  "version": 2,
+  "item_count": 1,
+  "total_quantity": 2,
+  "selected_item_count": 1,
+  "selected_quantity": 2,
+  "total_price": 59.98,
+  "selected_total_price": 59.98
+}

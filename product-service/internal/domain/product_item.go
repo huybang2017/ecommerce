@@ -6,11 +6,11 @@ package domain
 type ProductItem struct {
 	ID         uint    `gorm:"primaryKey" json:"id"`
 	ProductID  uint    `gorm:"index;not null" json:"product_id"`
-	SKUCode    string  `gorm:"column:sku_code;size:50;uniqueIndex;not null" json:"sku_code"` // Unique SKU
-	ImageURL   string  `gorm:"column:image_url;size:255" json:"image_url"` // Image for this specific SKU
-	Price      float64 `gorm:"type:decimal(15,2);not null" json:"price"` // Price for this SKU
-	QtyInStock int     `gorm:"column:qty_in_stock;default:0" json:"qty_in_stock"` // Stock for this SKU
-	Status     string  `gorm:"size:20;default:'ACTIVE'" json:"status"` // ACTIVE, OUT_OF_STOCK, DISABLED
+	SKUCode    string  `gorm:"column:sku_code;size:50;uniqueIndex;not null" json:"sku_code"`
+	ImageURL   string  `gorm:"column:image_url;size:255" json:"image_url"`
+	Price      float64 `gorm:"type:decimal(15,2);not null" json:"price"`
+	QtyInStock int     `gorm:"column:qty_in_stock;default:0" json:"qty_in_stock"`
+	Status     string  `gorm:"size:20;default:'ACTIVE'" json:"status"`
 }
 
 // TableName specifies the table name for GORM
@@ -28,4 +28,3 @@ type ProductItemRepository interface {
 	Delete(id uint) error
 	UpdateStock(id uint, quantity int) error // Atomic stock update
 }
-

@@ -11,12 +11,12 @@ import (
 
 // ProductItemService contains the business logic for product item (SKU) operations
 type ProductItemService struct {
-	productItemRepo domain.ProductItemRepository
-	variationRepo   domain.VariationRepository
+	productItemRepo  domain.ProductItemRepository
+	variationRepo    domain.VariationRepository
 	variationOptRepo domain.VariationOptionRepository
-	skuConfigRepo   domain.SKUConfigurationRepository
-	productRepo     domain.ProductRepository
-	logger          *zap.Logger
+	skuConfigRepo    domain.SKUConfigurationRepository
+	productRepo      domain.ProductRepository
+	logger           *zap.Logger
 }
 
 // NewProductItemService creates a new product item service
@@ -40,12 +40,12 @@ func NewProductItemService(
 
 // CreateProductItemRequest represents the request to create a new product item (SKU)
 type CreateProductItemRequest struct {
-	ProductID        uint     `json:"product_id" binding:"required"`
-	SKUCode          string   `json:"sku_code" binding:"required"`
-	ImageURL         string   `json:"image_url"`
-	Price            float64  `json:"price" binding:"required,min=0"`
-	QtyInStock       int      `json:"qty_in_stock"`
-	VariationOptions []uint   `json:"variation_options"` // List of variation_option_ids (e.g. [1, 5] = Size M + Color Red)
+	ProductID        uint    `json:"product_id" binding:"required"`
+	SKUCode          string  `json:"sku_code" binding:"required"`
+	ImageURL         string  `json:"image_url"`
+	Price            float64 `json:"price" binding:"required,min=0"`
+	QtyInStock       int     `json:"qty_in_stock"`
+	VariationOptions []uint  `json:"variation_options"` // List of variation_option_ids (e.g. [1, 5] = Size M + Color Red)
 }
 
 // UpdateProductItemRequest represents the request to update a product item
@@ -221,6 +221,72 @@ func (s *ProductItemService) GetProductItems(productID uint) ([]*domain.ProductI
 	return items, nil
 }
 
+// ProductItemWithProduct represents a product item with nested product info
+type ProductItemWithProduct struct {
+	ID         uint    `json:"id"`
+	ProductID  uint    `json:"product_id"`
+	SKUCode    string  `json:"sku_code"`
+	ImageURL   string  `json:"image_url"`
+	Price      float64 `json:"price"`
+	QtyInStock int     `json:"qty_in_stock"`
+	Status     string  `json:"status"`
+	Product    *struct {
+		ID     uint   `json:"id"`
+		ShopID uint   `json:"shop_id"`
+		Name   string `json:"name"`
+	} `json:"product"`
+}
+
+// GetProductItemsWithProduct retrieves multiple product items by IDs with product details
+// Used by order-service/cart-service for batch fetching
+func (s *ProductItemService) GetProductItemsWithProduct(ids []uint) ([]*ProductItemWithProduct, error) {
+	if len(ids) == 0 {
+		return []*ProductItemWithProduct{}, nil
+	}
+
+	result := make([]*ProductItemWithProduct, 0, len(ids))
+
+	for _, id := range ids {
+		// Get product item
+		item, err := s.productItemRepo.GetByID(id)
+		if err != nil {
+			s.logger.Warn("product item not found", zap.Uint("id", id), zap.Error(err))
+			continue // Skip missing items instead of failing entire batch
+		}
+
+		// Get product info
+		product, err := s.productRepo.GetByID(item.ProductID)
+		if err != nil {
+			s.logger.Warn("product not found for item", zap.Uint("product_id", item.ProductID), zap.Error(err))
+			continue
+		}
+
+		// Build response
+		itemWithProduct := &ProductItemWithProduct{
+			ID:         item.ID,
+			ProductID:  item.ProductID,
+			SKUCode:    item.SKUCode,
+			ImageURL:   item.ImageURL,
+			Price:      item.Price,
+			QtyInStock: item.QtyInStock,
+			Status:     item.Status,
+			Product: &struct {
+				ID     uint   `json:"id"`
+				ShopID uint   `json:"shop_id"`
+				Name   string `json:"name"`
+			}{
+				ID:     product.ID,
+				ShopID: product.ShopID,
+				Name:   product.Name,
+			},
+		}
+
+		result = append(result, itemWithProduct)
+	}
+
+	return result, nil
+}
+
 // DeleteProductItem deletes a product item and its SKU configurations
 func (s *ProductItemService) DeleteProductItem(id uint) error {
 	// Delete SKU configurations first (foreign key constraint)
@@ -239,4 +305,3 @@ func (s *ProductItemService) DeleteProductItem(id uint) error {
 
 	return nil
 }
-

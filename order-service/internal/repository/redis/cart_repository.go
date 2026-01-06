@@ -8,56 +8,58 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
-// cartRepository handles Redis operations for cart storage
-// This is the infrastructure layer - it knows HOW to interact with Redis
 type cartRepository struct {
 	client *redis.Client
+	logger *zap.Logger
 }
 
-// NewCartRepository creates a new Redis cart repository
-// Dependency injection: we inject the Redis client
-func NewCartRepository(client *redis.Client) *cartRepository {
-	return &cartRepository{client: client}
+func NewCartRepository(client *redis.Client, logger *zap.Logger) domain.CartRepository {
+	return &cartRepository{
+		client: client,
+		logger: logger,
+	}
 }
 
-// getCartKey generates the Redis key for a cart
-// Format: "cart:user:{user_id}" - only authenticated users
-// Business rule: Cart requires authentication - session_id is no longer supported
+// Redis key format
 func (r *cartRepository) getCartKey(userID string) string {
 	return fmt.Sprintf("cart:user:%s", userID)
 }
 
 // GetCart retrieves a cart from Redis
-// Business rule: Only authenticated users - userID is required
-func (r *cartRepository) GetCart(userID string) (*domain.Cart, error) {
+func (r *cartRepository) GetCart(userID string) (*domain.ShoppingCart, error) {
 	ctx := context.Background()
 	key := r.getCartKey(userID)
 
-	// Get from Redis
 	val, err := r.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		// Cart doesn't exist, return empty cart
-		return &domain.Cart{
-			UserID:    userID,
-			Items:     make(map[uint]*domain.CartItem),
-			Total:     0,
-			UpdatedAt: time.Now().Unix(),
+		// Return empty cart
+		return &domain.ShoppingCart{
+			UserID:  userID,
+			Items:   make([]*domain.CartItem, 0),
+			Version: 1,
 		}, nil
 	}
 	if err != nil {
+		r.logger.Error("failed to get cart from Redis",
+			zap.Error(err),
+			zap.String("user_id", userID),
+		)
 		return nil, fmt.Errorf("failed to get cart from Redis: %w", err)
 	}
 
-	// Deserialize JSON to Cart
-	var cart domain.Cart
-	err = json.Unmarshal([]byte(val), &cart)
-	if err != nil {
+	var cart domain.ShoppingCart
+	if err := json.Unmarshal([]byte(val), &cart); err != nil {
+		r.logger.Error("failed to unmarshal cart",
+			zap.Error(err),
+			zap.String("user_id", userID),
+		)
 		return nil, fmt.Errorf("failed to unmarshal cart: %w", err)
 	}
 
-	// Ensure UserID is set (for backward compatibility)
+	// Ensure UserID is set
 	if cart.UserID == "" {
 		cart.UserID = userID
 	}
@@ -65,10 +67,8 @@ func (r *cartRepository) GetCart(userID string) (*domain.Cart, error) {
 	return &cart, nil
 }
 
-// SaveCart saves a cart to Redis
-// Cart expires after 30 days of inactivity
-// Business rule: Only authenticated users - UserID is required
-func (r *cartRepository) SaveCart(cart *domain.Cart) error {
+// SaveCart saves a cart to Redis with TTL
+func (r *cartRepository) SaveCart(cart *domain.ShoppingCart) error {
 	if cart.UserID == "" {
 		return fmt.Errorf("user_id is required - authentication required")
 	}
@@ -76,50 +76,259 @@ func (r *cartRepository) SaveCart(cart *domain.Cart) error {
 	ctx := context.Background()
 	key := r.getCartKey(cart.UserID)
 
-	// Update timestamp
-	cart.UpdatedAt = time.Now().Unix()
+	// Update metadata
+	cart.Version++ // Increment version for optimistic locking
 
-	// Calculate total
-	cart.Total = 0
-	for _, item := range cart.Items {
-		cart.Total += item.Price * float64(item.Quantity)
+	// Create minimal cart for Redis storage (without computed fields)
+	minimalCart := struct {
+		UserID  string             `json:"user_id"`
+		Items   []*domain.CartItem `json:"items"`
+		Version int                `json:"version"`
+	}{
+		UserID:  cart.UserID,
+		Items:   cart.Items,
+		Version: cart.Version,
 	}
 
-	// Serialize cart to JSON
-	cartJSON, err := json.Marshal(cart)
+	// Serialize to JSON
+	cartJSON, err := json.Marshal(minimalCart)
 	if err != nil {
+		r.logger.Error("failed to marshal cart",
+			zap.Error(err),
+			zap.String("user_id", cart.UserID),
+		)
 		return fmt.Errorf("failed to marshal cart: %w", err)
 	}
 
-	// Set with expiration (30 days)
+	// Save with 30 days TTL
 	ttl := 30 * 24 * time.Hour
-	err = r.client.Set(ctx, key, cartJSON, ttl).Err()
-	if err != nil {
+	if err := r.client.Set(ctx, key, cartJSON, ttl).Err(); err != nil {
+		r.logger.Error("failed to save cart to Redis",
+			zap.Error(err),
+			zap.String("user_id", cart.UserID),
+		)
 		return fmt.Errorf("failed to save cart to Redis: %w", err)
 	}
+
+	r.logger.Info("cart saved successfully",
+		zap.String("user_id", cart.UserID),
+		zap.Int("item_count", len(cart.Items)),
+		zap.Int("version", cart.Version),
+	)
 
 	return nil
 }
 
 // DeleteCart removes a cart from Redis
-// Business rule: Only authenticated users - userID is required
 func (r *cartRepository) DeleteCart(userID string) error {
 	ctx := context.Background()
 	key := r.getCartKey(userID)
-	return r.client.Del(ctx, key).Err()
+
+	if err := r.client.Del(ctx, key).Err(); err != nil {
+		r.logger.Error("failed to delete cart",
+			zap.Error(err),
+			zap.String("user_id", userID),
+		)
+		return fmt.Errorf("failed to delete cart: %w", err)
+	}
+
+	r.logger.Info("cart deleted successfully",
+		zap.String("user_id", userID),
+	)
+
+	return nil
 }
 
-// ClearCartItems clears all items from a cart but keeps the cart structure
-// Business rule: Only authenticated users - userID is required
-func (r *cartRepository) ClearCartItems(userID string) error {
+// ClearSelectedItems removes only selected items from cart
+// This is called after successful checkout
+func (r *cartRepository) ClearSelectedItems(userID string) error {
 	cart, err := r.GetCart(userID)
 	if err != nil {
 		return err
 	}
 
-	cart.Items = make(map[uint]*domain.CartItem)
-	cart.Total = 0
+	// Filter out selected items
+	unselectedItems := make([]*domain.CartItem, 0)
+	for _, item := range cart.Items {
+		if !item.IsSelected {
+			unselectedItems = append(unselectedItems, item)
+		}
+	}
+
+	// Update cart with only unselected items
+	cart.Items = unselectedItems
+
+	r.logger.Info("cleared selected items from cart",
+		zap.String("user_id", userID),
+		zap.Int("remaining_items", len(unselectedItems)),
+	)
+
 	return r.SaveCart(cart)
 }
 
+// AddItem adds a new item to cart or updates quantity if exists
+func (r *cartRepository) AddItem(userID string, item *domain.CartItem) error {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return err
+	}
 
+	// Check if item already exists
+	found := false
+	for _, existingItem := range cart.Items {
+		if existingItem.ProductItemID == item.ProductItemID {
+			// Update quantity
+			existingItem.Quantity += item.Quantity
+			found = true
+			break
+		}
+	}
+
+	// Add new item if not found
+	if !found {
+		cart.Items = append(cart.Items, item)
+	}
+
+	r.logger.Info("item added to cart",
+		zap.String("user_id", userID),
+		zap.Uint("product_item_id", item.ProductItemID),
+		zap.Int("quantity", item.Quantity),
+	)
+
+	return r.SaveCart(cart)
+}
+
+// UpdateItemQuantity updates the quantity of a specific item
+func (r *cartRepository) UpdateItemQuantity(userID string, productItemID uint, quantity int) error {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, item := range cart.Items {
+		if item.ProductItemID == productItemID {
+			item.Quantity = quantity
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("item not found in cart")
+	}
+
+	r.logger.Info("cart item quantity updated",
+		zap.String("user_id", userID),
+		zap.Uint("product_item_id", productItemID),
+		zap.Int("new_quantity", quantity),
+	)
+
+	return r.SaveCart(cart)
+}
+
+// RemoveItem removes a specific item from cart
+func (r *cartRepository) RemoveItem(userID string, productItemID uint) error {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return err
+	}
+
+	// Filter out the item
+	newItems := make([]*domain.CartItem, 0)
+	removed := false
+	for _, item := range cart.Items {
+		if item.ProductItemID != productItemID {
+			newItems = append(newItems, item)
+		} else {
+			removed = true
+		}
+	}
+
+	if !removed {
+		return fmt.Errorf("item not found in cart")
+	}
+
+	cart.Items = newItems
+
+	r.logger.Info("item removed from cart",
+		zap.String("user_id", userID),
+		zap.Uint("product_item_id", productItemID),
+	)
+
+	return r.SaveCart(cart)
+}
+
+// ToggleItemSelection toggles the selection state of an item
+func (r *cartRepository) ToggleItemSelection(userID string, productItemID uint) error {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for _, item := range cart.Items {
+		if item.ProductItemID == productItemID {
+			item.IsSelected = !item.IsSelected
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("item not found in cart")
+	}
+
+	return r.SaveCart(cart)
+}
+
+// SelectAllItems selects or deselects all items in cart
+func (r *cartRepository) SelectAllItems(userID string, selected bool) error {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range cart.Items {
+		item.IsSelected = selected
+	}
+
+	r.logger.Info("all items selection updated",
+		zap.String("user_id", userID),
+		zap.Bool("selected", selected),
+	)
+
+	return r.SaveCart(cart)
+}
+
+// GetSelectedItems returns only selected items
+func (r *cartRepository) GetSelectedItems(userID string) ([]*domain.CartItem, error) {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	selectedItems := make([]*domain.CartItem, 0)
+	for _, item := range cart.Items {
+		if item.IsSelected {
+			selectedItems = append(selectedItems, item)
+		}
+	}
+
+	return selectedItems, nil
+}
+
+// GetCartItemCount returns total number of items in cart
+func (r *cartRepository) GetCartItemCount(userID string) (int, error) {
+	cart, err := r.GetCart(userID)
+	if err != nil {
+		return 0, err
+	}
+
+	totalCount := 0
+	for _, item := range cart.Items {
+		totalCount += item.Quantity
+	}
+
+	return totalCount, nil
+}

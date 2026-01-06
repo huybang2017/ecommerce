@@ -141,6 +141,74 @@ func (h *SKUHandler) GetProductItemBySKU(c *gin.Context) {
 	c.JSON(http.StatusOK, item)
 }
 
+// GetProductItemsBatch godoc
+// @Summary Get multiple product items by IDs (batch)
+// @Description Fetch multiple product items in one request for cart/order services
+// @Tags skus
+// @Produce json
+// @Param ids query string true "Comma-separated product item IDs (e.g., 1,2,3)"
+// @Success 200 {object} map[string]interface{} "items array with product details"
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /product-items/batch [get]
+func (h *SKUHandler) GetProductItemsBatch(c *gin.Context) {
+	idsParam := c.Query("ids")
+	if idsParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ids parameter is required"})
+		return
+	}
+
+	// Parse comma-separated IDs
+	var ids []uint
+	idStrings := splitByComma(idsParam)
+	for _, idStr := range idStrings {
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format: " + idStr})
+			return
+		}
+		ids = append(ids, uint(id))
+	}
+
+	if len(ids) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no valid ids provided"})
+		return
+	}
+
+	// Fetch items with product details
+	items, err := h.productItemService.GetProductItemsWithProduct(ids)
+	if err != nil {
+		h.logger.Error("failed to get product items batch", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch product items"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items": items,
+		"count": len(items),
+	})
+}
+
+// Helper function to split comma-separated string
+func splitByComma(s string) []string {
+	var result []string
+	current := ""
+	for _, char := range s {
+		if char == ',' {
+			if current != "" {
+				result = append(result, current)
+				current = ""
+			}
+		} else if char != ' ' { // Skip spaces
+			current += string(char)
+		}
+	}
+	if current != "" {
+		result = append(result, current)
+	}
+	return result
+}
+
 // UpdateProductItem godoc
 // @Summary Update a SKU
 // @Description Update product item (SKU) details
@@ -204,4 +272,3 @@ func (h *SKUHandler) DeleteProductItem(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "product item deleted successfully"})
 }
-

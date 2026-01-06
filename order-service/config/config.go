@@ -11,11 +11,11 @@ import (
 
 // Config holds all configuration for the Order Service
 type Config struct {
-	Server        ServerConfig
-	Database      DatabaseConfig
-	Redis         RedisConfig
-	Kafka         KafkaConfig
-	Logging       LoggingConfig
+	Server         ServerConfig
+	Database       DatabaseConfig
+	Redis          RedisConfig
+	Kafka          KafkaConfig
+	Logging        LoggingConfig
 	ProductService ProductServiceConfig
 }
 
@@ -27,11 +27,11 @@ type ProductServiceConfig struct {
 
 // KafkaConfig holds Kafka configuration
 type KafkaConfig struct {
-	Brokers          []string      `mapstructure:"brokers"`
-	TopicOrderCreated string       `mapstructure:"topic_order_created"`
-	WriteTimeout     time.Duration `mapstructure:"write_timeout"`
-	ReadTimeout      time.Duration `mapstructure:"read_timeout"`
-	RequiredAcks     int           `mapstructure:"required_acks"`
+	Brokers           []string      `mapstructure:"brokers"`
+	TopicOrderCreated string        `mapstructure:"topic_order_created"`
+	WriteTimeout      time.Duration `mapstructure:"write_timeout"`
+	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
+	RequiredAcks      int           `mapstructure:"required_acks"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -92,6 +92,8 @@ func LoadConfig(configPath string) (*Config, error) {
 	// Read config file (optional - env vars will override)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Warning: Could not read config file: %v. Using defaults and environment variables.", err)
+	} else {
+		log.Printf("Loaded config from: %s", viper.ConfigFileUsed())
 	}
 
 	config := &Config{}
@@ -100,6 +102,9 @@ func LoadConfig(configPath string) (*Config, error) {
 	if err := viper.Unmarshal(config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+
+	// Debug: print loaded config
+	log.Printf("Config loaded - ProductService.BaseURL: %s", config.ProductService.BaseURL)
 
 	return config, nil
 }
@@ -145,7 +150,7 @@ func setDefaults() {
 	viper.SetDefault("logging.error_output_paths", []string{"stderr"})
 
 	// Product Service defaults
-	viper.SetDefault("product_service.base_url", "http://localhost:8000")
+	viper.SetDefault("product_service.base_url", "http://localhost:8080")
 	viper.SetDefault("product_service.timeout", "10s")
 }
 
@@ -159,5 +164,3 @@ func (c *DatabaseConfig) GetDSN() string {
 func (c *RedisConfig) GetAddress() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
-
-

@@ -90,8 +90,9 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 			categories.DELETE("/:id/attributes/:attr_id", attrHandler.DeleteCategoryAttribute)
 		}
 
-		// Product item by SKU code (standalone route)
-		v1.GET("/product-items/:id", skuHandler.GetProductItemBySKU)
+		// Product item routes (standalone)
+		v1.GET("/product-items/batch", skuHandler.GetProductItemsBatch) // Batch fetch (MUST be before :id route)
+		v1.GET("/product-items/:id", skuHandler.GetProductItemBySKU)    // Get by SKU code
 
 		// Stock management routes
 		productItems := v1.Group("/product-items")
