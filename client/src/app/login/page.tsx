@@ -86,19 +86,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-[#ee4d2d] text-white py-3 px-4 rounded-sm font-medium hover:bg-[#d73211] focus:outline-none focus:ring-2 focus:ring-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase text-sm tracking-wide shadow-sm"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-600">
-          Don&apos;t have an account?{" "}
+          Bạn mới biết đến Shopee?{" "}
           <Link
             href="/register"
-            className="font-medium text-neutral-900 hover:text-neutral-700"
+            className="font-medium text-[#ee4d2d] hover:text-[#d73211]"
           >
-            Register
+            Đăng ký
           </Link>
         </p>
       </div>

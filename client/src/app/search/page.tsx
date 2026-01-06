@@ -1,38 +1,43 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { searchProductsAdvanced, getCategories } from '@/lib/api';
-import ProductCard from '@/components/ProductCard';
-import { ProductCardSkeleton } from '@/components/Loading';
-import Error from '@/components/Error';
-import { Product, Category, SearchResponse } from '@/lib/types';
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { searchProductsAdvanced, getCategories } from "@/lib/api";
+import ProductCard from "@/components/ProductCard";
+import { ProductCardSkeleton } from "@/components/Loading";
+import Error from "@/components/Error";
+import { Product, Category, SearchResponse } from "@/lib/types";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   // State
-  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [categoryId, setCategoryId] = useState<number | undefined>(
-    searchParams.get('category_id') ? parseInt(searchParams.get('category_id')!, 10) : undefined
+    searchParams.get("category_id")
+      ? parseInt(searchParams.get("category_id")!, 10)
+      : undefined
   );
   const [minPrice, setMinPrice] = useState<string>(
-    searchParams.get('min_price') || ''
+    searchParams.get("min_price") || ""
   );
   const [maxPrice, setMaxPrice] = useState<string>(
-    searchParams.get('max_price') || ''
+    searchParams.get("max_price") || ""
   );
   const [status, setStatus] = useState<string>(
-    searchParams.get('status') || ''
+    searchParams.get("status") || ""
   );
-  const [sortField, setSortField] = useState<'price' | 'name' | 'created_at'>(
-    (searchParams.get('sort_field') as 'price' | 'name' | 'created_at') || 'created_at'
+  const [sortField, setSortField] = useState<"price" | "name" | "created_at">(
+    (searchParams.get("sort_field") as "price" | "name" | "created_at") ||
+      "created_at"
   );
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
-    (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    (searchParams.get("sort_order") as "asc" | "desc") || "desc"
   );
-  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
+  const [page, setPage] = useState(
+    parseInt(searchParams.get("page") || "1", 10)
+  );
   const limit = 20;
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -71,28 +76,48 @@ function SearchContent() {
       setProducts(response.products || []);
       setTotal(response.total || 0);
     } catch (err: any) {
-      setError(err?.message || 'Failed to search products');
+      setError(err?.message || "Failed to search products");
       setProducts([]);
       setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [query, categoryId, minPrice, maxPrice, status, sortField, sortOrder, page, limit]);
+  }, [
+    query,
+    categoryId,
+    minPrice,
+    maxPrice,
+    status,
+    sortField,
+    sortOrder,
+    page,
+    limit,
+  ]);
 
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (categoryId) params.set('category_id', categoryId.toString());
-    if (minPrice) params.set('min_price', minPrice);
-    if (maxPrice) params.set('max_price', maxPrice);
-    if (status) params.set('status', status);
-    if (sortField) params.set('sort_field', sortField);
-    if (sortOrder) params.set('sort_order', sortOrder);
-    if (page > 1) params.set('page', page.toString());
+    if (query) params.set("q", query);
+    if (categoryId) params.set("category_id", categoryId.toString());
+    if (minPrice) params.set("min_price", minPrice);
+    if (maxPrice) params.set("max_price", maxPrice);
+    if (status) params.set("status", status);
+    if (sortField) params.set("sort_field", sortField);
+    if (sortOrder) params.set("sort_order", sortOrder);
+    if (page > 1) params.set("page", page.toString());
 
     router.replace(`/search?${params.toString()}`, { scroll: false });
-  }, [query, categoryId, minPrice, maxPrice, status, sortField, sortOrder, page, router]);
+  }, [
+    query,
+    categoryId,
+    minPrice,
+    maxPrice,
+    status,
+    sortField,
+    sortOrder,
+    page,
+    router,
+  ]);
 
   // Perform search when filters change
   useEffect(() => {
@@ -106,227 +131,234 @@ function SearchContent() {
   };
 
   const handleReset = () => {
-    setQuery('');
+    setQuery("");
     setCategoryId(undefined);
-    setMinPrice('');
-    setMaxPrice('');
-    setStatus('');
-    setSortField('created_at');
-    setSortOrder('desc');
+    setMinPrice("");
+    setMaxPrice("");
+    setStatus("");
+    setSortField("created_at");
+    setSortOrder("desc");
     setPage(1);
   };
 
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="min-h-screen bg-white">
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
-            Search Products
-          </h1>
-          <p className="mt-4 text-lg text-neutral-600">
-            Find exactly what you're looking for
-          </p>
-        </div>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="mb-10 rounded-2xl border border-neutral-200 bg-neutral-50 p-8">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* Search Query */}
-            <div className="lg:col-span-2">
-              <label htmlFor="query" className="mb-2 block text-sm font-medium text-neutral-700">
-                Search
-              </label>
-              <input
-                id="query"
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search products..."
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <label htmlFor="category" className="mb-2 block text-sm font-medium text-neutral-700">
-                Category
-              </label>
-              <select
-                id="category"
-                value={categoryId || ''}
-                onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-              >
-                <option value="">All Categories</option>
+    <div className="min-h-screen bg-[#f5f5f5] pb-10">
+      <main className="mx-auto max-w-[1200px] px-0 pt-6">
+        <div className="grid grid-cols-12 gap-5">
+          {/* Sidebar Filters - 2 cols (approx 200px) */}
+          <div className="col-span-2 hidden lg:block">
+            {/* Categories */}
+            <div className="mb-6">
+              <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                  />
+                </svg>
+                Tất Cả Danh Mục
+              </h3>
+              <ul className="text-sm space-y-2 pl-2">
+                <li
+                  className={`cursor-pointer ${
+                    !categoryId ? "text-[#ee4d2d] font-bold" : ""
+                  }`}
+                  onClick={() => setCategoryId(undefined)}
+                >
+                  Tất cả
+                </li>
                 {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                  <li
+                    key={cat.id}
+                    className={`cursor-pointer ${
+                      categoryId === cat.id ? "text-[#ee4d2d] font-bold" : ""
+                    }`}
+                    onClick={() => setCategoryId(cat.id)}
+                  >
                     {cat.name}
-                  </option>
+                  </li>
                 ))}
-              </select>
+              </ul>
             </div>
 
-            {/* Status Filter */}
-            <div>
-              <label htmlFor="status" className="mb-2 block text-sm font-medium text-neutral-700">
-                Status
-              </label>
-              <select
-                id="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+            {/* Search Filter Header */}
+            <h3 className="font-bold text-sm mb-3 flex items-center gap-2 uppercase">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-4 h-4"
               >
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"
+                />
+              </svg>
+              Bộ lọc tìm kiếm
+            </h3>
 
             {/* Price Range */}
-            <div>
-              <label htmlFor="min_price" className="mb-2 block text-sm font-medium text-neutral-700">
-                Min Price
-              </label>
-              <input
-                id="min_price"
-                type="number"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="max_price" className="mb-2 block text-sm font-medium text-neutral-700">
-                Max Price
-              </label>
-              <input
-                id="max_price"
-                type="number"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="No limit"
-                min="0"
-                step="0.01"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-              />
-            </div>
-
-            {/* Sort Field */}
-            <div>
-              <label htmlFor="sort_field" className="mb-2 block text-sm font-medium text-neutral-700">
-                Sort By
-              </label>
-              <select
-                id="sort_field"
-                value={sortField}
-                onChange={(e) => setSortField(e.target.value as 'price' | 'name' | 'created_at')}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+            <div className="mb-6">
+              <div className="text-sm mb-2">Khoảng Giá</div>
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="number"
+                  placeholder="₫ TỪ"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full text-xs px-1 py-1 border outline-none"
+                />
+                <span className="text-neutral-400">-</span>
+                <input
+                  type="number"
+                  placeholder="₫ ĐẾN"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full text-xs px-1 py-1 border outline-none"
+                />
+              </div>
+              <button
+                onClick={() => performSearch()}
+                className="w-full bg-[#ee4d2d] text-white text-sm py-1 uppercase rounded-sm hover:opacity-90"
               >
-                <option value="created_at">Date</option>
-                <option value="price">Price</option>
-                <option value="name">Name</option>
-              </select>
+                Áp dụng
+              </button>
             </div>
 
-            {/* Sort Order */}
-            <div>
-              <label htmlFor="sort_order" className="mb-2 block text-sm font-medium text-neutral-700">
-                Order
-              </label>
-              <select
-                id="sort_order"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-neutral-900 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-              >
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
+            {/* Rating (Mock) */}
+            <div className="mb-6">
+              <div className="text-sm mb-2">Đánh Giá</div>
+              <div className="space-y-1 text-sm pl-2">
+                {[5, 4, 3, 2, 1].map((star) => (
+                  <div
+                    key={star}
+                    className="flex items-center gap-1 cursor-pointer hover:opacity-80"
+                  >
+                    <div className="flex text-yellow-500 text-xs">
+                      {[...Array(5)].map((_, i) => (
+                        <span
+                          key={i}
+                          className={i < star ? "" : "text-neutral-300"}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    {star < 5 && <span>trở lên</span>}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="mt-6 flex gap-3">
             <button
-              type="submit"
-              className="rounded-lg bg-neutral-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-200"
-            >
-              Search
-            </button>
-            <button
-              type="button"
               onClick={handleReset}
-              className="rounded-lg border border-neutral-300 bg-white px-6 py-3 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:border-neutral-400"
+              className="w-full bg-[#ee4d2d] text-white text-sm py-1 uppercase rounded-sm hover:opacity-90"
             >
-              Reset
+              Xóa tất cả
             </button>
           </div>
-        </form>
 
-        {/* Results */}
-        {error ? (
-          <Error message={error} />
-        ) : (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm font-medium text-neutral-600">
-                {loading ? 'Searching...' : `Found ${total} product${total !== 1 ? 's' : ''}`}
-              </p>
+          {/* Main Content - 10 cols */}
+          <div className="col-span-12 lg:col-span-10">
+            {/* Sort Bars */}
+            <div className="bg-[#ededed] p-3 flex items-center justify-between text-sm mb-4 rounded-sm">
+              <div className="flex items-center gap-2">
+                <span className="mr-2">Sắp xếp theo</span>
+                <button className="bg-[#ee4d2d] text-white px-4 py-2 rounded-sm">
+                  Liên Quan
+                </button>
+                <button className="bg-white px-4 py-2 rounded-sm hover:bg-neutral-50 ml-1">
+                  Mới Nhất
+                </button>
+                <button className="bg-white px-4 py-2 rounded-sm hover:bg-neutral-50 ml-1">
+                  Bán Chạy
+                </button>
+                <div className="relative inline-block ml-1">
+                  <select
+                    value={`${sortField}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [field, order] = e.target.value.split("-");
+                      setSortField(field as any);
+                      setSortOrder(order as any);
+                    }}
+                    className="bg-white px-4 py-2 rounded-sm outline-none cursor-pointer appearance-none min-w-[200px]"
+                  >
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <span className="text-[#ee4d2d] font-bold">{page}</span>
+                  <span className="text-neutral-800">/{totalPages || 1}</span>
+                </div>
+                <div className="flex rounded-sm overflow-hidden border border-neutral-200">
+                  <button
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-2 bg-white hover:bg-neutral-50 disabled:bg-neutral-100 disabled:text-neutral-300 border-r"
+                  >
+                    &lt;
+                  </button>
+                  <button
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-2 bg-white hover:bg-neutral-50 disabled:bg-neutral-100 disabled:text-neutral-300"
+                  >
+                    &gt;
+                  </button>
+                </div>
+              </div>
             </div>
 
+            {/* Results */}
             {loading ? (
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[...Array(8)].map((_, i) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+                {[...Array(10)].map((_, i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
               </div>
-            ) : products.length === 0 ? (
-              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-16 text-center">
-                <p className="text-lg font-medium text-neutral-500">
-                  No products found. Try adjusting your search criteria.
-                </p>
-              </div>
             ) : (
               <>
-                <div className="mb-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                      className="rounded-lg border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <span className="px-5 py-2.5 text-sm font-medium text-neutral-600">
-                      Page {page} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-                      disabled={page === totalPages}
-                      className="rounded-lg border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
+                {products.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+                    {products.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-20 bg-white shadow-sm rounded-sm">
+                    <img
+                      src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/search/a60759ad1dabe909c46a.png"
+                      width={130}
+                      alt="no result"
+                    />
+                    <div className="mt-4 text-neutral-500">
+                      Không tìm thấy kết quả nào
+                    </div>
+                    <div className="text-neutral-400 text-sm mt-1">
+                      Hãy thử sử dụng các từ khóa khác xem sao.
+                    </div>
                   </div>
                 )}
               </>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </main>
     </div>
   );
@@ -334,18 +366,18 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white">
-        <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-24">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900"></div>
-          </div>
-        </main>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white">
+          <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center py-24">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900"></div>
+            </div>
+          </main>
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );
 }
-
-

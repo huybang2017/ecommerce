@@ -1,14 +1,26 @@
-'use client';
+"use client";
 
-import { useCartContext as useCart } from '@/contexts/CartContext';
-import Link from 'next/link';
-import { useState } from 'react';
+import { useCartContext as useCart } from "@/contexts/CartContext";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function CartPage() {
-  const { cart, loading, error, itemCount, total, updateItem, removeItem, clear } = useCart();
+  const {
+    cart,
+    loading,
+    error,
+    itemCount,
+    total,
+    updateItem,
+    removeItem,
+    clear,
+  } = useCart();
   const [updating, setUpdating] = useState<number | null>(null);
 
-  const handleQuantityChange = async (productId: number, newQuantity: number) => {
+  const handleQuantityChange = async (
+    productId: number,
+    newQuantity: number
+  ) => {
     if (newQuantity < 1) {
       await removeItem(productId);
       return;
@@ -31,9 +43,9 @@ export default function CartPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
@@ -85,7 +97,9 @@ export default function CartPage() {
                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
               />
             </svg>
-            <p className="mb-4 text-lg font-medium text-neutral-600">Your cart is empty</p>
+            <p className="mb-4 text-lg font-medium text-neutral-600">
+              Your cart is empty
+            </p>
             <Link
               href="/products"
               className="inline-block rounded-lg bg-neutral-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
@@ -141,7 +155,9 @@ export default function CartPage() {
                             {item.name}
                           </Link>
                           {item.sku && (
-                            <p className="mt-1 text-sm text-neutral-500">SKU: {item.sku}</p>
+                            <p className="mt-1 text-sm text-neutral-500">
+                              SKU: {item.sku}
+                            </p>
                           )}
                         </div>
                         <button
@@ -167,11 +183,21 @@ export default function CartPage() {
 
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <label className="text-sm font-medium text-neutral-700">Quantity:</label>
+                          <label className="text-sm font-medium text-neutral-700">
+                            Quantity:
+                          </label>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleQuantityChange(item.product_id, item.quantity - 1)}
-                              disabled={updating === item.product_id || item.quantity <= 1}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.product_id,
+                                  item.quantity - 1
+                                )
+                              }
+                              disabled={
+                                updating === item.product_id ||
+                                item.quantity <= 1
+                              }
                               className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <svg
@@ -192,7 +218,12 @@ export default function CartPage() {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => handleQuantityChange(item.product_id, item.quantity + 1)}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.product_id,
+                                  item.quantity + 1
+                                )
+                              }
                               disabled={updating === item.product_id}
                               className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -241,7 +272,9 @@ export default function CartPage() {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="sticky top-8 rounded-xl border border-neutral-200 bg-neutral-50 p-6">
-                <h2 className="mb-4 text-xl font-semibold text-neutral-900">Order Summary</h2>
+                <h2 className="mb-4 text-xl font-semibold text-neutral-900">
+                  Order Summary
+                </h2>
                 <div className="space-y-3 border-b border-neutral-200 pb-4">
                   <div className="flex justify-between text-sm text-neutral-600">
                     <span>Items ({itemCount})</span>
@@ -254,15 +287,15 @@ export default function CartPage() {
                 </div>
                 <Link
                   href="/checkout"
-                  className="mt-6 block w-full rounded-lg bg-neutral-900 px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 block w-full rounded-sm bg-[#ee4d2d] px-6 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-[#d73211] disabled:opacity-50 disabled:cursor-not-allowed uppercase shadow-sm"
                 >
-                  Proceed to Checkout
+                  Mua Hàng
                 </Link>
                 <Link
                   href="/products"
-                  className="mt-3 block w-full rounded-lg border border-neutral-300 bg-white px-6 py-3 text-center text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                  className="mt-3 block w-full rounded-sm border border-neutral-300 bg-white px-6 py-3 text-center text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                 >
-                  Continue Shopping
+                  Tiếp Tục Mua Sắm
                 </Link>
               </div>
             </div>
@@ -272,5 +305,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { Product } from '@/lib/types';
-import { useCartContext as useCart } from '@/contexts/CartContext';
-import { useState } from 'react';
+import Link from "next/link";
+import Image from "next/image";
+import { Product } from "@/lib/types";
+import { useCartContext as useCart } from "@/contexts/CartContext";
+import { useState } from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -17,8 +17,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (product.status !== 'ACTIVE' || product.stock === 0) return;
+
+    if (product.status !== "ACTIVE" || product.stock === 0) return;
 
     setAdding(true);
     try {
@@ -27,82 +27,88 @@ export default function ProductCard({ product }: ProductCardProps) {
         name: product.name,
         price: product.price,
         quantity: 1,
-        image: product.images && Array.isArray(product.images) && product.images.length > 0 
-          ? product.images[0] 
-          : undefined,
+        image:
+          product.images &&
+          Array.isArray(product.images) &&
+          product.images.length > 0
+            ? product.images[0]
+            : undefined,
         sku: product.sku,
       });
     } catch (err) {
-      console.error('Failed to add to cart:', err);
+      console.error("Failed to add to cart:", err);
     } finally {
       setAdding(false);
     }
   };
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   const imageUrl =
     product.images && Array.isArray(product.images) && product.images.length > 0
       ? product.images[0]
-      : '/placeholder-product.jpg';
+      : "/placeholder-product.jpg";
 
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition-all hover:border-neutral-300 hover:shadow-md"
+      className="group relative flex flex-col overflow-hidden rounded-sm border border-transparent bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-500 hover:shadow-md hover:z-10"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-neutral-50">
-        {imageUrl.startsWith('http') ? (
+        {imageUrl.startsWith("http") ? (
           <img
             src={imageUrl}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-opacity duration-300 group-hover:opacity-90"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400">
-            <span className="text-sm font-medium">No Image</span>
+            <span className="text-xs">No Image</span>
           </div>
         )}
-        {product.status === 'INACTIVE' && (
-          <div className="absolute top-3 right-3 rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white">
-            Out of Stock
-          </div>
-        )}
+
+        {/* Discount Badge */}
+        <div className="absolute right-0 top-0 flex flex-col items-center bg-yellow-400 px-1 py-0.5 text-[10px] font-semibold leading-tight text-red-600 after:absolute after:bottom-[-4px] after:left-0 after:border-l-[18px] after:border-r-[18px] after:border-t-[4px] after:border-l-transparent after:border-r-transparent after:border-t-yellow-400 after:content-['']">
+          <span>50%</span>
+          <span className="text-white uppercase">GIẢM</span>
+        </div>
+
+        {/* Generic Mall/Favorite Badge if needed */}
+        <div className="absolute left-[-4px] top-2 rounded-r-sm bg-[#ee4d2d] px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm before:absolute before:bottom-[-3px] before:left-0 before:border-l-[3px] before:border-t-[3px] before:border-l-transparent before:border-t-[#9e311b] before:content-['']">
+          Yêu thích
+        </div>
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="mb-2 line-clamp-2 text-base font-semibold text-neutral-900 leading-tight">
+
+      <div className="flex flex-1 flex-col p-2">
+        <h3 className="mb-1 line-clamp-2 text-xs text-neutral-800 leading-normal min-h-[2.5em]">
           {product.name}
         </h3>
-        {product.description && (
-          <p className="mb-4 line-clamp-2 text-sm text-neutral-500 leading-relaxed">
-            {product.description}
-          </p>
-        )}
-        <div className="mt-auto space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xl font-semibold text-neutral-900">
-              {formatPrice(product.price)}
+
+        <div className="mt-auto pt-2">
+          {/* Price Section */}
+          <div className="flex items-baseline gap-1 flex-wrap">
+            <span className="text-[10px] text-neutral-400 line-through">
+              {formatPrice(product.price * 1.5)}
             </span>
-            {product.stock > 0 && (
-              <span className="text-xs font-medium text-neutral-400">
-                {product.stock} in stock
-              </span>
-            )}
+            <span className="text-sm font-medium text-[#ee4d2d]">
+              <span className="text-[10px] align-top">₫</span>
+              {new Intl.NumberFormat("vi-VN").format(product.price)}
+            </span>
           </div>
-          <button
-            onClick={handleAddToCart}
-            disabled={product.status !== 'ACTIVE' || product.stock === 0 || adding}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {adding ? 'Adding...' : product.status === 'ACTIVE' && product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-          </button>
+
+          {/* Footer: Rating & Sold */}
+          <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-500">
+            <div className="flex items-center gap-0.5 text-yellow-400">
+              <span>★★★★★</span>
+            </div>
+            <span>Đã bán {product.stock * 3}</span>
+          </div>
         </div>
       </div>
     </Link>
   );
 }
-
