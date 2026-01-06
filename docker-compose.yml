@@ -144,8 +144,12 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     networks:
       - ecommerce-network
+    restart: unless-stopped
     healthcheck:
       test:
         [
@@ -159,11 +163,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   # Identity Service (Port 8001)
   identity-service:
     build:
-      context: ./src/services/identity-service
+      context: ./identity-service
       dockerfile: Dockerfile
     container_name: ecommerce-identity-service
     environment:
@@ -190,7 +195,7 @@ services:
   # Search Service (Port 8002)
   search-service:
     build:
-      context: ./src/services/search-service
+      context: ./search-service
       dockerfile: Dockerfile
     container_name: ecommerce-search-service
     environment:
@@ -208,40 +213,70 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     networks:
       - ecommerce-network
-    profiles:
-      - services
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "-O",
+          "-",
+          "http://localhost:8002/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Order Service (Port 8003)
   order-service:
     build:
-      context: ./src/services/order-service
+      context: ./order-service
       dockerfile: Dockerfile
     container_name: ecommerce-order-service
     environment:
-      - SERVER_PORT=8003
+      - SERVER_PORT=8083
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_DBNAME=order_service
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - KAFKA_BROKERS=kafka:9093
     ports:
-      - "8003:8003"
+      - "8083:8083"
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
-      kafka:
+      postgres:
         condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     networks:
       - ecommerce-network
-    profiles:
-      - services
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "-O",
+          "-",
+          "http://localhost:8083/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Inventory Service (Port 8004)
   inventory-service:
@@ -368,14 +403,24 @@ services:
     environment:
       - SERVER_PORT=8000
       - SERVICES_PRODUCT_SERVICE_BASE_URL=http://product-service:8080
+      - SERVICES_SEARCH_SERVICE_BASE_URL=http://search-service:8002
+      - SERVICES_ORDER_SERVICE_BASE_URL=http://order-service:8083
       - JWT_SECRET=your-secret-key-change-in-production
     ports:
       - "8000:8000"
     depends_on:
       product-service:
         condition: service_healthy
+      search-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     networks:
       - ecommerce-network
+    restart: unless-stopped
     healthcheck:
       test:
         [
@@ -389,6 +434,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:
