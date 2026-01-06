@@ -183,18 +183,18 @@ func main() {
 	thoiTrangNamID := createdCategories[0].ID
 	thoiTrangNuID := createdCategories[1].ID
 	dienThoaiID := createdCategories[2].ID
-	meBeID := createdCategories[3].ID
+	// meBeID := createdCategories[3].ID
 	thietBiDienTuID := createdCategories[4].ID
 	nhaCuaID := createdCategories[5].ID
 	sacDepID := createdCategories[6].ID
-	sucKhoeID := createdCategories[7].ID
+	// sucKhoeID := createdCategories[7].ID
 	giayNamID := createdCategories[8].ID
-	giayNuID := createdCategories[9].ID
+	// giayNuID := createdCategories[9].ID
 	tuiNamID := createdCategories[10].ID
-	tuiNuID := createdCategories[11].ID
-	dongHoID := createdCategories[12].ID
-	theThaoID := createdCategories[13].ID
-	xeID := createdCategories[14].ID
+	// tuiNuID := createdCategories[11].ID
+	// dongHoID := createdCategories[12].ID
+	// theThaoID := createdCategories[13].ID
+	// xeID := createdCategories[14].ID
 
 	// 2. Create Products
 	log.Println("\nCreating products...")
@@ -212,191 +212,246 @@ func main() {
 	defaultShopID := uint(1)
 
 	products := []*domain.Product{
-		// Electronics
+		// Thời Trang Nam
 		{
 			ShopID:      defaultShopID,
-			Name:        "iPhone 15 Pro",
-			Description: "Latest iPhone with A17 Pro chip, 48MP camera, and titanium design",
-			Price:       999.99,
-			BasePrice:   999.99,
-			SKU:         "IPH15P-001",
-			CategoryID:  &electronicsID,
+			Name:        "Áo Thun Nam Cotton Compact Form Rộng Unisex",
+			Description: "Áo thun nam cotton 100%, form rộng thoải mái, nhiều màu",
+			Price:       129000,
+			BasePrice:   159000,
+			SKU:         "AOTHUN-NAM-001",
+			CategoryID:  &thoiTrangNamID,
 			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/iphone15pro.jpg"}),
-			Stock:       50,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "Samsung Galaxy S24 Ultra",
-			Description: "Flagship Android phone with S Pen, 200MP camera, and Snapdragon 8 Gen 3",
-			Price:       1199.99,
-			BasePrice:   1199.99,
-			SKU:         "SGS24U-001",
-			CategoryID:  &electronicsID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/galaxy-s24.jpg"}),
-			Stock:       30,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "MacBook Pro 16-inch",
-			Description: "Apple M3 Pro chip, 16GB RAM, 512GB SSD",
-			Price:       2499.99,
-			BasePrice:   2499.99,
-			SKU:         "MBP16-001",
-			CategoryID:  &electronicsID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/macbook-pro.jpg"}),
-			Stock:       20,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "Sony WH-1000XM5 Headphones",
-			Description: "Industry-leading noise canceling wireless headphones",
-			Price:       399.99,
-			BasePrice:   399.99,
-			SKU:         "SONY-XM5-001",
-			CategoryID:  &electronicsID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/sony-headphones.jpg"}),
-			Stock:       75,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "iPad Air",
-			Description: "10.9-inch display, M2 chip, 64GB storage",
-			Price:       599.99,
-			BasePrice:   599.99,
-			SKU:         "IPAD-AIR-001",
-			CategoryID:  &electronicsID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/ipad-air.jpg"}),
-			Stock:       40,
-			IsActive:    true,
-		},
-		// Clothing
-		{
-			ShopID:      defaultShopID,
-			Name:        "Nike Air Max 90",
-			Description: "Classic running shoes with Air cushioning",
-			Price:       129.99,
-			BasePrice:   129.99,
-			SKU:         "NIKE-AM90-001",
-			CategoryID:  &clothingID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/nike-shoes.jpg"}),
-			Stock:       100,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "Levi's 501 Jeans",
-			Description: "Original fit straight leg jeans",
-			Price:       89.99,
-			BasePrice:   89.99,
-			SKU:         "LEVI-501-001",
-			CategoryID:  &clothingID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/levis-jeans.jpg"}),
-			Stock:       80,
-			IsActive:    true,
-		},
-		{
-			ShopID:      defaultShopID,
-			Name:        "Adidas Originals T-Shirt",
-			Description: "Classic three-stripe design cotton t-shirt",
-			Price:       29.99,
-			BasePrice:   29.99,
-			SKU:         "ADIDAS-TS-001",
-			CategoryID:  &clothingID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/adidas-tshirt.jpg"}),
-			Stock:       150,
-			IsActive:    true,
-		},
-		// Books
-		{
-			ShopID:      defaultShopID,
-			Name:        "The Clean Code",
-			Description: "A Handbook of Agile Software Craftsmanship by Robert C. Martin",
-			Price:       49.99,
-			BasePrice:   49.99,
-			SKU:         "BOOK-CC-001",
-			CategoryID:  &booksID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/clean-code.jpg"}),
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
 			Stock:       200,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
-			Name:        "Designing Data-Intensive Applications",
-			Description: "The Big Ideas Behind Reliable, Scalable, and Maintainable Systems",
-			Price:       59.99,
-			BasePrice:   59.99,
-			SKU:         "BOOK-DDIA-001",
-			CategoryID:  &booksID,
+			Name:        "Quần Jeans Nam Ống Rộng Suông Baggy",
+			Description: "Quần jean nam ống rộng, chất liệu denim cao cấp",
+			Price:       299000,
+			BasePrice:   399000,
+			SKU:         "JEAN-NAM-001",
+			CategoryID:  &thoiTrangNamID,
 			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/ddia.jpg"}),
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
 			Stock:       150,
 			IsActive:    true,
 		},
-		// Home & Kitchen
 		{
 			ShopID:      defaultShopID,
-			Name:        "KitchenAid Stand Mixer",
-			Description: "5-quart stand mixer with 10 speeds",
-			Price:       379.99,
-			BasePrice:   379.99,
-			SKU:         "KA-MIXER-001",
-			CategoryID:  &homeID,
+			Name:        "Áo Khoác Nam Bomber Jacket 2 Lớp Chống Nước",
+			Description: "Áo khoác bomber 2 lớp, chống nước, nhiều màu sắc",
+			Price:       459000,
+			BasePrice:   599000,
+			SKU:         "KHOAC-NAM-001",
+			CategoryID:  &thoiTrangNamID,
 			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/kitchenaid.jpg"}),
-			Stock:       25,
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       80,
 			IsActive:    true,
 		},
+		// Thời Trang Nữ
 		{
 			ShopID:      defaultShopID,
-			Name:        "Instant Pot Duo",
-			Description: "7-in-1 electric pressure cooker, slow cooker, rice cooker",
-			Price:       99.99,
-			BasePrice:   99.99,
-			SKU:         "IP-DUO-001",
-			CategoryID:  &homeID,
+			Name:        "Váy Babydoll Hoa Nhí Tay Bồng",
+			Description: "Váy babydoll dáng xòe, họa tiết hoa nhí xinh xắn",
+			Price:       189000,
+			BasePrice:   249000,
+			SKU:         "VAY-NU-001",
+			CategoryID:  &thoiTrangNuID,
 			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/instant-pot.jpg"}),
-			Stock:       60,
-			IsActive:    true,
-		},
-		// Sports & Outdoors
-		{
-			ShopID:      defaultShopID,
-			Name:        "Yoga Mat Premium",
-			Description: "Non-slip exercise mat, 6mm thick, eco-friendly",
-			Price:       39.99,
-			BasePrice:   39.99,
-			SKU:         "YOGA-MAT-001",
-			CategoryID:  &sportsID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/yoga-mat.jpg"}),
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
 			Stock:       120,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
-			Name:        "Dumbbell Set 20kg",
-			Description: "Adjustable dumbbells with stand",
-			Price:       199.99,
-			BasePrice:   199.99,
-			SKU:         "DUMB-20KG-001",
-			CategoryID:  &sportsID,
+			Name:        "Áo Kiểu Nữ Dài Tay Công Sở",
+			Description: "Áo kiểu nữ dài tay, chất liệu lụa mềm mại",
+			Price:       159000,
+			BasePrice:   199000,
+			SKU:         "AOKIEU-NU-001",
+			CategoryID:  &thoiTrangNuID,
 			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://example.com/dumbbells.jpg"}),
-			Stock:       35,
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       180,
+			IsActive:    true,
+		},
+		// Điện Thoại
+		{
+			ShopID:      defaultShopID,
+			Name:        "iPhone 15 Pro Max 256GB Chính Hãng VN/A",
+			Description: "iPhone 15 Pro Max - Chip A17 Pro, Camera 48MP, Màn hình 6.7 inch",
+			Price:       29990000,
+			BasePrice:   33990000,
+			SKU:         "IPHONE15PM-256",
+			CategoryID:  &dienThoaiID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       50,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Samsung Galaxy S24 Ultra 12GB/256GB",
+			Description: "Galaxy S24 Ultra - Snapdragon 8 Gen 3, Camera 200MP, S Pen",
+			Price:       26990000,
+			BasePrice:   31990000,
+			SKU:         "SAMSUNG-S24U-256",
+			CategoryID:  &dienThoaiID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       60,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Xiaomi Redmi Note 13 Pro 8GB/256GB",
+			Description: "Redmi Note 13 Pro - Camera 200MP, Màn hình AMOLED 120Hz",
+			Price:       6990000,
+			BasePrice:   8990000,
+			SKU:         "XIAOMI-RN13P-256",
+			CategoryID:  &dienThoaiID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       200,
+			IsActive:    true,
+		},
+		// Thiết Bị Điện Tử
+		{
+			ShopID:      defaultShopID,
+			Name:        "Laptop Dell Inspiron 15 3520 i5-1235U/8GB/512GB",
+			Description: "Dell Inspiron 15 - Intel Core i5 Gen 12, RAM 8GB, SSD 512GB",
+			Price:       13990000,
+			BasePrice:   16990000,
+			SKU:         "DELL-INS15-3520",
+			CategoryID:  &thietBiDienTuID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       40,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Tai Nghe Bluetooth Sony WH-1000XM5",
+			Description: "Tai nghe chống ồn chủ động hàng đầu, pin 30 giờ",
+			Price:       7990000,
+			BasePrice:   9990000,
+			SKU:         "SONY-WH1000XM5",
+			CategoryID:  &thietBiDienTuID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       75,
+			IsActive:    true,
+		},
+		// Giày Dép Nam
+		{
+			ShopID:      defaultShopID,
+			Name:        "Giày Sneaker Nam Thể Thao Cổ Thấp",
+			Description: "Giày sneaker nam, đế cao su, êm ái thoáng khí",
+			Price:       249000,
+			BasePrice:   399000,
+			SKU:         "GIAY-NAM-001",
+			CategoryID:  &giayNamID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       300,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Dép Quai Ngang Nam Nữ Unisex",
+			Description: "Dép quai ngang đế êm, chống trơn trượt",
+			Price:       89000,
+			BasePrice:   129000,
+			SKU:         "DEP-NAM-001",
+			CategoryID:  &giayNamID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       500,
+			IsActive:    true,
+		},
+		// Túi Ví Nam
+		{
+			ShopID:      defaultShopID,
+			Name:        "Balo Laptop 15.6 inch Chống Nước",
+			Description: "Balo laptop đa ngăn, chống nước, chống sốc",
+			Price:       299000,
+			BasePrice:   449000,
+			SKU:         "BALO-NAM-001",
+			CategoryID:  &tuiNamID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       100,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Ví Da Nam Cao Cấp Đựng Thẻ ATM",
+			Description: "Ví da bò thật, nhiều ngăn đựng thẻ tiện lợi",
+			Price:       159000,
+			BasePrice:   259000,
+			SKU:         "VI-NAM-001",
+			CategoryID:  &tuiNamID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       200,
+			IsActive:    true,
+		},
+		// Sắc Đẹp
+		{
+			ShopID:      defaultShopID,
+			Name:        "Kem Chống Nắng Anessa SPF50+ PA++++",
+			Description: "Kem chống nắng Nhật Bản, chống nước, lâu trôi",
+			Price:       459000,
+			BasePrice:   599000,
+			SKU:         "ANESSA-SPF50",
+			CategoryID:  &sacDepID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       150,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Son Kem Lì 3CE Velvet Lip Tint",
+			Description: "Son kem lì Hàn Quốc, lên màu chuẩn, bền màu",
+			Price:       249000,
+			BasePrice:   329000,
+			SKU:         "3CE-VELVET-001",
+			CategoryID:  &sacDepID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       250,
+			IsActive:    true,
+		},
+		// Nhà Cửa & Đời Sống
+		{
+			ShopID:      defaultShopID,
+			Name:        "Nồi Cơm Điện Tử Sharp 1.8L",
+			Description: "Nồi cơm điện tử công nghệ Nhật, lòng chống dính",
+			Price:       1290000,
+			BasePrice:   1690000,
+			SKU:         "SHARP-RC18",
+			CategoryID:  &nhaCuaID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       60,
+			IsActive:    true,
+		},
+		{
+			ShopID:      defaultShopID,
+			Name:        "Đèn LED Thông Minh Xiaomi",
+			Description: "Đèn LED điều khiển qua app, 16 triệu màu",
+			Price:       299000,
+			BasePrice:   499000,
+			SKU:         "XIAOMI-LED-001",
+			CategoryID:  &nhaCuaID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			Stock:       180,
 			IsActive:    true,
 		},
 	}
@@ -454,63 +509,62 @@ func seedProductItems(
 	skuConfigRepo domain.SKUConfigurationRepository,
 ) {
 	// Get some products to add variations
-	iphone, _ := productRepo.GetBySKU("IPH15P-001")
-	nikeshoes, _ := productRepo.GetBySKU("NIKE-AM90-001")
-	tshirt, _ := productRepo.GetBySKU("ADIDAS-TS-001")
+	aoThun, _ := productRepo.GetBySKU("AOTHUN-NAM-001")
+	iphone, _ := productRepo.GetBySKU("IPHONE15PM-256")
+	giay, _ := productRepo.GetBySKU("GIAY-NAM-001")
 
-	if iphone == nil || nikeshoes == nil || tshirt == nil {
+	if aoThun == nil || iphone == nil || giay == nil {
 		log.Println("⚠️  Required products not found, skipping product items seeding")
 		return
 	}
 
-	// ============= iPhone 15 Pro - Storage + Color variations =============
-	log.Printf("\n--- Creating variations for: %s ---", iphone.Name)
+	// ============= Áo Thun - Size + Color variations =============
+	log.Printf("\n--- Creating variations for: %s ---", aoThun.Name)
 
 	// Create Variations
-	storageVar := &domain.Variation{ProductID: iphone.ID, Name: "Storage"}
-	variationRepo.Create(storageVar)
+	sizeVar := &domain.Variation{ProductID: aoThun.ID, Name: "Kích Thước"}
+	variationRepo.Create(sizeVar)
 
-	colorVar := &domain.Variation{ProductID: iphone.ID, Name: "Color"}
+	colorVar := &domain.Variation{ProductID: aoThun.ID, Name: "Màu Sắc"}
 	variationRepo.Create(colorVar)
 
-	// Create Variation Options - Storage
-	storage128 := &domain.VariationOption{VariationID: storageVar.ID, Value: "128GB"}
-	storage256 := &domain.VariationOption{VariationID: storageVar.ID, Value: "256GB"}
-	storage512 := &domain.VariationOption{VariationID: storageVar.ID, Value: "512GB"}
-	variationOptRepo.Create(storage128)
-	variationOptRepo.Create(storage256)
-	variationOptRepo.Create(storage512)
+	// Create Variation Options - Size
+	sizeM := &domain.VariationOption{VariationID: sizeVar.ID, Value: "M"}
+	sizeL := &domain.VariationOption{VariationID: sizeVar.ID, Value: "L"}
+	sizeXL := &domain.VariationOption{VariationID: sizeVar.ID, Value: "XL"}
+	variationOptRepo.Create(sizeM)
+	variationOptRepo.Create(sizeL)
+	variationOptRepo.Create(sizeXL)
 
 	// Create Variation Options - Color
-	colorNatural := &domain.VariationOption{VariationID: colorVar.ID, Value: "Natural Titanium"}
-	colorBlue := &domain.VariationOption{VariationID: colorVar.ID, Value: "Blue Titanium"}
-	colorBlack := &domain.VariationOption{VariationID: colorVar.ID, Value: "Black Titanium"}
-	variationOptRepo.Create(colorNatural)
-	variationOptRepo.Create(colorBlue)
+	colorWhite := &domain.VariationOption{VariationID: colorVar.ID, Value: "Trắng"}
+	colorBlack := &domain.VariationOption{VariationID: colorVar.ID, Value: "Đen"}
+	colorGray := &domain.VariationOption{VariationID: colorVar.ID, Value: "Xám"}
+	variationOptRepo.Create(colorWhite)
 	variationOptRepo.Create(colorBlack)
+	variationOptRepo.Create(colorGray)
 
-	// Create Product Items (SKUs) - combinations
-	iphoneSKUs := []struct {
-		storage *domain.VariationOption
-		color   *domain.VariationOption
-		sku     string
-		price   float64
-		stock   int
+	aoThunSKUs := []struct {
+		size  *domain.VariationOption
+		color *domain.VariationOption
+		sku   string
+		price float64
+		stock int
 	}{
-		{storage128, colorNatural, "IPH15P-128-NAT", 999.99, 20},
-		{storage128, colorBlue, "IPH15P-128-BLU", 999.99, 15},
-		{storage128, colorBlack, "IPH15P-128-BLK", 999.99, 18},
-		{storage256, colorNatural, "IPH15P-256-NAT", 1099.99, 12},
-		{storage256, colorBlue, "IPH15P-256-BLU", 1099.99, 10},
-		{storage512, colorNatural, "IPH15P-512-NAT", 1299.99, 8},
-		{storage512, colorBlack, "IPH15P-512-BLK", 1299.99, 5},
+		{sizeM, colorWhite, "AOTHUN-NAM-M-TRANG", 129000, 50},
+		{sizeM, colorBlack, "AOTHUN-NAM-M-DEN", 129000, 45},
+		{sizeL, colorWhite, "AOTHUN-NAM-L-TRANG", 129000, 60},
+		{sizeL, colorBlack, "AOTHUN-NAM-L-DEN", 129000, 55},
+		{sizeL, colorGray, "AOTHUN-NAM-L-XAM", 129000, 40},
+		{sizeXL, colorWhite, "AOTHUN-NAM-XL-TRANG", 139000, 35},
+		{sizeXL, colorBlack, "AOTHUN-NAM-XL-DEN", 139000, 30},
 	}
 
-	for _, item := range iphoneSKUs {
+	for _, item := range aoThunSKUs {
 		productItem := &domain.ProductItem{
-			ProductID:  iphone.ID,
+			ProductID:  aoThun.ID,
 			SKUCode:    item.sku,
-			ImageURL:   "https://example.com/iphone15pro.jpg",
+			ImageURL:   "https://placehold.co/400x400",
 			Price:      item.price,
 			QtyInStock: item.stock,
 			Status:     "ACTIVE",
@@ -521,7 +575,73 @@ func seedProductItems(
 			continue
 		}
 
-		// Link with variation options
+		skuConfigRepo.Create(&domain.SKUConfiguration{
+			ProductItemID:     productItem.ID,
+			VariationOptionID: item.size.ID,
+		})
+		skuConfigRepo.Create(&domain.SKUConfiguration{
+			ProductItemID:     productItem.ID,
+			VariationOptionID: item.color.ID,
+		})
+
+		log.Printf("✅ Created SKU: %s - Size %s, Màu %s (stock: %d)",
+			item.sku, item.size.Value, item.color.Value, item.stock)
+	}
+
+	// ============= iPhone - Storage + Color variations =============
+	log.Printf("\n--- Creating variations for: %s ---", iphone.Name)
+
+	storageVar := &domain.Variation{ProductID: iphone.ID, Name: "Bộ Nhớ"}
+	variationRepo.Create(storageVar)
+
+	iphoneColorVar := &domain.Variation{ProductID: iphone.ID, Name: "Màu Sắc"}
+	variationRepo.Create(iphoneColorVar)
+
+	// Storage options
+	storage256 := &domain.VariationOption{VariationID: storageVar.ID, Value: "256GB"}
+	storage512 := &domain.VariationOption{VariationID: storageVar.ID, Value: "512GB"}
+	storage1TB := &domain.VariationOption{VariationID: storageVar.ID, Value: "1TB"}
+	variationOptRepo.Create(storage256)
+	variationOptRepo.Create(storage512)
+	variationOptRepo.Create(storage1TB)
+
+	// Color options
+	titaniumNatural := &domain.VariationOption{VariationID: iphoneColorVar.ID, Value: "Titan Tự Nhiên"}
+	titaniumBlue := &domain.VariationOption{VariationID: iphoneColorVar.ID, Value: "Titan Xanh"}
+	titaniumBlack := &domain.VariationOption{VariationID: iphoneColorVar.ID, Value: "Titan Đen"}
+	variationOptRepo.Create(titaniumNatural)
+	variationOptRepo.Create(titaniumBlue)
+	variationOptRepo.Create(titaniumBlack)
+
+	iphoneSKUs := []struct {
+		storage *domain.VariationOption
+		color   *domain.VariationOption
+		sku     string
+		price   float64
+		stock   int
+	}{
+		{storage256, titaniumNatural, "IP15PM-256-NATURAL", 29990000, 10},
+		{storage256, titaniumBlue, "IP15PM-256-BLUE", 29990000, 8},
+		{storage512, titaniumNatural, "IP15PM-512-NATURAL", 34990000, 5},
+		{storage512, titaniumBlack, "IP15PM-512-BLACK", 34990000, 6},
+		{storage1TB, titaniumBlue, "IP15PM-1TB-BLUE", 39990000, 3},
+	}
+
+	for _, item := range iphoneSKUs {
+		productItem := &domain.ProductItem{
+			ProductID:  iphone.ID,
+			SKUCode:    item.sku,
+			ImageURL:   "https://placehold.co/400x400",
+			Price:      item.price,
+			QtyInStock: item.stock,
+			Status:     "ACTIVE",
+		}
+
+		if err := productItemRepo.Create(productItem); err != nil {
+			log.Printf("⏭️  SKU %s already exists", item.sku)
+			continue
+		}
+
 		skuConfigRepo.Create(&domain.SKUConfiguration{
 			ProductItemID:     productItem.ID,
 			VariationOptionID: item.storage.ID,
@@ -531,59 +651,58 @@ func seedProductItems(
 			VariationOptionID: item.color.ID,
 		})
 
-		log.Printf("✅ Created SKU: %s - %s %s ($%.2f, stock: %d)",
-			item.sku, item.storage.Value, item.color.Value, item.price, item.stock)
+		log.Printf("✅ Created SKU: %s - %s %s (%d VNĐ, stock: %d)",
+			item.sku, item.storage.Value, item.color.Value, int(item.price), item.stock)
 	}
 
-	// ============= Nike Air Max 90 - Size + Color variations =============
-	log.Printf("\n--- Creating variations for: %s ---", nikeshoes.Name)
+	// ============= Giày - Size + Color variations =============
+	log.Printf("\n--- Creating variations for: %s ---", giay.Name)
 
-	sizeVar := &domain.Variation{ProductID: nikeshoes.ID, Name: "Size"}
-	variationRepo.Create(sizeVar)
+	giaySizeVar := &domain.Variation{ProductID: giay.ID, Name: "Kích Thước"}
+	variationRepo.Create(giaySizeVar)
 
-	shoeColorVar := &domain.Variation{ProductID: nikeshoes.ID, Name: "Color"}
-	variationRepo.Create(shoeColorVar)
+	giayColorVar := &domain.Variation{ProductID: giay.ID, Name: "Màu Sắc"}
+	variationRepo.Create(giayColorVar)
 
 	// Sizes
-	size8 := &domain.VariationOption{VariationID: sizeVar.ID, Value: "US 8"}
-	size9 := &domain.VariationOption{VariationID: sizeVar.ID, Value: "US 9"}
-	size10 := &domain.VariationOption{VariationID: sizeVar.ID, Value: "US 10"}
-	size11 := &domain.VariationOption{VariationID: sizeVar.ID, Value: "US 11"}
-	variationOptRepo.Create(size8)
-	variationOptRepo.Create(size9)
-	variationOptRepo.Create(size10)
-	variationOptRepo.Create(size11)
+	size39 := &domain.VariationOption{VariationID: giaySizeVar.ID, Value: "39"}
+	size40 := &domain.VariationOption{VariationID: giaySizeVar.ID, Value: "40"}
+	size41 := &domain.VariationOption{VariationID: giaySizeVar.ID, Value: "41"}
+	size42 := &domain.VariationOption{VariationID: giaySizeVar.ID, Value: "42"}
+	variationOptRepo.Create(size39)
+	variationOptRepo.Create(size40)
+	variationOptRepo.Create(size41)
+	variationOptRepo.Create(size42)
 
 	// Colors
-	colorWhite := &domain.VariationOption{VariationID: shoeColorVar.ID, Value: "White"}
-	colorRed := &domain.VariationOption{VariationID: shoeColorVar.ID, Value: "Red"}
-	colorNavy := &domain.VariationOption{VariationID: shoeColorVar.ID, Value: "Navy"}
-	variationOptRepo.Create(colorWhite)
-	variationOptRepo.Create(colorRed)
-	variationOptRepo.Create(colorNavy)
+	giayWhite := &domain.VariationOption{VariationID: giayColorVar.ID, Value: "Trắng"}
+	giayBlack := &domain.VariationOption{VariationID: giayColorVar.ID, Value: "Đen"}
+	giayRed := &domain.VariationOption{VariationID: giayColorVar.ID, Value: "Đỏ"}
+	variationOptRepo.Create(giayWhite)
+	variationOptRepo.Create(giayBlack)
+	variationOptRepo.Create(giayRed)
 
-	nikeSKUs := []struct {
+	giaySKUs := []struct {
 		size  *domain.VariationOption
 		color *domain.VariationOption
 		sku   string
 		stock int
 	}{
-		{size8, colorWhite, "NIKE-AM90-8-WHT", 15},
-		{size9, colorWhite, "NIKE-AM90-9-WHT", 20},
-		{size9, colorRed, "NIKE-AM90-9-RED", 18},
-		{size10, colorWhite, "NIKE-AM90-10-WHT", 25},
-		{size10, colorRed, "NIKE-AM90-10-RED", 22},
-		{size10, colorNavy, "NIKE-AM90-10-NAV", 20},
-		{size11, colorWhite, "NIKE-AM90-11-WHT", 12},
-		{size11, colorNavy, "NIKE-AM90-11-NAV", 10},
+		{size39, giayWhite, "GIAY-39-TRANG", 25},
+		{size40, giayWhite, "GIAY-40-TRANG", 30},
+		{size40, giayBlack, "GIAY-40-DEN", 28},
+		{size41, giayWhite, "GIAY-41-TRANG", 35},
+		{size41, giayBlack, "GIAY-41-DEN", 32},
+		{size41, giayRed, "GIAY-41-DO", 20},
+		{size42, giayBlack, "GIAY-42-DEN", 22},
 	}
 
-	for _, item := range nikeSKUs {
+	for _, item := range giaySKUs {
 		productItem := &domain.ProductItem{
-			ProductID:  nikeshoes.ID,
+			ProductID:  giay.ID,
 			SKUCode:    item.sku,
-			ImageURL:   "https://example.com/nike-shoes.jpg",
-			Price:      129.99, // Same price for all variants
+			ImageURL:   "https://placehold.co/400x400",
+			Price:      249000,
 			QtyInStock: item.stock,
 			Status:     "ACTIVE",
 		}
@@ -602,111 +721,11 @@ func seedProductItems(
 			VariationOptionID: item.color.ID,
 		})
 
-		log.Printf("✅ Created SKU: %s - %s %s (stock: %d)",
-			item.sku, item.size.Value, item.color.Value, item.stock)
-	}
-
-	// ============= Adidas T-Shirt - Size + Color variations =============
-	log.Printf("\n--- Creating variations for: %s ---", tshirt.Name)
-
-	tshirtSizeVar := &domain.Variation{ProductID: tshirt.ID, Name: "Size"}
-	variationRepo.Create(tshirtSizeVar)
-
-	tshirtColorVar := &domain.Variation{ProductID: tshirt.ID, Name: "Color"}
-	variationRepo.Create(tshirtColorVar)
-
-	// Sizes
-	sizeS := &domain.VariationOption{VariationID: tshirtSizeVar.ID, Value: "S"}
-	sizeM := &domain.VariationOption{VariationID: tshirtSizeVar.ID, Value: "M"}
-	sizeL := &domain.VariationOption{VariationID: tshirtSizeVar.ID, Value: "L"}
-	sizeXL := &domain.VariationOption{VariationID: tshirtSizeVar.ID, Value: "XL"}
-	variationOptRepo.Create(sizeS)
-	variationOptRepo.Create(sizeM)
-	variationOptRepo.Create(sizeL)
-	variationOptRepo.Create(sizeXL)
-
-	// Colors
-	tBlack := &domain.VariationOption{VariationID: tshirtColorVar.ID, Value: "Black"}
-	tWhite := &domain.VariationOption{VariationID: tshirtColorVar.ID, Value: "White"}
-	tGray := &domain.VariationOption{VariationID: tshirtColorVar.ID, Value: "Gray"}
-	variationOptRepo.Create(tBlack)
-	variationOptRepo.Create(tWhite)
-	variationOptRepo.Create(tGray)
-
-	tshirtSKUs := []struct {
-		size  *domain.VariationOption
-		color *domain.VariationOption
-		sku   string
-		stock int
-	}{
-		{sizeS, tBlack, "ADIDAS-TS-S-BLK", 30},
-		{sizeS, tWhite, "ADIDAS-TS-S-WHT", 25},
-		{sizeM, tBlack, "ADIDAS-TS-M-BLK", 40},
-		{sizeM, tWhite, "ADIDAS-TS-M-WHT", 35},
-		{sizeM, tGray, "ADIDAS-TS-M-GRY", 30},
-		{sizeL, tBlack, "ADIDAS-TS-L-BLK", 35},
-		{sizeL, tWhite, "ADIDAS-TS-L-WHT", 30},
-		{sizeL, tGray, "ADIDAS-TS-L-GRY", 25},
-		{sizeXL, tBlack, "ADIDAS-TS-XL-BLK", 20},
-		{sizeXL, tWhite, "ADIDAS-TS-XL-WHT", 18},
-	}
-
-	for _, item := range tshirtSKUs {
-		productItem := &domain.ProductItem{
-			ProductID:  tshirt.ID,
-			SKUCode:    item.sku,
-			ImageURL:   "https://example.com/adidas-tshirt.jpg",
-			Price:      29.99,
-			QtyInStock: item.stock,
-			Status:     "ACTIVE",
-		}
-
-		if err := productItemRepo.Create(productItem); err != nil {
-			log.Printf("⏭️  SKU %s already exists", item.sku)
-			continue
-		}
-
-		skuConfigRepo.Create(&domain.SKUConfiguration{
-			ProductItemID:     productItem.ID,
-			VariationOptionID: item.size.ID,
-		})
-		skuConfigRepo.Create(&domain.SKUConfiguration{
-			ProductItemID:     productItem.ID,
-			VariationOptionID: item.color.ID,
-		})
-
-		log.Printf("✅ Created SKU: %s - Size %s Color %s (stock: %d)",
+		log.Printf("✅ Created SKU: %s - Size %s, Màu %s (stock: %d)",
 			item.sku, item.size.Value, item.color.Value, item.stock)
 	}
 
 	log.Println("\n✅ Product items seeding completed!")
-
-	// ============= Seed specific ID 101 for testing cart =============
-	log.Println("\n--- Creating test product item ID 101 ---")
-
-	// Check if ID 101 already exists
-	existing, _ := productItemRepo.GetByID(101)
-	if existing != nil {
-		log.Println("⏭️  Product item ID 101 already exists, skipping")
-	} else {
-		// Create a simple product item with ID 101 (using Nike shoes product)
-		testItem := &domain.ProductItem{
-			ID:         101,
-			ProductID:  nikeshoes.ID,
-			SKUCode:    "NIKE-AM90-TEST-101",
-			ImageURL:   "https://example.com/nike-test-101.jpg",
-			Price:      119.99,
-			QtyInStock: 100,
-			Status:     "active",
-		}
-
-		if err := productItemRepo.Create(testItem); err != nil {
-			log.Printf("❌ Failed to create product item ID 101: %v", err)
-		} else {
-			log.Printf("✅ Created product item ID 101: %s (Price: $%.2f, Stock: %d)",
-				testItem.SKUCode, testItem.Price, testItem.QtyInStock)
-		}
-	}
 }
 
 func seedCategoryAndProductAttributes(
