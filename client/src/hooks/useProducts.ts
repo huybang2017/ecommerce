@@ -48,17 +48,6 @@ const productApi = {
     return data;
   },
 
-  getCategoryProducts: async (
-    id: number,
-    params?: SearchParams
-  ): Promise<ProductsResponse> => {
-    const { data } = await apiClient.get<ProductsResponse>(
-      `/api/v1/categories/${id}/products`,
-      { params }
-    );
-    return data;
-  },
-
   getCategoryChildren: async (parentId: number): Promise<Category[]> => {
     const { data } = await apiClient.get<Category[]>(
       `/api/v1/categories/${parentId}/children`
@@ -109,14 +98,6 @@ export const useCategory = (id: number, enabled: boolean = true) => {
     queryFn: () => productApi.getCategory(id),
     enabled,
     staleTime: 10 * 60 * 1000,
-  });
-};
-
-export const useCategoryProducts = (id: number, params?: SearchParams) => {
-  return useQuery<ProductsResponse, AxiosError>({
-    queryKey: ["category", id, "products", params],
-    queryFn: () => productApi.getCategoryProducts(id, params),
-    staleTime: 2 * 60 * 1000,
   });
 };
 

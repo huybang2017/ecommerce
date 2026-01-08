@@ -1,5 +1,4 @@
-import type { Category } from "./product";
-
+import { Category } from "@/types/product";
 export interface CategoryDetailResponse extends Category {
   parent?: Category;
   children?: Category[];

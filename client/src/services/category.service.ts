@@ -58,6 +58,9 @@ export async function getCategoryById(id: number): Promise<CategoryDetail> {
     parent: data.parent,
     path: buildBreadcrumbPath(data),
     children: data.children || [],
+    is_active: data.is_active,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
   };
 }
 
