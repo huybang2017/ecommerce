@@ -37,9 +37,9 @@ func main() {
 
 	log.Println("Starting to seed data...")
 
-	// 1. Create Categories
-	log.Println("Creating categories...")
-	categories := []*domain.Category{
+	// 1. Create Parent Categories (Root Level)
+	log.Println("Creating parent categories...")
+	parentCategories := []*domain.Category{
 		// Thời Trang Nam
 		{
 			Name:        "Thời Trang Nam",
@@ -148,7 +148,7 @@ func main() {
 	}
 
 	var createdCategories []*domain.Category
-	for _, cat := range categories {
+	for _, cat := range parentCategories {
 		// Check if category already exists
 		existing, err := categoryRepo.GetBySlug(cat.Slug)
 		if err == nil && existing != nil {
@@ -179,7 +179,7 @@ func main() {
 		log.Fatal("No categories available. Cannot create products.")
 	}
 
-	// Get category IDs
+	// Get parent category IDs
 	thoiTrangNamID := createdCategories[0].ID
 	thoiTrangNuID := createdCategories[1].ID
 	dienThoaiID := createdCategories[2].ID
@@ -196,7 +196,97 @@ func main() {
 	// theThaoID := createdCategories[13].ID
 	// xeID := createdCategories[14].ID
 
-	// 2. Create Products
+	// 2. Create Child Categories (Sub-categories)
+	log.Println("\nCreating child categories...")
+	childCategories := []*domain.Category{
+		// Children of Thời Trang Nam
+		{Name: "Áo Thun Nam", Slug: "ao-thun-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Áo Sơ Mi Nam", Slug: "ao-so-mi-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Áo Khoác Nam", Slug: "ao-khoac-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Quần Jeans Nam", Slug: "quan-jeans-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Quần Short Nam", Slug: "quan-short-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Áo Polo Nam", Slug: "ao-polo-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Quần Tây Nam", Slug: "quan-tay-nam", ParentID: &thoiTrangNamID, IsActive: true},
+		{Name: "Áo Vest Nam", Slug: "ao-vest-nam", ParentID: &thoiTrangNamID, IsActive: true},
+
+		// Children of Thời Trang Nữ
+		{Name: "Váy Đầm", Slug: "vay-dam", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Áo Kiểu Nữ", Slug: "ao-kieu-nu", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Áo Thun Nữ", Slug: "ao-thun-nu", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Quần Jeans Nữ", Slug: "quan-jeans-nu", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Chân Váy", Slug: "chan-vay", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Áo Khoác Nữ", Slug: "ao-khoac-nu", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Đồ Mặc Nhà", Slug: "do-mac-nha", ParentID: &thoiTrangNuID, IsActive: true},
+		{Name: "Đồ Bộ Nữ", Slug: "do-bo-nu", ParentID: &thoiTrangNuID, IsActive: true},
+
+		// Children of Điện Thoại & Phụ Kiện
+		{Name: "Điện Thoại", Slug: "dien-thoai", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Máy Tính Bảng", Slug: "may-tinh-bang", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Ốp Lưng Điện Thoại", Slug: "op-lung-dien-thoai", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Cáp Sạc", Slug: "cap-sac", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Tai Nghe", Slug: "tai-nghe", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Sạc Dự Phòng", Slug: "sac-du-phong", ParentID: &dienThoaiID, IsActive: true},
+		{Name: "Miếng Dán Màn Hình", Slug: "mieng-dan-man-hinh", ParentID: &dienThoaiID, IsActive: true},
+
+		// Children of Thiết Bị Điện Tử
+		{Name: "Laptop", Slug: "laptop", ParentID: &thietBiDienTuID, IsActive: true},
+		{Name: "Máy Tính Để Bàn", Slug: "may-tinh-de-ban", ParentID: &thietBiDienTuID, IsActive: true},
+		{Name: "Camera", Slug: "camera", ParentID: &thietBiDienTuID, IsActive: true},
+		{Name: "Tai Nghe - Loa", Slug: "tai-nghe-loa", ParentID: &thietBiDienTuID, IsActive: true},
+		{Name: "Thiết Bị Mạng", Slug: "thiet-bi-mang", ParentID: &thietBiDienTuID, IsActive: true},
+		{Name: "Linh Kiện Máy Tính", Slug: "linh-kien-may-tinh", ParentID: &thietBiDienTuID, IsActive: true},
+
+		// Children of Nhà Cửa & Đời Sống
+		{Name: "Chăn Ga Gối", Slug: "chan-ga-goi", ParentID: &nhaCuaID, IsActive: true},
+		{Name: "Nội Thất", Slug: "noi-that", ParentID: &nhaCuaID, IsActive: true},
+		{Name: "Đồ Dùng Nhà Bếp", Slug: "do-dung-nha-bep", ParentID: &nhaCuaID, IsActive: true},
+		{Name: "Trang Trí Nhà Cửa", Slug: "trang-tri-nha-cua", ParentID: &nhaCuaID, IsActive: true},
+		{Name: "Đèn", Slug: "den", ParentID: &nhaCuaID, IsActive: true},
+
+		// Children of Sắc Đẹp
+		{Name: "Chăm Sóc Da Mặt", Slug: "cham-soc-da-mat", ParentID: &sacDepID, IsActive: true},
+		{Name: "Trang Điểm", Slug: "trang-diem", ParentID: &sacDepID, IsActive: true},
+		{Name: "Dưỡng Thể", Slug: "duong-the", ParentID: &sacDepID, IsActive: true},
+		{Name: "Nước Hoa", Slug: "nuoc-hoa", ParentID: &sacDepID, IsActive: true},
+		{Name: "Chăm Sóc Tóc", Slug: "cham-soc-toc", ParentID: &sacDepID, IsActive: true},
+
+		// Children of Giày Dép Nam
+		{Name: "Giày Thể Thao Nam", Slug: "giay-the-thao-nam", ParentID: &giayNamID, IsActive: true},
+		{Name: "Giày Tây Nam", Slug: "giay-tay-nam", ParentID: &giayNamID, IsActive: true},
+		{Name: "Dép Nam", Slug: "dep-nam", ParentID: &giayNamID, IsActive: true},
+		{Name: "Giày Boots Nam", Slug: "giay-boots-nam", ParentID: &giayNamID, IsActive: true},
+
+		// Children of Túi Ví Nam
+		{Name: "Balo Nam", Slug: "balo-nam", ParentID: &tuiNamID, IsActive: true},
+		{Name: "Túi Đeo Chéo Nam", Slug: "tui-deo-cheo-nam", ParentID: &tuiNamID, IsActive: true},
+		{Name: "Ví Nam", Slug: "vi-nam", ParentID: &tuiNamID, IsActive: true},
+		{Name: "Cặp Laptop", Slug: "cap-laptop", ParentID: &tuiNamID, IsActive: true},
+	}
+
+	for _, cat := range childCategories {
+		// Check if category already exists
+		existing, err := categoryRepo.GetBySlug(cat.Slug)
+		if err == nil && existing != nil {
+			log.Printf("⏭️  Using existing child category: %s (ID: %d)", existing.Name, existing.ID)
+			continue
+		}
+
+		// Create new category
+		err = categoryRepo.Create(cat)
+		if err != nil {
+			log.Printf("❌ Failed to create child category %s: %v", cat.Name, err)
+			continue
+		}
+
+		// Get the created category
+		created, err := categoryRepo.GetBySlug(cat.Slug)
+		if err != nil {
+			log.Printf("⚠️  Created child category %s but failed to retrieve it: %v", cat.Name, err)
+			continue
+		}
+
+		log.Printf("✅ Created child category: %s (ID: %d, Parent: %d)", created.Name, created.ID, *created.ParentID)
+	}
 	log.Println("\nCreating products...")
 
 	// Helper function to create images JSON

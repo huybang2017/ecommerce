@@ -16,11 +16,12 @@ import (
 // This is the service layer - it orchestrates between repositories
 // Following Clean Architecture: business logic is independent of infrastructure
 type ProductService struct {
-	productRepo      domain.ProductRepository
-	searchRepo       domain.ProductSearchRepository
-	cacheRepo        CacheRepository
-	eventPublisher   domain.EventPublisher
-	logger           *zap.Logger
+	productRepo    domain.ProductRepository
+	searchRepo     domain.ProductSearchRepository
+	cacheRepo      CacheRepository
+	categoryRepo   domain.CategoryRepository
+	eventPublisher domain.EventPublisher
+	logger         *zap.Logger
 }
 
 // CacheRepository defines cache operations (abstraction for Redis)
@@ -39,6 +40,7 @@ func NewProductService(
 	productRepo domain.ProductRepository,
 	searchRepo domain.ProductSearchRepository,
 	cacheRepo CacheRepository,
+	categoryRepo domain.CategoryRepository,
 	eventPublisher domain.EventPublisher,
 	logger *zap.Logger,
 ) *ProductService {
@@ -46,6 +48,7 @@ func NewProductService(
 		productRepo:    productRepo,
 		searchRepo:     searchRepo,
 		cacheRepo:      cacheRepo,
+		categoryRepo:   categoryRepo,
 		eventPublisher: eventPublisher,
 		logger:         logger,
 	}
@@ -117,7 +120,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Prod
 		zap.Bool("eventPublisher_nil", s.eventPublisher == nil),
 	)
 	_ = s.logger.Sync()
-	
+
 	go func() {
 		// CRITICAL: Use Zap logger with Sync to ensure logs are flushed immediately
 		s.logger.Info("🚀🚀🚀 EVENT PUBLISHING GOROUTINE CALLED!",
@@ -125,7 +128,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Prod
 			zap.String("product_name", product.Name),
 		)
 		_ = s.logger.Sync() // Force flush logs immediately
-		
+
 		// Check if eventPublisher is nil
 		if s.eventPublisher == nil {
 			s.logger.Error("❌❌❌ Event publisher is nil - cannot publish event",
@@ -286,6 +289,7 @@ func (s *ProductService) ListProducts(ctx context.Context, filters map[string]in
 }
 
 // GetProductsByCategory retrieves products by category ID with pagination
+// If category is a parent (has children), it will fetch products from all child categories too
 func (s *ProductService) GetProductsByCategory(ctx context.Context, categoryID uint, page, limit int) ([]*domain.Product, int64, error) {
 	// Set defaults
 	if page < 1 {
@@ -298,7 +302,28 @@ func (s *ProductService) GetProductsByCategory(ctx context.Context, categoryID u
 		limit = 100 // Max limit
 	}
 
-	products, total, err := s.productRepo.GetProductsByCategory(categoryID, page, limit)
+	// Fetch category to check if it has children
+	category, err := s.categoryRepo.GetByID(categoryID)
+	if err != nil {
+		s.logger.Error("failed to get category", zap.Error(err))
+		return nil, 0, fmt.Errorf("category not found: %w", err)
+	}
+
+	// Build category IDs array
+	categoryIDs := []uint{categoryID}
+
+	// If parent category (has children), include all children IDs
+	if len(category.Children) > 0 {
+		for _, child := range category.Children {
+			categoryIDs = append(categoryIDs, child.ID)
+		}
+		s.logger.Info("fetching products for parent category with children",
+			zap.Uint("parent_id", categoryID),
+			zap.Int("children_count", len(category.Children)),
+			zap.Uints("category_ids", categoryIDs))
+	}
+
+	products, total, err := s.productRepo.GetProductsByCategoryIDs(categoryIDs, page, limit)
 	if err != nil {
 		s.logger.Error("failed to get products by category", zap.Error(err))
 		return nil, 0, fmt.Errorf("failed to get products by category: %w", err)
@@ -366,4 +391,3 @@ func (s *ProductService) UpdateInventory(ctx context.Context, productID uint, qu
 
 	return nil
 }
-

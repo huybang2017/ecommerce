@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"product-service/internal/domain"
 
 	"gorm.io/gorm"
@@ -31,9 +32,14 @@ func (r *categoryRepository) Update(category *domain.Category) error {
 // GetByID retrieves a category by its ID
 func (r *categoryRepository) GetByID(id uint) (*domain.Category, error) {
 	var category domain.Category
-	err := r.db.First(&category, id).Error
+	err := r.db.Preload("Parent").Preload("Children").First(&category, id).Error
 	if err != nil {
 		return nil, err
+	}
+	// Debug: check if parent loaded
+	if category.ParentID != nil {
+		fmt.Printf("[DEBUG] Category %d has parent_id=%d, Parent loaded: %v\n",
+			category.ID, *category.ParentID, category.Parent != nil)
 	}
 	return &category, nil
 }
@@ -41,7 +47,7 @@ func (r *categoryRepository) GetByID(id uint) (*domain.Category, error) {
 // GetBySlug retrieves a category by its slug
 func (r *categoryRepository) GetBySlug(slug string) (*domain.Category, error) {
 	var category domain.Category
-	err := r.db.Where("slug = ?", slug).First(&category).Error
+	err := r.db.Preload("Parent").Where("slug = ?", slug).First(&category).Error
 	if err != nil {
 		return nil, err
 	}
@@ -73,4 +79,3 @@ func (r *categoryRepository) GetChildren(parentID uint) ([]*domain.Category, err
 func (r *categoryRepository) Delete(id uint) error {
 	return r.db.Delete(&domain.Category{}, id).Error
 }
-

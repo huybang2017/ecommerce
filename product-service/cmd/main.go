@@ -140,7 +140,7 @@ func migrateProductsTable(db *gorm.DB, logger *zap.Logger) error {
 func main() {
 	fmt.Fprintf(os.Stderr, "🚀🚀🚀 PRODUCT SERVICE MAIN() STARTED! 🚀🚀🚀\n")
 	log.Printf("🚀 PRODUCT SERVICE MAIN() STARTED!")
-	
+
 	// Load configuration
 	cfg, err := config.LoadConfig("./config")
 	if err != nil {
@@ -172,7 +172,7 @@ func main() {
 	if err := migrateProductsTable(db, appLogger); err != nil {
 		appLogger.Fatal("Failed to migrate products table", zap.Error(err))
 	}
-	
+
 	// AutoMigrate other tables
 	if err := db.AutoMigrate(
 		&domain.Category{},
@@ -243,6 +243,7 @@ func main() {
 		productRepo,
 		searchRepo,
 		cacheRepo,
+		categoryRepo,
 		eventPublisher,
 		appLogger,
 	)
@@ -312,7 +313,7 @@ func main() {
 
 	// Give server a moment to start
 	time.Sleep(2 * time.Second)
-	
+
 	// Verify server is running
 	testCtx, testCancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer testCancel()
@@ -349,4 +350,3 @@ func main() {
 	// Note: Kafka publisher and Redis/ES clients are closed via defer
 	appLogger.Info("Server exited gracefully")
 }
-

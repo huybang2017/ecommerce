@@ -116,6 +116,26 @@ func (r *productRepository) GetProductsByCategory(categoryID uint, page, limit i
 	return products, total, nil
 }
 
+// GetProductsByCategoryIDs retrieves products by multiple category IDs with pagination
+// Used for fetching products from parent category + all children
+func (r *productRepository) GetProductsByCategoryIDs(categoryIDs []uint, page, limit int) ([]*domain.Product, int64, error) {
+	var products []*domain.Product
+	var total int64
+
+	// Count total
+	if err := r.db.Model(&domain.Product{}).Where("category_id IN ?", categoryIDs).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get products with pagination
+	offset := (page - 1) * limit
+	if err := r.db.Where("category_id IN ?", categoryIDs).Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
+}
+
 // Delete soft deletes a product (or hard delete based on your business logic)
 func (r *productRepository) Delete(id uint) error {
 	return r.db.Delete(&domain.Product{}, id).Error
@@ -141,4 +161,3 @@ func (r *productRepository) GetProductsByShopID(shopID uint, page, limit int) ([
 
 	return products, total, nil
 }
-
