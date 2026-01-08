@@ -1,10 +1,4 @@
-import {
-  ChevronRight,
-  ClipboardList,
-  Wallet,
-  ShoppingBag,
-  Star,
-} from "lucide-react";
+import { ChevronRight, ClipboardList, ShoppingBag, Star } from "lucide-react";
 
 export default function Dashboard() {
   return (
