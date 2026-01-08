@@ -28,7 +28,7 @@ func main() {
 	// Initialize repository
 	productRepo := postgres.NewProductRepository(db)
 
-	log.Println("Starting to seed products...")
+	log.Println("Starting to seed products (child categories)...")
 
 	createImagesJSON := func(images []string) datatypes.JSON {
 		if len(images) == 0 {
