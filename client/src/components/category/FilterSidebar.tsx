@@ -8,16 +8,25 @@ interface FilterSidebarProps {
   categories: { id: number; name: string; slug: string }[];
   currentCategory: { id: number; name: string };
   isParent: boolean;
+  currentSlug: string;
+  currentCategoryId: number;
 }
 
 export function FilterSidebar({
   categories,
   currentCategory,
   isParent,
+  currentSlug,
+  currentCategoryId,
 }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+
+  const handleCategoryClick = (categorySlug: string) => {
+    // Navigate using the real category slug from the database
+    router.push(`/${categorySlug}`, { scroll: false });
+  };
 
   const handleApplyPrice = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -59,14 +68,22 @@ export function FilterSidebar({
                 </span>
               )}
             </li>
-            {categories.map((cat) => (
-              <li
-                key={cat.id}
-                className="cursor-pointer hover:text-[#ee4d2d] transition-colors pl-4"
-              >
-                {cat.name}
-              </li>
-            ))}
+            {categories.map((cat) => {
+              // Active if this category's slug matches current slug
+              const isActive = cat.slug === currentSlug;
+
+              return (
+                <li
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.slug)}
+                  className={`cursor-pointer hover:text-[#ee4d2d] transition-colors pl-4 ${
+                    isActive ? "text-[#ee4d2d] font-semibold" : ""
+                  }`}
+                >
+                  {cat.name}
+                </li>
+              );
+            })}
           </ul>
         </div>
 

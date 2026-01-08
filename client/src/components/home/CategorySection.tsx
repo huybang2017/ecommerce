@@ -32,7 +32,7 @@ export default function CategorySection() {
               .map((category) => (
                 <Link
                   key={category.id}
-                  href={`/${category.slug}-cat.${category.id}`}
+                  href={`/${category.slug}.${category.id}`}
                   className="flex min-w-[120px] shrink-0 flex-col items-center gap-2 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-3 text-center text-[13px] text-neutral-700 hover:border-orange-400 hover:bg-orange-50 transition-colors"
                 >
                   {category.image_url ? (

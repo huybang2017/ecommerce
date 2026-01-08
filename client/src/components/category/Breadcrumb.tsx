@@ -5,6 +5,7 @@ interface BreadcrumbProps {
   items: {
     name: string;
     path: string;
+    slug?: string;
   }[];
 }
 
