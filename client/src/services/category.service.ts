@@ -1,31 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "./axios-client";
-import type { Category, ProductsResponse } from "@/hooks/useProducts";
-
-interface CategoryDetailResponse extends Category {
-  parent?: Category;
-  children?: Category[];
-}
-
-export interface BreadcrumbItem {
-  name: string;
-  path: string;
-  slug: string;
-}
-
-export interface CategoryDetail extends Category {
-  path: BreadcrumbItem[];
-  children: Category[];
-}
-
-interface ProductFilters {
-  page?: number;
-  limit?: number;
-  sort_by?: string;
-  order?: "asc" | "desc";
-  min_price?: number;
-  max_price?: number;
-}
+import { apiClient } from "@/lib/axios-client";
+import type { ProductsResponse } from "@/types/product";
+import type {
+  CategoryDetailResponse,
+  CategoryDetail,
+  BreadcrumbItem,
+  ProductFilters,
+} from "@/types/category";
 
 /**
  * Build breadcrumb path from category data
@@ -64,7 +44,7 @@ function buildBreadcrumbPath(
 /**
  * Fetch category detail by ID
  */
-async function fetchCategoryDetail(id: number): Promise<CategoryDetail> {
+export async function getCategoryById(id: number): Promise<CategoryDetail> {
   const { data } = await apiClient.get<CategoryDetailResponse>(
     `/api/v1/categories/${id}`
   );
@@ -84,7 +64,7 @@ async function fetchCategoryDetail(id: number): Promise<CategoryDetail> {
 /**
  * Fetch products by category ID with filters
  */
-async function fetchCategoryProducts(
+export async function getCategoryProducts(
   categoryId: number,
   filters: ProductFilters = {}
 ) {
@@ -108,31 +88,4 @@ async function fetchCategoryProducts(
     page: data.page || 1,
     last_page: data.total_pages || 1,
   };
-}
-
-/**
- * React Query hook for fetching category detail
- */
-export function useCategoryDetail(categoryId: number) {
-  return useQuery({
-    queryKey: ["category", categoryId],
-    queryFn: () => fetchCategoryDetail(categoryId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!categoryId,
-  });
-}
-
-/**
- * React Query hook for fetching category products
- */
-export function useCategoryProducts(
-  categoryId: number,
-  filters: ProductFilters = {}
-) {
-  return useQuery({
-    queryKey: ["category-products", categoryId, filters],
-    queryFn: () => fetchCategoryProducts(categoryId, filters),
-    staleTime: 1 * 60 * 1000, // 1 minute
-    enabled: !!categoryId,
-  });
 }

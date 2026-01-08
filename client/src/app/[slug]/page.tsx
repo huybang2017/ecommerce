@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
-import { getCategoryDetail, getProducts } from "@/lib/mock-category-api";
 import { Breadcrumb } from "@/components/category/Breadcrumb";
-import { FilterSidebar } from "@/components/category/FilterSidebar";
+import { CategoryFilterWrapper } from "@/components/category/CategoryFilterWrapper";
 import { SortBar } from "@/components/category/SortBar";
 import { ProductGrid } from "@/components/category/ProductGrid";
+import {
+  getCategoryById,
+  getCategoryProducts,
+} from "@/services/category.service";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -15,16 +18,39 @@ export default async function CategoryPage({
   searchParams,
 }: PageProps) {
   const { slug } = await params;
-  const sp = await searchParams; // search params object
+  const sp = await searchParams;
 
-  const category = await getCategoryDetail(slug);
+  // Parse format: slug.parentId or slug.parentId.childId
+  // Example: thoi-trang-nam.6 (parent) or thoi-trang-nam.6.23 (child)
+  const slugParts = slug.split(".");
+  const categoryId =
+    slugParts.length === 2
+      ? parseInt(slugParts[1]) // Parent: thoi-trang-nam.6 -> ID=6
+      : parseInt(slugParts[2]); // Child: thoi-trang-nam.6.23 -> ID=23
+
+  if (!categoryId || isNaN(categoryId)) {
+    notFound();
+  }
+
+  // Fetch category detail by ID from API
+  const category = await getCategoryById(categoryId);
 
   if (!category) {
     notFound();
   }
 
-  // Fetch products with filters
-  const products = await getProducts(category.id, sp);
+  // Determine if parent or child based on slug format
+  const isParentCategory = slugParts.length === 2; // Only has slug.ID
+
+  // For sidebar: parent shows its children, child shows siblings
+  const categoryIdForChildren = isParentCategory
+    ? category.id
+    : slugParts.length === 3
+    ? parseInt(slugParts[1])
+    : category.parent_id!;
+
+  // Fetch products for this specific category
+  const products = await getCategoryProducts(category.id, sp);
 
   return (
     <div className="bg-[#f5f5f5] min-h-screen pb-10">
@@ -33,11 +59,17 @@ export default async function CategoryPage({
         <Breadcrumb items={category.path} />
 
         <div className="flex gap-5 mt-5">
-          {/* Sidebar */}
-          <FilterSidebar
-            categories={category.children || []}
-            currentCategory={{ id: category.id, name: category.name }}
-            isParent={true}
+          {/* Sidebar - Always fetch parent's children for navigation */}
+          <CategoryFilterWrapper
+            categoryId={categoryIdForChildren}
+            categoryName={
+              isParentCategory
+                ? category.name
+                : category.parent?.name || category.name
+            }
+            isParent={isParentCategory}
+            currentSlug={slug}
+            currentCategoryId={category.id}
           />
 
           {/* Main Content */}

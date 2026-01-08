@@ -1,62 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/axios-client";
 import { AxiosError } from "axios";
+import type {
+  Product,
+  Category,
+  ProductsResponse,
+  SearchParams,
+} from "@/types/product";
 
-// Types
-export interface Product {
-  id: number;
-  name: string;
-  description?: string;
-  price: number;
-  original_price?: number;
-  category_id?: number;
-  category?: Category;
-  image_url?: string;
-  images?: string[];
-  stock_quantity: number;
-  sku?: string;
-  weight?: number;
-  dimensions?: string;
-  is_active: boolean;
-  rating?: number;
-  review_count?: number;
-  sold_count?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  slug: string;
-  parent_id?: number;
-  image_url?: string;
-  is_active: boolean;
-  display_order?: number;
-  product_count?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductsResponse {
-  products: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-}
-
-export interface SearchParams {
-  q?: string;
-  category?: string;
-  min_price?: number;
-  max_price?: number;
-  sort_by?: "price" | "rating" | "created_at" | "sold_count";
-  order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-}
+// Re-export types for backward compatibility
+export type {
+  Product,
+  Category,
+  ProductsResponse,
+  SearchParams,
+} from "@/types/product";
 
 // API functions
 const productApi = {
@@ -97,6 +55,13 @@ const productApi = {
     const { data } = await apiClient.get<ProductsResponse>(
       `/api/v1/categories/${id}/products`,
       { params }
+    );
+    return data;
+  },
+
+  getCategoryChildren: async (parentId: number): Promise<Category[]> => {
+    const { data } = await apiClient.get<Category[]>(
+      `/api/v1/categories/${parentId}/children`
     );
     return data;
   },
@@ -152,6 +117,18 @@ export const useCategoryProducts = (id: number, params?: SearchParams) => {
     queryKey: ["category", id, "products", params],
     queryFn: () => productApi.getCategoryProducts(id, params),
     staleTime: 2 * 60 * 1000,
+  });
+};
+
+export const useCategoryChildren = (
+  parentId: number,
+  enabled: boolean = true
+) => {
+  return useQuery<Category[], AxiosError>({
+    queryKey: ["category", parentId, "children"],
+    queryFn: () => productApi.getCategoryChildren(parentId),
+    enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutes (categories don't change often)
   });
 };
 
