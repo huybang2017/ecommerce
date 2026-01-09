@@ -50,7 +50,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Set HttpOnly session_id cookie (session-based auth, 7 days)
-	// access_token is returned in response body for frontend to store in memory
 	c.SetCookie(
 		"session_id",
 		response.SessionID,
@@ -59,6 +58,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"",
 		false, // secure (true in production)
 		true,  // httpOnly
+	)
+
+	// Set access_token as HttpOnly cookie (15 min)
+	c.SetCookie(
+		"access_token",
+		response.AccessToken,
+		900, // 15 minutes
+		"/",
+		"",
+		false, // secure (true in production with HTTPS)
+		true,  // httpOnly (prevents XSS)
 	)
 
 	// Also set refresh_token cookie for backward compatibility (deprecated)
@@ -73,9 +83,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":      "user registered successfully",
-		"access_token": response.AccessToken, // SHORT-LIVED (15 min) - store in memory
-		"user":         response.User,
+		"message": "user registered successfully",
+		"user":    response.User,
 	})
 }
 
@@ -105,7 +114,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Set HttpOnly session_id cookie (session-based auth, 7 days)
-	// access_token is returned in response body for frontend to store in memory
 	c.SetCookie(
 		"session_id",
 		response.SessionID,
@@ -114,6 +122,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"",
 		false, // secure (true in production with HTTPS)
 		true,  // httpOnly (prevents JavaScript access)
+	)
+
+	// Set access_token as HttpOnly cookie (15 min)
+	c.SetCookie(
+		"access_token",
+		response.AccessToken,
+		900, // 15 minutes
+		"/",
+		"",
+		false, // secure (true in production with HTTPS)
+		true,  // httpOnly (prevents XSS)
 	)
 
 	// Also set refresh_token cookie for backward compatibility (deprecated)
@@ -127,12 +146,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		true,                  // httpOnly (prevents JavaScript access)
 	)
 
-	// Return access_token in response body + user info
-	// Frontend will store access_token in memory (NOT localStorage)
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "login successful",
-		"access_token": response.AccessToken, // SHORT-LIVED (15 min) - store in memory
-		"user":         response.User,
+		"message": "login successful",
+		"user":    response.User,
 	})
 }
 
@@ -157,11 +173,20 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 			return
 		}
 
-		// Return new access_token in response body
+		// Set new access_token as HttpOnly cookie
+		c.SetCookie(
+			"access_token",
+			response.AccessToken,
+			900, // 15 minutes
+			"/",
+			"",
+			false, // secure (true in production)
+			true,  // httpOnly
+		)
+
 		c.JSON(http.StatusOK, gin.H{
-			"message":      "token refreshed successfully",
-			"access_token": response.AccessToken,
-			"user":         response.User,
+			"message": "token refreshed successfully",
+			"user":    response.User,
 		})
 		return
 	}
@@ -182,12 +207,20 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Return new access_token in response body (frontend stores in memory)
-	// refresh_token cookie remains unchanged
+	// Set new access_token as HttpOnly cookie
+	c.SetCookie(
+		"access_token",
+		response.AccessToken,
+		900, // 15 minutes
+		"/",
+		"",
+		false, // secure (true in production)
+		true,  // httpOnly
+	)
+
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "token refreshed successfully",
-		"access_token": response.AccessToken, // NEW access token
-		"user":         response.User,
+		"message": "token refreshed successfully",
+		"user":    response.User,
 	})
 }
 
@@ -212,8 +245,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 			return
 		}
 
-		// Clear both session_id and refresh_token cookies
+		// Clear all cookies: session_id, access_token, refresh_token
 		c.SetCookie("session_id", "", -1, "/", "", false, true)
+		c.SetCookie("access_token", "", -1, "/", "", false, true)
 		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -255,7 +289,8 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	// Clear only refresh_token cookie (access_token is in memory, will be discarded by frontend)
+	// Clear both access_token and refresh_token cookies
+	c.SetCookie("access_token", "", -1, "/", "", false, true)
 	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{

@@ -5,53 +5,35 @@ import (
 	"identity-service/internal/service"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// AuthMiddleware validates JWT token and sets user context
+// AuthMiddleware validates JWT token from cookie and sets user context
 func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from Authorization header
-		authHeader := c.GetHeader("Authorization")
+		// Get access_token from HttpOnly cookie
+		token, err := c.Cookie("access_token")
 		fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] Request: %s %s\n", c.Request.Method, c.Request.URL.Path)
-		fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] Authorization header present: %v\n", authHeader != "")
-		if authHeader != "" {
-			fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] Auth header: %s...\n", authHeader[:min(30, len(authHeader))])
-		} else {
-			// Debug: Log all headers to see what we received
-			fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] ❌ Missing Authorization header!\n")
-			fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] All headers: %v\n", c.Request.Header)
+		fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] access_token cookie present: %v\n", err == nil && token != "")
+
+		if err != nil || token == "" {
+			fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] ❌ Missing access_token cookie!\n")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 			c.Abort()
 			return
 		}
 
-		// Extract token (format: "Bearer <token>")
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
-
 		// Validate token
 		userID, role, err := authService.ValidateToken(token)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] ❌ Invalid token: %v\n", err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			c.Abort()
 			return
 		}
+
+		fmt.Fprintf(os.Stderr, "[DEBUG Identity Service] ✅ Token validated for user: %v\n", userID)
 
 		// Set user context
 		c.Set("user_id", userID)
@@ -59,4 +41,3 @@ func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
