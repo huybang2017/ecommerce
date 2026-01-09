@@ -63,6 +63,14 @@ func SetupRouter(
 				products.GET("", productHandler.ListProducts)
 				products.GET("/:id", productHandler.GetProduct)
 				products.GET("/search", productHandler.SearchProducts)
+
+				// Product Items (SKU) routes - Public
+				products.GET("/:id/items", productHandler.GetProductItems)
+				products.GET("/:id/items/:item_id", productHandler.GetProductItem)
+
+				// Variation routes - Public (for UI selectors)
+				products.GET("/:id/variations", productHandler.GetProductVariations)
+
 				products.POST("", productHandler.CreateProduct) // Protected in handler
 
 				// Protected routes (auth required)
@@ -73,6 +81,11 @@ func SetupRouter(
 					protected.PATCH("/:id", productHandler.UpdateProduct)
 					protected.PATCH("/:id/inventory", productHandler.UpdateInventory)
 					protected.DELETE("/:id", productHandler.DeleteProduct)
+
+					// Product Items (SKU) - Protected operations
+					protected.POST("/:id/items", productHandler.CreateProductItem)
+					protected.PUT("/:id/items/:item_id", productHandler.UpdateProductItem)
+					protected.DELETE("/:id/items/:item_id", productHandler.DeleteProductItem)
 				}
 			}
 
@@ -96,8 +109,9 @@ func SetupRouter(
 				search.GET("", searchHandler.SearchProducts)
 			}
 
-			// Cart routes (Order Service) - Public routes (session-based)
+			// Cart routes (Order Service) - Protected routes (require authentication)
 			cart := v1.Group("/cart")
+			cart.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
 			{
 				cart.GET("", gatewayHandler.ProxyRequest)
 				cart.DELETE("", gatewayHandler.ProxyRequest)
