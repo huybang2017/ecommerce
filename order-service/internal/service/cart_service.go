@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"order-service/internal/domain"
 
 	"go.uber.org/zap"
@@ -54,6 +55,7 @@ func NewCartService(
 
 // GetCart retrieves user's cart and enriches with product data from Product Service
 func (s *CartService) GetCart(ctx context.Context, userID string) (*domain.ShoppingCart, error) {
+	log.Println("Fetching cart for userId:", userID)
 	if userID == "" {
 		return nil, errors.New("user_id is required")
 	}

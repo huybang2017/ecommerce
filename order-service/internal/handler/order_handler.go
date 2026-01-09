@@ -44,9 +44,13 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Get user_id from query if not in body
+	// Get user_id from header (preferred - set by API Gateway)
 	if req.UserID == nil {
-		userIDStr := c.Query("user_id")
+		userIDStr := c.GetHeader("X-User-Id")
+		if userIDStr == "" {
+			// Fallback to query parameter for backward compatibility
+			userIDStr = c.Query("user_id")
+		}
 		if userIDStr != "" {
 			userID, err := strconv.ParseUint(userIDStr, 10, 32)
 			if err == nil {
@@ -140,8 +144,12 @@ func (h *OrderHandler) GetOrderByOrderNumber(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /orders [get]
 func (h *OrderHandler) ListOrders(c *gin.Context) {
-	// Get user_id or session_id
-	userIDStr := c.Query("user_id")
+	// Get user_id from header (preferred - set by API Gateway)
+	userIDStr := c.GetHeader("X-User-Id")
+	if userIDStr == "" {
+		// Fallback to query parameter for backward compatibility
+		userIDStr = c.Query("user_id")
+	}
 	sessionID := c.Query("session_id")
 
 	if userIDStr == "" && sessionID == "" {
@@ -188,4 +196,3 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 		"offset": offset,
 	})
 }
-

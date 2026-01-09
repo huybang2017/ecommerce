@@ -43,16 +43,16 @@ type UpdateItemRequest struct {
 // @Description Get the shopping cart for the current user
 // @Tags Cart
 // @Produce json
-// @Param user_id query string true "User ID (authenticated)"
 // @Success 200 {object} domain.Cart "Cart retrieved successfully"
-// @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /cart [get]
 func (h *CartHandler) GetCart(c *gin.Context) {
-	userID := c.Query("user_id")
+	// Get user_id from header (set by API Gateway after JWT validation)
+	userID := c.GetHeader("X-User-Id")
 
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -72,17 +72,19 @@ func (h *CartHandler) GetCart(c *gin.Context) {
 // @Tags Cart
 // @Accept json
 // @Produce json
-// @Param user_id query string true "User ID (authenticated)"
 // @Param request body AddItemRequest true "Add Item Request"
 // @Success 200 {object} map[string]string "Item added successfully"
 // @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /cart/items [post]
 func (h *CartHandler) AddItem(c *gin.Context) {
-	userID := c.Query("user_id")
+	// Get user_id from header (set by API Gateway after JWT validation)
+	userID := c.GetHeader("X-User-Id")
+	log.Println("")
 	log.Println("userID:", userID)
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -119,18 +121,19 @@ func (h *CartHandler) AddItem(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param product_item_id path int true "Product Item ID (SKU)"
-// @Param user_id query string true "User ID (authenticated)"
 // @Param request body UpdateItemRequest true "Update Item Request"
 // @Success 200 {object} map[string]string "Item updated successfully"
 // @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Item not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /cart/items/{product_item_id} [put]
 func (h *CartHandler) UpdateItem(c *gin.Context) {
-	userID := c.Query("user_id")
+	// Get user_id from header (set by API Gateway after JWT validation)
+	userID := c.GetHeader("X-User-Id")
 
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -171,17 +174,18 @@ func (h *CartHandler) UpdateItem(c *gin.Context) {
 // @Tags Cart
 // @Produce json
 // @Param product_item_id path int true "Product Item ID (SKU)"
-// @Param user_id query string true "User ID (authenticated)"
 // @Success 200 {object} map[string]string "Item removed successfully"
 // @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Item not found"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /cart/items/{product_item_id} [delete]
 func (h *CartHandler) RemoveItem(c *gin.Context) {
-	userID := c.Query("user_id")
+	// Get user_id from header (set by API Gateway after JWT validation)
+	userID := c.GetHeader("X-User-Id")
 
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -214,16 +218,16 @@ func (h *CartHandler) RemoveItem(c *gin.Context) {
 // @Description Remove all items from the shopping cart
 // @Tags Cart
 // @Produce json
-// @Param user_id query string true "User ID (authenticated)"
 // @Success 200 {object} map[string]string "Cart cleared successfully"
-// @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /cart [delete]
 func (h *CartHandler) ClearCart(c *gin.Context) {
-	userID := c.Query("user_id")
+	// Get user_id from header (set by API Gateway after JWT validation)
+	userID := c.GetHeader("X-User-Id")
 
 	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
