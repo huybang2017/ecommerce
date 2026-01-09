@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SortBar } from "./SortBar";
 import { ProductGrid } from "./ProductGrid";
-import { getProducts } from "@/lib/mock-category-api";
+import { getProducts } from "@/services/product.service";
 
 interface ProductSectionProps {
   initialProducts: any;
@@ -38,12 +38,13 @@ export function ProductSection({
           : categoryId;
 
         const filters = {
+          category_id: targetCategoryId,
           sort_by: sortBy || undefined,
           order: order || undefined,
         };
 
-        const newProducts = await getProducts(targetCategoryId, filters);
-        setProducts(newProducts);
+        const response = await getProducts(filters);
+        setProducts(response.products);
       } catch (error) {
         console.error("Failed to fetch products:", error);
       } finally {

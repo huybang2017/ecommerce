@@ -1,4 +1,4 @@
-import { getProducts } from "@/lib/api";
+import { getProducts } from "@/services/product.service";
 import ProductCard from "@/components/ProductCard";
 import Error from "@/components/Error";
 import { Product } from "@/lib/types";

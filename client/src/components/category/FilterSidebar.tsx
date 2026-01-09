@@ -57,20 +57,17 @@ export function FilterSidebar({
             Theo Danh Mục
           </div>
           <ul className="text-sm space-y-2 pl-2">
-            <li className={`font-medium ${!isParent ? "text-[#ee4d2d]" : ""}`}>
-              {isParent ? (
-                <span className="font-bold flex items-center gap-1">
-                  <ChevronDown size={14} /> {currentCategory.name}
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <ChevronDown size={14} /> {currentCategory.name}
-                </span>
-              )}
-            </li>
+            {/* Parent category header - only show if we have categories to display */}
+            {categories.length > 0 && (
+              <li className="font-bold flex items-center gap-1">
+                <ChevronDown size={14} /> {currentCategory.name}
+              </li>
+            )}
+
+            {/* Children or siblings list */}
             {categories.map((cat) => {
-              // Active if this category's slug matches current slug
-              const isActive = cat.slug === currentSlug;
+              // Active if this category's ID matches current category ID
+              const isActive = cat.id === currentCategoryId;
 
               return (
                 <li

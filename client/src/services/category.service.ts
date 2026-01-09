@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/axios-client";
-import type { ProductsResponse } from "@/types/product";
+import type { ProductsResponse } from "./product.service";
+import type { Category } from "@/types/product";
 import type {
   CategoryDetailResponse,
   CategoryDetail,
@@ -7,36 +8,59 @@ import type {
   ProductFilters,
 } from "@/types/category";
 
+// ==================== CATEGORIES ====================
+
+/**
+ * Get list of all categories
+ */
+export async function getCategories(): Promise<Category[]> {
+  const { data } = await apiClient.get<Category[]>("/api/v1/categories");
+  return data;
+}
+
+/**
+ * Get single category by ID (basic info)
+ */
+export async function getCategory(id: number): Promise<Category> {
+  const { data } = await apiClient.get<Category>(`/api/v1/categories/${id}`);
+  return data;
+}
+
 /**
  * Build breadcrumb path from category data
+ * Note: Backend no longer returns parent/children objects, only parent_id
  */
-function buildBreadcrumbPath(
+async function buildBreadcrumbPath(
   category: CategoryDetailResponse
-): BreadcrumbItem[] {
+): Promise<BreadcrumbItem[]> {
   const breadcrumbPath: BreadcrumbItem[] = [];
 
-  // Add parent to breadcrumb if exists (for child categories)
-  if (category.parent) {
-    breadcrumbPath.push({
-      name: category.parent.name,
-      path: `/${category.parent.slug}.${category.parent.id}`,
-      slug: `${category.parent.slug}.${category.parent.id}`,
-    });
+  // If has parent_id, fetch parent to build full path
+  if (category.parent_id) {
+    try {
+      const { data: parent } = await apiClient.get<CategoryDetailResponse>(
+        `/api/v1/categories/${category.parent_id}`
+      );
 
-    // Add current child category
-    breadcrumbPath.push({
-      name: category.name,
-      path: `/${category.parent.slug}.${category.parent.id}.${category.id}`,
-      slug: `${category.parent.slug}.${category.parent.id}.${category.id}`,
-    });
-  } else {
-    // Parent category only - just add itself
-    breadcrumbPath.push({
-      name: category.name,
-      path: `/${category.slug}.${category.id}`,
-      slug: `${category.slug}.${category.id}`,
-    });
+      // Add parent first
+      breadcrumbPath.push({
+        name: parent.name,
+        path: `/${parent.slug}.${parent.id}`,
+        slug: `${parent.slug}.${parent.id}`,
+      });
+    } catch (err) {
+      console.error("Failed to fetch parent category", err);
+    }
   }
+
+  // Add current category
+  breadcrumbPath.push({
+    name: category.name,
+    path: category.parent_id
+      ? `/${category.slug}.${category.parent_id}.${category.id}`
+      : `/${category.slug}.${category.id}`,
+    slug: `${category.slug}.${category.id}`,
+  });
 
   return breadcrumbPath;
 }
@@ -55,9 +79,8 @@ export async function getCategoryById(id: number): Promise<CategoryDetail> {
     slug: data.slug,
     description: data.description,
     parent_id: data.parent_id,
-    parent: data.parent,
-    path: buildBreadcrumbPath(data),
-    children: data.children || [],
+    path: await buildBreadcrumbPath(data),
+    children: [],
     is_active: data.is_active,
     created_at: data.created_at,
     updated_at: data.updated_at,

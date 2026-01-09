@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { searchProductsAdvanced, getCategories } from "@/lib/api";
+import { searchProductsAdvanced } from "@/services/search.service";
+import { getCategories } from "@/services/category.service";
 import ProductCard from "@/components/ProductCard";
 import { ProductCardSkeleton } from "@/components/Loading";
 import Error from "@/components/Error";
-import { Product, Category, SearchResponse } from "@/lib/types";
+import { Product, Category } from "@/lib/types";
+import type { ProductsResponse } from "@/types/product";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -72,7 +74,7 @@ function SearchContent() {
       if (maxPrice) params.max_price = parseFloat(maxPrice);
       if (status) params.status = status;
 
-      const response: SearchResponse = await searchProductsAdvanced(params);
+      const response: ProductsResponse = await searchProductsAdvanced(params);
       setProducts(response.products || []);
       setTotal(response.total || 0);
     } catch (err: any) {

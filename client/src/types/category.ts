@@ -1,7 +1,8 @@
 import { Category } from "@/types/product";
+
+// API Response (backend no longer returns parent/children objects)
 export interface CategoryDetailResponse extends Category {
-  parent?: Category;
-  children?: Category[];
+  // ❌ Removed: parent, children (backend refactored domain)
 }
 
 export interface BreadcrumbItem {
@@ -12,7 +13,7 @@ export interface BreadcrumbItem {
 
 export interface CategoryDetail extends Category {
   path: BreadcrumbItem[];
-  children: Category[];
+  children: Category[]; // Always empty array (for backward compat)
 }
 
 export interface ProductFilters {

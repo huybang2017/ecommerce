@@ -42,7 +42,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCartMutation = useClearCart();
 
   // Calculate item count and total
-  const itemCount = cart
+  const itemCount = cart?.items
     ? cart.items.reduce((sum: number, item) => sum + item.quantity, 0)
     : 0;
   const total = cart?.total_price || 0;
@@ -54,7 +54,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Add item to cart
   const addItem = async (productId: number, quantity: number) => {
-    await addToCartMutation.mutateAsync({ product_id: productId, quantity });
+    await addToCartMutation.mutateAsync({
+      product_item_id: productId,
+      quantity,
+    });
   };
 
   // Update cart item

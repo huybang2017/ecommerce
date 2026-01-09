@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import apiClient, { setAccessToken } from "@/lib/axios-client";
+import apiClient from "@/lib/axios-client";
 import { AxiosError } from "axios";
 
 // Types
@@ -31,7 +31,6 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   message: string;
-  access_token: string; // NOW returned in response body
   user: User;
 }
 
@@ -47,8 +46,7 @@ const authApi = {
       "/api/v1/auth/login",
       credentials
     );
-    // Store access_token in memory (refresh_token is in HttpOnly cookie)
-    setAccessToken(data.access_token);
+    // access_token is now in HttpOnly cookie, no need to store
     return data;
   },
 
@@ -57,8 +55,7 @@ const authApi = {
       "/api/v1/auth/register",
       userData
     );
-    // Store access_token in memory (refresh_token is in HttpOnly cookie)
-    setAccessToken(data.access_token);
+    // access_token is now in HttpOnly cookie, no need to store
     return data;
   },
 
@@ -66,8 +63,7 @@ const authApi = {
     const { data } = await apiClient.post<{ message: string }>(
       "/api/v1/auth/logout"
     );
-    // Clear access_token from memory (refresh_token cookie cleared by server)
-    setAccessToken(null);
+    // All cookies cleared by server
     return data;
   },
 
@@ -91,7 +87,7 @@ export const useLogin = () => {
       // Cache user profile
       queryClient.setQueryData(["user"], data.user);
       console.log("✅ Login successful:", data.user.email);
-      console.log("🔑 Access token stored in memory");
+      console.log("🍪 Access token stored in HttpOnly cookie");
     },
     onError: (error) => {
       console.error(
@@ -111,7 +107,7 @@ export const useRegister = () => {
       // Cache user profile
       queryClient.setQueryData(["user"], data.user);
       console.log("✅ Register successful:", data.user.email);
-      console.log("🔑 Access token stored in memory");
+      console.log("🍪 Access token stored in HttpOnly cookie");
     },
     onError: (error) => {
       console.error(
@@ -131,15 +127,14 @@ export const useLogout = () => {
       // Clear all cached data
       queryClient.clear();
       console.log("✅ Logout successful");
-      console.log("🔑 Access token cleared from memory");
+      console.log("🍪 All cookies cleared by server");
     },
     onError: (error) => {
       console.error(
         "❌ Logout failed:",
         error.response?.data?.error || error.message
       );
-      // Clear cache and token anyway on logout failure
-      setAccessToken(null);
+      // Clear cache anyway on logout failure
       queryClient.clear();
     },
   });

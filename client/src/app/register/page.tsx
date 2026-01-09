@@ -1,30 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      await register({ email, password, name, phone });
-      router.push('/');
+      await register({
+        email,
+        password,
+        username: email,
+        full_name: name,
+        phone_number: phone,
+      });
+      router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -45,7 +51,10 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Name
             </label>
             <input
@@ -59,7 +68,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Email
             </label>
             <input
@@ -74,7 +86,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Phone
             </label>
             <input
@@ -88,7 +103,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-neutral-700 mb-2"
+            >
               Password
             </label>
             <input
@@ -107,13 +125,16 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-neutral-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-600">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-neutral-900 hover:text-neutral-700">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-neutral-900 hover:text-neutral-700"
+          >
             Login
           </Link>
         </p>
@@ -121,4 +142,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

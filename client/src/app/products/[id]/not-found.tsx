@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function NotFound() {
   return (
@@ -12,7 +12,8 @@ export default function NotFound() {
             Product Not Found
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            The product you're looking for doesn't exist or has been removed.
+            The product you&apos;re looking for doesn&apos;t exist or has been
+            removed.
           </p>
           <Link
             href="/products"
@@ -25,4 +26,3 @@ export default function NotFound() {
     </div>
   );
 }
-

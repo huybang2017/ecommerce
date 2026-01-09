@@ -49,6 +49,18 @@ export default async function CategoryPage({
     ? parseInt(slugParts[1])
     : category.parent_id!;
 
+  // Get parent category name for child categories
+  let parentCategoryName = category.name;
+  if (!isParentCategory && category.parent_id) {
+    // Fetch parent to get its name (backend no longer returns parent object)
+    try {
+      const parentCategory = await getCategoryById(category.parent_id);
+      parentCategoryName = parentCategory.name;
+    } catch (err) {
+      console.error("Failed to fetch parent category name", err);
+    }
+  }
+
   // Fetch products for this specific category
   const products = await getCategoryProducts(category.id, sp);
 
@@ -62,11 +74,7 @@ export default async function CategoryPage({
           {/* Sidebar - Always fetch parent's children for navigation */}
           <CategoryFilterWrapper
             categoryId={categoryIdForChildren}
-            categoryName={
-              isParentCategory
-                ? category.name
-                : category.parent?.name || category.name
-            }
+            categoryName={parentCategoryName}
             isParent={isParentCategory}
             currentSlug={slug}
             currentCategoryId={category.id}

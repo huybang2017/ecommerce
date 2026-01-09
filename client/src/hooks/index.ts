@@ -25,9 +25,10 @@ export {
   useSearchProducts,
   useCategories,
   useCategory,
-  useCategoryProducts,
   productApi,
 } from "./useProducts";
+
+export { useCategoryProducts } from "./useCategory";
 
 export type {
   Product,

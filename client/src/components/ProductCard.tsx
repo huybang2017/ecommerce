@@ -18,23 +18,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (product.status !== "ACTIVE" || product.stock === 0) return;
-
     setAdding(true);
     try {
-      await addItem({
-        product_id: product.id,
-        name: product.name,
-        price: product.price,
-        quantity: 1,
-        image:
-          product.images &&
-          Array.isArray(product.images) &&
-          product.images.length > 0
-            ? product.images[0]
-            : undefined,
-        sku: product.sku,
-      });
+      await addItem(product.id, 1);
     } catch (err) {
       console.error("Failed to add to cart:", err);
     } finally {
@@ -92,11 +78,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Price Section */}
           <div className="flex items-baseline gap-1 flex-wrap">
             <span className="text-[10px] text-neutral-400 line-through">
-              {formatPrice(product.price * 1.5)}
+              {formatPrice(product.base_price * 1.5)}
             </span>
             <span className="text-sm font-medium text-[#ee4d2d]">
               <span className="text-[10px] align-top">₫</span>
-              {new Intl.NumberFormat("vi-VN").format(product.price)}
+              {new Intl.NumberFormat("vi-VN").format(product.base_price)}
             </span>
           </div>
 
@@ -105,7 +91,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <div className="flex items-center gap-0.5 text-yellow-400">
               <span>★★★★★</span>
             </div>
-            <span>Đã bán {product.stock * 3}</span>
+            <span>Đã bán {product.sold_count || 0}</span>
           </div>
         </div>
       </div>

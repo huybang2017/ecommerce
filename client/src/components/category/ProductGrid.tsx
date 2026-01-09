@@ -11,15 +11,13 @@ function transformProduct(product: Product) {
     id: product.id,
     name: product.name,
     image: product.image_url || "https://placehold.co/300x300",
-    price: product.price,
-    originalPrice: product.original_price,
-    rating: product.rating || 0,
+    price: product.base_price, // ✅ Use base_price
+    originalPrice: undefined, // ❌ No longer available from backend
+    rating: 0, // ❌ No longer available from backend
     sold: product.sold_count || 0,
-    discountBadge: product.original_price
-      ? `${Math.round((1 - product.price / product.original_price) * 100)}%`
-      : undefined,
-    location: "TP. Hồ Chí Minh", // Can be enhanced with seller location from product data
-    slug: product.sku || `product-${product.id}`, // Use SKU or fallback to ID
+    discountBadge: undefined, // ❌ No discount without originalPrice
+    location: "TP. Hồ Chí Minh", // Default location
+    slug: `product-${product.id}`, // ❌ Product no longer has sku
   };
 }
 
@@ -43,7 +41,7 @@ export function ProductGrid({ products }: ProductGridProps) {
         return (
           <Link
             key={product.id}
-            href={`/product/${product.slug}`}
+            href={`/products/${product.id}`}
             className="bg-white border border-transparent hover:border-[#ee4d2d] hover:shadow-sm hover:z-10 transition-all rounded-sm overflow-hidden relative group block"
           >
             {/* Badge */}
@@ -78,14 +76,10 @@ export function ProductGrid({ products }: ProductGridProps) {
 
               <div className="flex items-center justify-between mb-2">
                 <div className="flex flex-col">
-                  {product.originalPrice && (
-                    <div className="text-xs text-neutral-400 line-through">
-                      ₫{product.originalPrice.toLocaleString("vi-VN")}
-                    </div>
-                  )}
+                  {/* Original price removed - use base_price only */}
                   <div className="text-[#ee4d2d] font-semibold text-base">
                     <span className="text-xs">₫</span>
-                    {product.price.toLocaleString("vi-VN")}
+                    {product.price?.toLocaleString("vi-VN") || "0"}
                   </div>
                 </div>
               </div>

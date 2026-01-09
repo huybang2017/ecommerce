@@ -4,9 +4,12 @@ import { AxiosError } from "axios";
 
 // Types
 export interface CartItem {
-  product_id: number;
+  product_item_id: number;
   product_name: string;
   product_image?: string;
+  name?: string;
+  image?: string;
+  sku?: string;
   price: number;
   quantity: number;
   subtotal: number;
@@ -21,7 +24,7 @@ export interface Cart {
 }
 
 export interface AddToCartRequest {
-  product_id: number;
+  product_item_id: number;
   quantity: number;
 }
 

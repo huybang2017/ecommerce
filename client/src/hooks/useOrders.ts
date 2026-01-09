@@ -25,7 +25,17 @@ export interface Order {
     | "cancelled";
   items: OrderItem[];
   total_amount: number;
+  subtotal?: number;
+  shipping_fee?: number;
+  tax?: number;
+  discount?: number;
+  shipping_name?: string;
+  shipping_phone?: string;
   shipping_address: string;
+  shipping_city?: string;
+  shipping_province?: string;
+  shipping_postal_code?: string;
+  shipping_country?: string;
   payment_method: string;
   payment_status: "pending" | "paid" | "failed" | "refunded";
   notes?: string;
@@ -34,12 +44,35 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  items: Array<{
+  // User/session context
+  user_id?: number;
+  session_id?: string;
+
+  // Shipping information (mirrors order-service CreateOrderRequest)
+  shipping_name: string;
+  shipping_phone: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_province?: string;
+  shipping_postal_code?: string;
+  shipping_country?: string;
+  shipping_address_id?: number;
+
+  // Financials
+  shipping_fee?: number;
+  shipping_discount?: number;
+  voucher_discount?: number;
+  tax?: number;
+  discount?: number;
+
+  // Payment
+  payment_method?: string;
+
+  // Legacy/compat fields (kept optional for compatibility)
+  items?: Array<{
     product_id: number;
     quantity: number;
   }>;
-  shipping_address: string;
-  payment_method: string;
   notes?: string;
 }
 

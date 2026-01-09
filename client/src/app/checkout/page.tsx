@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useCartContext as useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { createOrder } from '@/lib/api';
-import { CreateOrderRequest } from '@/lib/types';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useCartContext as useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { createOrder } from "@/services/order.service";
+import { CreateOrderRequest } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function CheckoutPage() {
   const { cart, loading: cartLoading, refreshCart } = useCart();
@@ -14,18 +14,18 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    shipping_name: '',
-    shipping_phone: '',
-    shipping_address: '',
-    shipping_city: '',
-    shipping_province: '',
-    shipping_postal_code: '',
-    shipping_country: 'VN',
+    shipping_name: "",
+    shipping_phone: "",
+    shipping_address: "",
+    shipping_city: "",
+    shipping_province: "",
+    shipping_postal_code: "",
+    shipping_country: "VN",
   });
 
   useEffect(() => {
     if (!cartLoading && (!cart || Object.keys(cart.items).length === 0)) {
-      router.push('/cart');
+      router.push("/cart");
     }
   }, [cart, cartLoading, router]);
 
@@ -36,12 +36,15 @@ export default function CheckoutPage() {
 
     try {
       if (!cart || Object.keys(cart.items).length === 0) {
-        setError('Cart is empty');
+        setError("Cart is empty");
         setLoading(false);
         return;
       }
 
-      const sessionId = typeof window !== 'undefined' ? localStorage.getItem('session_id') || '' : '';
+      const sessionId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("session_id") || ""
+          : "";
       const orderRequest: CreateOrderRequest = {
         user_id: user?.id,
         session_id: sessionId,
@@ -51,7 +54,7 @@ export default function CheckoutPage() {
         discount: 0,
       };
 
-      const order = await createOrder(orderRequest, sessionId, user?.id?.toString());
+      const order = await createOrder(orderRequest);
 
       // Refresh cart to clear it
       await refreshCart();
@@ -59,13 +62,15 @@ export default function CheckoutPage() {
       // Redirect to order confirmation page
       router.push(`/orders/${order.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create order');
+      setError(err instanceof Error ? err.message : "Failed to create order");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -87,7 +92,7 @@ export default function CheckoutPage() {
   }
 
   const cartItems = Object.values(cart.items);
-  const subtotal = cart.total;
+  const subtotal = cart.total_price;
   const shippingFee = 0;
   const tax = 0;
   const discount = 0;
@@ -108,11 +113,16 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-gray-50 rounded-lg p-6 sticky top-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
-              
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Order Summary
+              </h2>
+
               <div className="space-y-4 mb-6">
                 {cartItems.map((item) => (
-                  <div key={item.product_id} className="flex items-center gap-4">
+                  <div
+                    key={item.product_id}
+                    className="flex items-center gap-4"
+                  >
                     {item.image && (
                       <img
                         src={item.image}
@@ -121,13 +131,15 @@ export default function CheckoutPage() {
                       />
                     )}
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {item.name}
+                      </p>
                       <p className="text-sm text-gray-500">
-                        {item.quantity} × {item.price.toLocaleString('vi-VN')}đ
+                        {item.quantity} × {item.price.toLocaleString("vi-VN")}đ
                       </p>
                     </div>
                     <p className="text-sm font-medium text-gray-900">
-                      {(item.price * item.quantity).toLocaleString('vi-VN')}đ
+                      {(item.price * item.quantity).toLocaleString("vi-VN")}đ
                     </p>
                   </div>
                 ))}
@@ -136,25 +148,35 @@ export default function CheckoutPage() {
               <div className="border-t border-gray-200 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900">{subtotal.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-gray-900">
+                    {subtotal.toLocaleString("vi-VN")}đ
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Shipping</span>
-                  <span className="text-gray-900">{shippingFee.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-gray-900">
+                    {shippingFee.toLocaleString("vi-VN")}đ
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Tax</span>
-                  <span className="text-gray-900">{tax.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-gray-900">
+                    {tax.toLocaleString("vi-VN")}đ
+                  </span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Discount</span>
-                    <span className="text-green-600">-{discount.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-green-600">
+                      -{discount.toLocaleString("vi-VN")}đ
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-200">
                   <span className="text-gray-900">Total</span>
-                  <span className="text-gray-900">{total.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-gray-900">
+                    {total.toLocaleString("vi-VN")}đ
+                  </span>
                 </div>
               </div>
             </div>
@@ -164,11 +186,16 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Shipping Information</h2>
-                
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Shipping Information
+                </h2>
+
                 <div className="grid grid-cols-1 gap-6">
                   <div>
-                    <label htmlFor="shipping_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="shipping_name"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Full Name *
                     </label>
                     <input
@@ -183,7 +210,10 @@ export default function CheckoutPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="shipping_phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="shipping_phone"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Phone Number *
                     </label>
                     <input
@@ -198,7 +228,10 @@ export default function CheckoutPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="shipping_address" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="shipping_address"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Address *
                     </label>
                     <input
@@ -214,7 +247,10 @@ export default function CheckoutPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="shipping_city" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="shipping_city"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         City *
                       </label>
                       <input
@@ -229,7 +265,10 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="shipping_province" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="shipping_province"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Province
                       </label>
                       <input
@@ -245,7 +284,10 @@ export default function CheckoutPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="shipping_postal_code" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="shipping_postal_code"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Postal Code
                       </label>
                       <input
@@ -259,7 +301,10 @@ export default function CheckoutPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="shipping_country" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="shipping_country"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Country
                       </label>
                       <input
@@ -288,7 +333,7 @@ export default function CheckoutPage() {
                   disabled={loading}
                   className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Processing...' : 'Place Order'}
+                  {loading ? "Processing..." : "Place Order"}
                 </button>
               </div>
             </form>
@@ -298,4 +343,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

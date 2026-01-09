@@ -11,7 +11,6 @@ import {
   LoginRequest,
   RegisterRequest,
 } from "@/hooks/useAuth";
-import { getAccessToken } from "@/lib/axios-client";
 
 interface AuthContextType {
   user: User | null;
@@ -30,8 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // CRITICAL: Don't fetch profile on public pages to prevent refresh loop
   const isPublicPage = pathname === "/login" || pathname === "/register";
-  const hasToken = !!getAccessToken();
-  const shouldFetchProfile = !isPublicPage && hasToken;
+  const shouldFetchProfile = !isPublicPage;
 
   // Use React Query hooks - only fetch if authenticated
   const {
