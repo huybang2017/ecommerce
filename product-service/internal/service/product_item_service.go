@@ -221,6 +221,59 @@ func (s *ProductItemService) GetProductItems(productID uint) ([]*domain.ProductI
 	return items, nil
 }
 
+// ProductItemWithVariations includes variation option IDs for UI matching
+type ProductItemWithVariations struct {
+	ID                 uint    `json:"id"`
+	ProductID          uint    `json:"product_id"`
+	SKUCode            string  `json:"sku_code"`
+	ImageURL           string  `json:"image_url"`
+	Price              float64 `json:"price"`
+	QtyInStock         int     `json:"qty_in_stock"`
+	Status             string  `json:"status"`
+	VariationOptionIDs []uint  `json:"variation_option_ids"`
+}
+
+// GetProductItemsWithVariations retrieves product items with their variation option IDs
+// This is used for variation selector UI (Shopee-style)
+func (s *ProductItemService) GetProductItemsWithVariations(productID uint) ([]*ProductItemWithVariations, error) {
+	// Get all product items
+	items, err := s.productItemRepo.GetByProductID(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ProductItemWithVariations, 0, len(items))
+	for _, item := range items {
+		// Get SKU configurations (variation options)
+		configs, err := s.skuConfigRepo.GetByProductItemID(item.ID)
+		if err != nil {
+			s.logger.Warn("Failed to get SKU configurations",
+				zap.Uint("product_item_id", item.ID),
+				zap.Error(err))
+			configs = []*domain.SKUConfiguration{} // Continue with empty
+		}
+
+		// Extract variation option IDs
+		optionIDs := make([]uint, len(configs))
+		for i, config := range configs {
+			optionIDs[i] = config.VariationOptionID
+		}
+
+		result = append(result, &ProductItemWithVariations{
+			ID:                 item.ID,
+			ProductID:          item.ProductID,
+			SKUCode:            item.SKUCode,
+			ImageURL:           item.ImageURL,
+			Price:              item.Price,
+			QtyInStock:         item.QtyInStock,
+			Status:             item.Status,
+			VariationOptionIDs: optionIDs,
+		})
+	}
+
+	return result, nil
+}
+
 // ProductItemWithProduct represents a product item with nested product info
 type ProductItemWithProduct struct {
 	ID         uint    `json:"id"`

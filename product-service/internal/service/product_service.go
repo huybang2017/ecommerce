@@ -62,25 +62,16 @@ func NewProductService(
 // 4. Publish event to Kafka (event-driven architecture)
 func (s *ProductService) CreateProduct(ctx context.Context, product *domain.Product) error {
 	// Business logic validation
-	if product.SKU == "" {
-		return errors.New("SKU is required")
-	}
 	if product.Name == "" {
 		return errors.New("name is required")
 	}
-	if product.Price < 0 {
-		return errors.New("price cannot be negative")
-	}
-
-	// Check if SKU already exists
-	existing, err := s.productRepo.GetBySKU(product.SKU)
-	if err == nil && existing != nil {
-		return errors.New("product with this SKU already exists")
+	if product.BasePrice < 0 {
+		return errors.New("base price cannot be negative")
 	}
 
 	// 1. Save to PostgreSQL (source of truth)
-	fmt.Fprintf(os.Stderr, "🟢🟢🟢 Service: About to create product in DB - Name: %s, SKU: %s\n", product.Name, product.SKU)
-	log.Printf("🟢 Service: About to create product in DB - Name: %s, SKU: %s", product.Name, product.SKU)
+	fmt.Fprintf(os.Stderr, "🟢🟢🟢 Service: About to create product in DB - Name: %s\n", product.Name)
+	log.Printf("🟢 Service: About to create product in DB - Name: %s", product.Name)
 	if err := s.productRepo.Create(product); err != nil {
 		fmt.Fprintf(os.Stderr, "❌❌❌ Service: Failed to create product in DB: %v\n", err)
 		log.Printf("❌ Service: Failed to create product in DB: %v", err)
@@ -302,26 +293,32 @@ func (s *ProductService) GetProductsByCategory(ctx context.Context, categoryID u
 		limit = 100 // Max limit
 	}
 
-	// Fetch category to check if it has children
-	category, err := s.categoryRepo.GetByID(categoryID)
-	if err != nil {
-		s.logger.Error("failed to get category", zap.Error(err))
-		return nil, 0, fmt.Errorf("category not found: %w", err)
-	}
-
-	// Build category IDs array
+	// Build category IDs array (include category and its children recursively)
 	categoryIDs := []uint{categoryID}
 
-	// If parent category (has children), include all children IDs
-	if len(category.Children) > 0 {
-		for _, child := range category.Children {
-			categoryIDs = append(categoryIDs, child.ID)
+	// Recursive helper to get all descendants
+	var getAllDescendants func(parentID uint)
+	getAllDescendants = func(parentID uint) {
+		children, err := s.categoryRepo.GetChildren(parentID)
+		if err == nil && len(children) > 0 {
+			s.logger.Debug("found children for category",
+				zap.Uint("parent_id", parentID),
+				zap.Int("children_count", len(children)))
+			for _, child := range children {
+				categoryIDs = append(categoryIDs, child.ID)
+				// Recursively get grandchildren
+				getAllDescendants(child.ID)
+			}
 		}
-		s.logger.Info("fetching products for parent category with children",
-			zap.Uint("parent_id", categoryID),
-			zap.Int("children_count", len(category.Children)),
-			zap.Uints("category_ids", categoryIDs))
 	}
+
+	// Get all descendants of this category
+	getAllDescendants(categoryID)
+
+	s.logger.Info("fetching products for category tree",
+		zap.Uint("root_category_id", categoryID),
+		zap.Int("total_categories", len(categoryIDs)),
+		zap.Uints("category_ids", categoryIDs))
 
 	products, total, err := s.productRepo.GetProductsByCategoryIDs(categoryIDs, page, limit)
 	if err != nil {
@@ -341,53 +338,4 @@ func (s *ProductService) SearchProducts(ctx context.Context, query string, filte
 	}
 
 	return products, nil
-}
-
-// UpdateInventory updates product stock with distributed locking
-// This demonstrates using Redis for distributed locks to prevent race conditions
-func (s *ProductService) UpdateInventory(ctx context.Context, productID uint, quantity int) error {
-	lockKey := fmt.Sprintf("lock:inventory:%d", productID)
-	lockTTL := 10 * time.Second
-
-	// Acquire distributed lock
-	acquired, err := s.cacheRepo.AcquireLock(ctx, lockKey, lockTTL)
-	if err != nil {
-		return fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	if !acquired {
-		return errors.New("could not acquire lock - another operation in progress")
-	}
-
-	// Ensure lock is released
-	defer func() {
-		releaseCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		s.cacheRepo.ReleaseLock(releaseCtx, lockKey)
-	}()
-
-	// Get product
-	product, err := s.productRepo.GetByID(productID)
-	if err != nil {
-		return fmt.Errorf("product not found: %w", err)
-	}
-
-	// Update stock
-	product.Stock += quantity
-	if product.Stock < 0 {
-		return errors.New("insufficient stock")
-	}
-
-	// Save to database
-	if err := s.productRepo.Update(product); err != nil {
-		return fmt.Errorf("failed to update inventory: %w", err)
-	}
-
-	// Invalidate cache
-	go func() {
-		cacheCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		s.cacheRepo.DeleteProduct(cacheCtx, productID)
-	}()
-
-	return nil
 }

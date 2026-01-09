@@ -167,7 +167,8 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	// Use DTO to prevent domain leak
+	c.JSON(http.StatusOK, ToCategoryResponse(category))
 }
 
 // GetCategoryBySlug handles GET /categories/slug/:slug
@@ -194,7 +195,8 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	// Use DTO to prevent domain leak
+	c.JSON(http.StatusOK, ToCategoryResponse(category))
 }
 
 // GetAllCategories handles GET /categories
@@ -213,7 +215,8 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, categories)
+	// Use DTO to prevent domain leak
+	c.JSON(http.StatusOK, ToCategoryResponses(categories))
 }
 
 // GetCategoryChildren handles GET /categories/:id/children
@@ -240,7 +243,8 @@ func (h *CategoryHandler) GetCategoryChildren(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, children)
+	// Use DTO to prevent domain leak
+	c.JSON(http.StatusOK, ToCategoryResponses(children))
 }
 
 // DeleteCategory handles DELETE /categories/:id
@@ -269,4 +273,3 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "category deleted successfully"})
 }
-

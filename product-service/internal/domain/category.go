@@ -5,20 +5,21 @@ import (
 )
 
 // Category represents the category domain entity
-// Supports nested categories via parent_id
-// NOTE: Following db-diagram.db schema (SOURCE OF TRUTH)
+// Schema: db-diagram.db (SOURCE OF TRUTH)
+// NOTE: NO Parent/Children to avoid circular reference and N+1 queries
 type Category struct {
-	ID          uint       `gorm:"primaryKey" json:"id"`
-	ParentID    *uint      `gorm:"index" json:"parent_id,omitempty"`  // Nullable for root categories
-	Parent      *Category  `gorm:"foreignKey:ParentID" json:"parent"` // Remove omitempty to always include
-	Children    []Category `gorm:"foreignKey:ParentID" json:"children,omitempty"`
-	Name        string     `gorm:"not null" json:"name"`
-	ImageURL    string     `gorm:"column:image_url;size:255" json:"image_url"`     // THÊM MỚI từ db-diagram.db
-	IsActive    bool       `gorm:"column:is_active;default:true" json:"is_active"` // THÊM MỚI từ db-diagram.db
-	Slug        string     `gorm:"uniqueIndex;not null" json:"slug"`               // GIỮ LẠI để backward compatibility
-	Description string     `json:"description"`                                    // GIỮ LẠI để backward compatibility
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          uint      `json:"id"`
+	ParentID    *uint     `json:"parent_id,omitempty"` // Nullable for root categories
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`        // Backward compatibility
+	Description string    `json:"description"` // Backward compatibility
+	ImageURL    string    `json:"image_url"`
+	IsActive    bool      `json:"is_active"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	// ❌ Removed: Parent *Category (circular reference)
+	// ❌ Removed: Children []Category (N+1 problem)
+	// ✅ Use repository methods to get parent/children when needed
 }
 
 // TableName specifies the table name for GORM

@@ -34,7 +34,7 @@ func RequestLogger() gin.HandlerFunc {
 
 // SetupRouter configures all API routes
 // This is the transport layer - it defines the HTTP API surface
-func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handler.CategoryHandler, skuHandler *handler.SKUHandler, attrHandler *handler.AttributeHandler, stockHandler *handler.StockHandler) *gin.Engine {
+func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handler.CategoryHandler, skuHandler *handler.SKUHandler, attrHandler *handler.AttributeHandler, stockHandler *handler.StockHandler, variationHandler *handler.VariationHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Add request logging middleware
@@ -66,6 +66,9 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 			products.GET("/:id/items/:item_id", skuHandler.GetProductItem)       // Get specific SKU
 			products.PUT("/:id/items/:item_id", skuHandler.UpdateProductItem)    // Update SKU
 			products.DELETE("/:id/items/:item_id", skuHandler.DeleteProductItem) // Delete SKU
+
+			// Variation routes - Use /:id/variations (for variation selector UI)
+			products.GET("/:id/variations", variationHandler.GetProductVariations) // Get variations with options
 
 			// Product attributes (EAV) - Use /:id/attributes
 			products.POST("/:id/attributes", attrHandler.SetProductAttributes)

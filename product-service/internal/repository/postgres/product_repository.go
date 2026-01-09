@@ -38,16 +38,6 @@ func (r *productRepository) GetByID(id uint) (*domain.Product, error) {
 	return &product, nil
 }
 
-// GetBySKU retrieves a product by its SKU
-func (r *productRepository) GetBySKU(sku string) (*domain.Product, error) {
-	var product domain.Product
-	err := r.db.Where("sku = ?", sku).First(&product).Error
-	if err != nil {
-		return nil, err
-	}
-	return &product, nil
-}
-
 // GetAll retrieves all products
 func (r *productRepository) GetAll() ([]*domain.Product, error) {
 	var products []*domain.Product

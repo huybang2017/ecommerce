@@ -33,12 +33,10 @@ func NewProductHandler(productService *service.ProductService, logger *zap.Logge
 type CreateProductRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Description string   `json:"description"`
-	Price       float64  `json:"price" binding:"required,min=0"`
-	SKU         string   `json:"sku" binding:"required"`
-	CategoryID  *uint    `json:"category_id,omitempty"`
+	BasePrice   float64  `json:"base_price" binding:"required,min=0"`
+	CategoryID  *uint    `json:"category_id,omitempty"` // Must be leaf category
 	Status      string   `json:"status"`
 	Images      []string `json:"images"`
-	Stock       int      `json:"stock"`
 	IsActive    bool     `json:"is_active"`
 }
 
@@ -46,39 +44,39 @@ type CreateProductRequest struct {
 type UpdateProductRequest struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
-	Price       float64  `json:"price" binding:"min=0"`
+	BasePrice   float64  `json:"base_price" binding:"min=0"`
 	CategoryID  *uint    `json:"category_id,omitempty"`
 	Status      string   `json:"status"`
 	Images      []string `json:"images"`
-	Stock       int      `json:"stock"`
 	IsActive    *bool    `json:"is_active"`
 }
 
 // ProductResponse represents the product response for Swagger
 type ProductResponse struct {
 	ID          uint     `json:"id"`
+	ShopID      uint     `json:"shop_id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
-	Price       float64  `json:"price"`
-	SKU         string   `json:"sku"`
+	BasePrice   float64  `json:"base_price"`
 	CategoryID  *uint    `json:"category_id,omitempty"`
 	Status      string   `json:"status"`
 	Images      []string `json:"images"`
-	Stock       int      `json:"stock"`
 	IsActive    bool     `json:"is_active"`
+	SoldCount   int      `json:"sold_count"`
 	CreatedAt   string   `json:"created_at"`
 	UpdatedAt   string   `json:"updated_at"`
 }
 
-// CategoryResponse represents the category response for Swagger
-type CategoryResponse struct {
-	ID          uint    `json:"id"`
-	Name        string  `json:"name"`
-	Slug        string  `json:"slug"`
-	ParentID    *uint   `json:"parent_id,omitempty"`
-	Description string  `json:"description"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+// ProductCategoryResponse represents category in product response for Swagger
+// Note: Different from CategoryResponse in category_dto.go (different use case)
+type ProductCategoryResponse struct {
+	ID          uint   `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	ParentID    *uint  `json:"parent_id,omitempty"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 // CreateProduct handles POST /products
@@ -99,7 +97,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		zap.String("path", c.Request.URL.Path),
 	)
 	_ = h.logger.Sync() // Force flush
-	
+
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
@@ -127,21 +125,19 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	// Convert request to domain entity
 	product := &domain.Product{
+		ShopID:      1, // TODO: Lấy từ auth context
 		Name:        req.Name,
 		Description: req.Description,
-		Price:       req.Price,
-		SKU:         req.SKU,
+		BasePrice:   req.BasePrice,
 		CategoryID:  req.CategoryID,
 		Status:      status,
 		Images:      imagesJSON,
-		Stock:       req.Stock,
 		IsActive:    req.IsActive,
 	}
 
 	// Call service layer (business logic)
 	h.logger.Info("🔵🔵🔵 Handler: Calling productService.CreateProduct",
 		zap.String("product_name", product.Name),
-		zap.String("product_sku", product.SKU),
 	)
 	_ = h.logger.Sync()
 	if err := h.productService.CreateProduct(c.Request.Context(), product); err != nil {
@@ -202,8 +198,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	if req.Description != "" {
 		product.Description = req.Description
 	}
-	if req.Price > 0 {
-		product.Price = req.Price
+	if req.BasePrice > 0 {
+		product.BasePrice = req.BasePrice
 	}
 	if req.CategoryID != nil {
 		product.CategoryID = req.CategoryID
@@ -216,9 +212,6 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		if err == nil {
 			product.Images = datatypes.JSON(imagesBytes)
 		}
-	}
-	if req.Stock != 0 {
-		product.Stock = req.Stock
 	}
 	if req.IsActive != nil {
 		product.IsActive = *req.IsActive
@@ -331,7 +324,7 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		"products": products,
 		"total":    total,
 		"page":     page,
-		"limit":     limit,
+		"limit":    limit,
 	})
 }
 
@@ -369,7 +362,7 @@ func (h *ProductHandler) GetProductsByCategory(c *gin.Context) {
 		"products": products,
 		"total":    total,
 		"page":     page,
-		"limit":     limit,
+		"limit":    limit,
 	})
 }
 
@@ -417,28 +410,11 @@ func (h *ProductHandler) SearchProducts(c *gin.Context) {
 // @Failure 400 {object} map[string]string "Invalid request payload or product ID"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /products/{id}/inventory [patch]
+// DEPRECATED: Inventory management moved to ProductItem (SKU level)
+// Use StockHandler.UpdateStock() instead: PATCH /api/v1/stock/:product_item_id
 func (h *ProductHandler) UpdateInventory(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product ID"})
-		return
-	}
-
-	var req struct {
-		Quantity int `json:"quantity" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.productService.UpdateInventory(c.Request.Context(), uint(id), req.Quantity); err != nil {
-		h.logger.Error("failed to update inventory", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "inventory updated successfully"})
+	c.JSON(http.StatusGone, gin.H{
+		"error":   "This endpoint is deprecated",
+		"message": "Inventory management has moved to SKU level. Use PATCH /api/v1/stock/:product_item_id instead",
+	})
 }
-

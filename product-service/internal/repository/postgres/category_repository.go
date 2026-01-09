@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"fmt"
 	"product-service/internal/domain"
 
 	"gorm.io/gorm"
@@ -29,25 +28,20 @@ func (r *categoryRepository) Update(category *domain.Category) error {
 	return r.db.Save(category).Error
 }
 
-// GetByID retrieves a category by its ID
+// GetByID retrieves a category by its ID (NO Preload to avoid N+1)
 func (r *categoryRepository) GetByID(id uint) (*domain.Category, error) {
 	var category domain.Category
-	err := r.db.Preload("Parent").Preload("Children").First(&category, id).Error
+	err := r.db.First(&category, id).Error
 	if err != nil {
 		return nil, err
-	}
-	// Debug: check if parent loaded
-	if category.ParentID != nil {
-		fmt.Printf("[DEBUG] Category %d has parent_id=%d, Parent loaded: %v\n",
-			category.ID, *category.ParentID, category.Parent != nil)
 	}
 	return &category, nil
 }
 
-// GetBySlug retrieves a category by its slug
+// GetBySlug retrieves a category by its slug (NO Preload)
 func (r *categoryRepository) GetBySlug(slug string) (*domain.Category, error) {
 	var category domain.Category
-	err := r.db.Preload("Parent").Where("slug = ?", slug).First(&category).Error
+	err := r.db.Where("slug = ?", slug).First(&category).Error
 	if err != nil {
 		return nil, err
 	}

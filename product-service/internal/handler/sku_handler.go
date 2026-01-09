@@ -15,6 +15,18 @@ type SKUHandler struct {
 	logger             *zap.Logger
 }
 
+// ProductItemWithVariations extends ProductItem with variation option IDs
+type ProductItemWithVariations struct {
+	ID                 uint    `json:"id"`
+	ProductID          uint    `json:"product_id"`
+	SKUCode            string  `json:"sku_code"`
+	ImageURL           string  `json:"image_url"`
+	Price              float64 `json:"price"`
+	QtyInStock         int     `json:"qty_in_stock"`
+	Status             string  `json:"status"`
+	VariationOptionIDs []uint  `json:"variation_option_ids"` // [1, 5] = Size M + Color Red
+}
+
 // NewSKUHandler creates a new SKU handler
 func NewSKUHandler(productItemService *service.ProductItemService, logger *zap.Logger) *SKUHandler {
 	return &SKUHandler{
@@ -78,7 +90,7 @@ func (h *SKUHandler) GetProductItems(c *gin.Context) {
 		return
 	}
 
-	items, err := h.productItemService.GetProductItems(uint(productID))
+	items, err := h.productItemService.GetProductItemsWithVariations(uint(productID))
 	if err != nil {
 		h.logger.Error("failed to get product items", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get product items"})
