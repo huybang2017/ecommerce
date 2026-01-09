@@ -151,3 +151,98 @@ func (h *ProductHandler) UpdateInventory(c *gin.Context) {
 	gatewayHandler.ProxyRequest(c)
 }
 
+// ==================== PRODUCT ITEMS (SKU) ====================
+
+// GetProductItems handles GET /products/:id/items
+// @Summary Get all product items (SKUs) for a product
+// @Description Get list of all SKUs/variations for a specific product
+// @Tags Product Items
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Success 200 {object} object "List of product items"
+// @Failure 404 {object} models.ErrorResponse "Product not found"
+// @Router /products/{id}/items [get]
+func (h *ProductHandler) GetProductItems(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
+
+// GetProductItem handles GET /products/:id/items/:item_id
+// @Summary Get specific product item (SKU)
+// @Description Get details of a specific SKU by product ID and item ID
+// @Tags Product Items
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Param item_id path int true "Product Item ID"
+// @Success 200 {object} object "Product item details"
+// @Failure 404 {object} models.ErrorResponse "Product item not found"
+// @Router /products/{id}/items/{item_id} [get]
+func (h *ProductHandler) GetProductItem(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
+
+// CreateProductItem handles POST /products/:id/items
+// @Summary Create new product item (SKU)
+// @Description Create a new SKU for a product (Auth required)
+// @Tags Product Items
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Success 201 {object} object "Created product item"
+// @Failure 400 {object} models.ErrorResponse "Bad request"
+// @Router /products/{id}/items [post]
+func (h *ProductHandler) CreateProductItem(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
+
+// UpdateProductItem handles PUT /products/:id/items/:item_id
+// @Summary Update product item (SKU)
+// @Description Update an existing SKU (Auth required)
+// @Tags Product Items
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Param item_id path int true "Product Item ID"
+// @Success 200 {object} object "Updated product item"
+// @Failure 400 {object} models.ErrorResponse "Bad request"
+// @Failure 404 {object} models.ErrorResponse "Product item not found"
+// @Router /products/{id}/items/{item_id} [put]
+func (h *ProductHandler) UpdateProductItem(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
+
+// DeleteProductItem handles DELETE /products/:id/items/:item_id
+// @Summary Delete product item (SKU)
+// @Description Delete a SKU (Auth required)
+// @Tags Product Items
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Param item_id path int true "Product Item ID"
+// @Success 204 "Product item deleted successfully"
+// @Failure 404 {object} models.ErrorResponse "Product item not found"
+// @Router /products/{id}/items/{item_id} [delete]
+func (h *ProductHandler) DeleteProductItem(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
+
+// GetProductVariations handles GET /products/:id/variations
+// @Summary Get product variations with options
+// @Description Get all variations (Color, Size, etc.) with their options for a product
+// @Tags Product Variations
+// @Accept json
+// @Produce json
+// @Param id path int true "Product ID"
+// @Success 200 {object} object "List of variations with options"
+// @Failure 404 {object} models.ErrorResponse "Product not found"
+// @Router /products/{id}/variations [get]
+func (h *ProductHandler) GetProductVariations(c *gin.Context) {
+	gatewayHandler := NewGatewayHandler(h.gatewayService, h.logger)
+	gatewayHandler.ProxyRequest(c)
+}
