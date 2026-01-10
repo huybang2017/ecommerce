@@ -29,7 +29,21 @@ func CORSMiddleware(cfg *config.CORSConfig, logger *zap.Logger) gin.HandlerFunc 
 
 			h := c.Writer.Header()
 			h.Set("Access-Control-Allow-Origin", allowedOrigin)
-			h.Set("Access-Control-Allow-Methods", strings.Join(cfg.AllowedMethods, ", "))
+
+			// Debug: log config
+			logger.Debug("CORS config",
+				zap.Strings("allowed_methods", cfg.AllowedMethods),
+				zap.Int("allowed_methods_count", len(cfg.AllowedMethods)),
+			)
+
+			// Hardcode methods if config is empty (fallback for safety)
+			allowedMethods := strings.Join(cfg.AllowedMethods, ", ")
+			if allowedMethods == "" {
+				allowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+				logger.Warn("AllowedMethods config is empty, using default")
+			}
+			h.Set("Access-Control-Allow-Methods", allowedMethods)
+
 			h.Set("Access-Control-Allow-Credentials", "true")
 			h.Set("Access-Control-Expose-Headers", strings.Join(cfg.ExposeHeaders, ", "))
 
