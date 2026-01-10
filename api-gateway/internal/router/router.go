@@ -116,8 +116,8 @@ func SetupRouter(
 				cart.GET("", gatewayHandler.ProxyRequest)
 				cart.DELETE("", gatewayHandler.ProxyRequest)
 				cart.POST("/items", gatewayHandler.ProxyRequest)
-				cart.PUT("/items/:product_id", gatewayHandler.ProxyRequest)
-				cart.DELETE("/items/:product_id", gatewayHandler.ProxyRequest)
+				cart.PUT("/items/:product_item_id", gatewayHandler.ProxyRequest)
+				cart.DELETE("/items/:product_item_id", gatewayHandler.ProxyRequest)
 			}
 
 			// Identity service routes - Auth
