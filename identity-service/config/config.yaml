@@ -25,7 +25,7 @@ redis:
 
 jwt:
   secret: your-secret-key-change-in-production
-  expiration: 24h
+  expiration: 15m # Short expiration for testing token refresh
 
 logging:
   level: info
@@ -34,4 +34,3 @@ logging:
     - stdout
   error_output_paths:
     - stderr
-
