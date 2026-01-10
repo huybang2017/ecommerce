@@ -18,9 +18,9 @@ interface CartContextType {
   itemCount: number;
   total: number;
   refreshCart: () => void;
-  addItem: (productId: number, quantity: number) => Promise<void>;
-  updateItem: (productId: number, quantity: number) => Promise<void>;
-  removeItem: (productId: number) => Promise<void>;
+  addItem: (productItemId: number, quantity: number) => Promise<void>;
+  updateItem: (productItemId: number, quantity: number) => Promise<void>;
+  removeItem: (productItemId: number) => Promise<void>;
   clear: () => Promise<void>;
 }
 
@@ -53,21 +53,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Add item to cart
-  const addItem = async (productId: number, quantity: number) => {
+  const addItem = async (productItemId: number, quantity: number) => {
     await addToCartMutation.mutateAsync({
-      product_item_id: productId,
+      product_item_id: productItemId,
       quantity,
     });
   };
 
   // Update cart item
-  const updateItem = async (productId: number, quantity: number) => {
-    await updateCartMutation.mutateAsync({ productId, quantity });
+  const updateItem = async (productItemId: number, quantity: number) => {
+    console.log("Updating item", productItemId, quantity);
+    await updateCartMutation.mutateAsync({ productItemId, quantity });
   };
 
   // Remove item from cart
-  const removeItem = async (productId: number) => {
-    await removeCartMutation.mutateAsync(productId);
+  const removeItem = async (productItemId: number) => {
+    await removeCartMutation.mutateAsync(productItemId);
   };
 
   // Clear cart

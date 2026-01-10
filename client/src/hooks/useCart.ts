@@ -45,19 +45,27 @@ const cartApi = {
   },
 
   updateCartItem: async (
-    productId: number,
+    productItemId: number,
     request: UpdateCartRequest
   ): Promise<Cart> => {
+    console.log("🔄 updateCartItem called:", {
+      productItemId,
+      request,
+      url: `/api/v1/cart/items/${productItemId}`,
+    });
+
     const { data } = await apiClient.put<Cart>(
-      `/api/v1/cart/items/${productId}`,
+      `/api/v1/cart/items/${productItemId}`,
       request
     );
+
+    console.log("✅ updateCartItem response:", data);
     return data;
   },
 
-  removeFromCart: async (productId: number): Promise<Cart> => {
+  removeFromCart: async (productItemId: number): Promise<Cart> => {
     const { data } = await apiClient.delete<Cart>(
-      `/api/v1/cart/items/${productId}`
+      `/api/v1/cart/items/${productItemId}`
     );
     return data;
   },
@@ -85,8 +93,8 @@ export const useAddToCart = () => {
   return useMutation<Cart, AxiosError, AddToCartRequest>({
     mutationFn: cartApi.addToCart,
     onSuccess: (data) => {
-      // Update cart cache
-      queryClient.setQueryData(["cart"], data);
+      // Backend returns message only; refetch cart to refresh state
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
       console.log("✅ Added to cart");
     },
     onError: (error) => {
@@ -98,19 +106,22 @@ export const useAddToCart = () => {
 export const useUpdateCartItem = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Cart, AxiosError, { productId: number; quantity: number }>(
-    {
-      mutationFn: ({ productId, quantity }) =>
-        cartApi.updateCartItem(productId, { quantity }),
-      onSuccess: (data) => {
-        queryClient.setQueryData(["cart"], data);
-        console.log("✅ Cart updated");
-      },
-      onError: (error) => {
-        console.error("❌ Failed to update cart:", error.response?.data);
-      },
-    }
-  );
+  return useMutation<
+    Cart,
+    AxiosError,
+    { productItemId: number; quantity: number }
+  >({
+    mutationFn: ({ productItemId, quantity }) =>
+      cartApi.updateCartItem(productItemId, { quantity }),
+    onSuccess: (data) => {
+      // Backend returns message only; refetch cart to get latest state
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Cart updated");
+    },
+    onError: (error) => {
+      console.error("❌ Failed to update cart:", error.response?.data);
+    },
+  });
 };
 
 export const useRemoveFromCart = () => {
@@ -119,7 +130,8 @@ export const useRemoveFromCart = () => {
   return useMutation<Cart, AxiosError, number>({
     mutationFn: cartApi.removeFromCart,
     onSuccess: (data) => {
-      queryClient.setQueryData(["cart"], data);
+      // Backend returns message only; refetch cart to refresh state
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
       console.log("✅ Removed from cart");
     },
     onError: (error) => {

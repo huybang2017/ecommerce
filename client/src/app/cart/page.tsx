@@ -17,20 +17,23 @@ export default function CartPage() {
   const items = cart?.items || [];
   const [updating, setUpdating] = useState<number | null>(null);
 
-  const handleRemove = async (productId: number) => {
-    setUpdating(productId);
+  const handleRemove = async (productItemId: number) => {
+    setUpdating(productItemId);
     try {
-      await removeItem(productId);
+      await removeItem(productItemId);
     } finally {
       setUpdating(null);
     }
   };
 
-  const handleQuantityChange = async (productId: number, quantity: number) => {
+  const handleQuantityChange = async (
+    productItemId: number,
+    quantity: number
+  ) => {
     if (quantity < 1) return;
-    setUpdating(productId);
+    setUpdating(productItemId);
     try {
-      await updateItem(productId, quantity);
+      await updateItem(productItemId, quantity);
     } finally {
       setUpdating(null);
     }
