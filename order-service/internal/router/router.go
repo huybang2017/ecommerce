@@ -26,11 +26,18 @@ func SetupRouter(cartHandler *handler.CartHandler, orderHandler *handler.OrderHa
 		// Cart routes
 		cart := v1.Group("/cart")
 		{
-			cart.GET("", cartHandler.GetCart)                              // Get cart
-			cart.DELETE("", cartHandler.ClearCart)                         // Clear cart
-			cart.POST("/items", cartHandler.AddItem)                       // Add item to cart
-			cart.PUT("/items/:product_item_id", cartHandler.UpdateItem)    // Update item quantity
-			cart.DELETE("/items/:product_item_id", cartHandler.RemoveItem) // Remove item from cart
+			cart.GET("", cartHandler.GetCart)                                            // Get cart
+			cart.DELETE("", cartHandler.ClearCart)                                       // Clear cart
+			cart.POST("/items", cartHandler.AddItem)                                     // Add item to cart
+			cart.PUT("/items/:product_item_id", cartHandler.UpdateItem)                  // Update item quantity
+			cart.POST("/items/:product_item_id/toggle", cartHandler.ToggleItemSelection) // Toggle item selection
+			cart.DELETE("/items/:product_item_id", cartHandler.RemoveItem)               // Remove item from cart
+			cart.PATCH("/items/:product_item_id/selection", cartHandler.SetItemSelection)
+			cart.PATCH("/selection", cartHandler.SetAllSelection)
+			cart.PATCH("/shops/:shop_id/selection", cartHandler.SetShopSelection)
+
+			cart.DELETE("/selected", cartHandler.ClearSelectedItems)
+			cart.POST("/validate", cartHandler.ValidateCart)
 		}
 
 		// Order routes

@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  models.AddToCartRequest:
+    properties:
+      product_item_id:
+        example: 1001
+        type: integer
+      quantity:
+        example: 1
+        type: integer
+    type: object
   models.AddressInfo:
     properties:
       city:
@@ -26,6 +35,72 @@ definitions:
       user_id:
         example: 1
         type: integer
+    type: object
+  models.CartItem:
+    properties:
+      image_url:
+        example: https://cdn.example.com/images/1.jpg
+        type: string
+      is_selected:
+        example: true
+        type: boolean
+      price:
+        example: 15100
+        type: number
+      product_item_id:
+        example: 1001
+        type: integer
+      product_name:
+        example: Găng tay chơi game
+        type: string
+      quantity:
+        example: 2
+        type: integer
+      shop_id:
+        example: 10
+        type: integer
+      sku:
+        example: GT-123
+        type: string
+      subtotal:
+        example: 30200
+        type: number
+    type: object
+  models.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/models.CartItem'
+        type: array
+      total_items:
+        example: 2
+        type: integer
+      total_price:
+        example: 30200
+        type: number
+      updated_at:
+        example: "2026-01-15T12:00:00Z"
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  models.CartValidationResponse:
+    properties:
+      errors:
+        example:
+        - '[''Product out of stock'''
+        - '''Invalid item'']'
+        items:
+          type: string
+        type: array
+      message:
+        example: Cart is valid for checkout
+        type: string
+      valid:
+        description: Whether the cart is valid for checkout
+        example: true
+        type: boolean
     type: object
   models.Category:
     properties:
@@ -114,6 +189,15 @@ definitions:
     required:
     - name
     type: object
+  models.CreateOrderRequest:
+    properties:
+      address_id:
+        example: 11
+        type: integer
+      payment_method:
+        example: cod
+        type: string
+    type: object
   models.CreateProductRequest:
     properties:
       category_id:
@@ -182,6 +266,46 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/models.UserInfo'
+    type: object
+  models.OrderItem:
+    properties:
+      price:
+        example: 15100
+        type: number
+      product_item_id:
+        example: 1001
+        type: integer
+      product_name:
+        example: Găng tay chơi game
+        type: string
+      quantity:
+        example: 2
+        type: integer
+      subtotal:
+        example: 30200
+        type: number
+    type: object
+  models.OrderResponse:
+    properties:
+      created_at:
+        example: "2026-01-15T12:05:00Z"
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/models.OrderItem'
+        type: array
+      order_id:
+        example: 5001
+        type: integer
+      order_number:
+        example: ORD-20260115-5001
+        type: string
+      status:
+        example: pending
+        type: string
+      total_amount:
+        example: 30200
+        type: number
     type: object
   models.Product:
     properties:
@@ -305,6 +429,24 @@ definitions:
         example: 100
         type: integer
     type: object
+  models.SelectAllRequest:
+    properties:
+      selected:
+        example: true
+        type: boolean
+    type: object
+  models.SelectShopRequest:
+    properties:
+      selected:
+        example: true
+        type: boolean
+    type: object
+  models.SelectionRequest:
+    properties:
+      selected:
+        example: true
+        type: boolean
+    type: object
   models.SuccessResponse:
     properties:
       data: {}
@@ -332,6 +474,12 @@ definitions:
       street:
         example: 123 Main St
         type: string
+    type: object
+  models.UpdateCartRequest:
+    properties:
+      quantity:
+        example: 2
+        type: integer
     type: object
   models.UpdateCategoryRequest:
     properties:
@@ -965,6 +1113,382 @@ paths:
       summary: Register a new user
       tags:
       - Authentication
+  /cart:
+    delete:
+      description: Xóa tất cả sản phẩm trong giỏ hàng của người dùng
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Xóa toàn bộ giỏ hàng
+      tags:
+      - Cart
+    get:
+      consumes:
+      - application/json
+      description: Lấy danh sách sản phẩm trong giỏ hàng của người dùng hiện tại (yêu
+        cầu đăng nhập)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Thông tin giỏ hàng
+          schema:
+            $ref: '#/definitions/models.CartResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - CookieAuth: []
+      summary: Lấy nội dung giỏ hàng
+      tags:
+      - Cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Thêm một sản phẩm cụ thể (SKU) vào giỏ hàng với số lượng nhất định
+      parameters:
+      - description: Thông tin sản phẩm thêm vào
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CartResponse'
+        "400":
+          description: Dữ liệu không hợp lệ hoặc thiếu hàng
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Thêm sản phẩm vào giỏ
+      tags:
+      - Cart
+  /cart/items/{product_item_id}:
+    delete:
+      description: Xóa một sản phẩm cụ thể ra khỏi giỏ hàng
+      parameters:
+      - description: ID của SKU sản phẩm
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Tham số không hợp lệ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Không tìm thấy sản phẩm
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Xóa sản phẩm khỏi giỏ hàng
+      tags:
+      - Cart
+    put:
+      consumes:
+      - application/json
+      description: Thay đổi số lượng của một SKU cụ thể trong giỏ hàng
+      parameters:
+      - description: ID của SKU sản phẩm
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      - description: Số lượng mới
+        in: body
+        name: quantity
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CartResponse'
+      security:
+      - BearerAuth: []
+      summary: Cập nhật số lượng sản phẩm
+      tags:
+      - Cart
+  /cart/items/{product_item_id}/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set the selection state (selected/deselected) for a cart item
+      parameters:
+      - description: ID của SKU sản phẩm
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      - description: Trạng thái chọn
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SelectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Dữ liệu không hợp lệ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Không tìm thấy sản phẩm
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set item selection
+      tags:
+      - Cart
+  /cart/items/{product_item_id}/toggle:
+    post:
+      consumes:
+      - application/json
+      description: Thay đổi trạng thái được chọn (tick) của một sản phẩm để chuẩn
+        bị thanh toán
+      parameters:
+      - description: ID của SKU sản phẩm
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CartResponse'
+      security:
+      - BearerAuth: []
+      summary: Bật/Tắt chọn sản phẩm
+      tags:
+      - Cart
+  /cart/select_all:
+    post:
+      consumes:
+      - application/json
+      description: Chọn hoặc bỏ chọn toàn bộ sản phẩm có trong giỏ hàng
+      parameters:
+      - description: Trạng thái chọn (true/false)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SelectAllRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+      security:
+      - BearerAuth: []
+      summary: Chọn/Bỏ chọn tất cả
+      tags:
+      - Cart
+  /cart/selected:
+    delete:
+      description: Xóa tất cả sản phẩm đang được tick chọn ra khỏi giỏ hàng
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+      security:
+      - BearerAuth: []
+      summary: Xóa các mục đã chọn
+      tags:
+      - Cart
+  /cart/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set selection state for all items in the cart
+      parameters:
+      - description: Trạng thái chọn
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SelectAllRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Dữ liệu không hợp lệ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set selection for all items
+      tags:
+      - Cart
+  /cart/shops/{shop_id}/select:
+    post:
+      consumes:
+      - application/json
+      description: Chọn hoặc bỏ chọn tất cả sản phẩm thuộc về một cửa hàng cụ thể
+      parameters:
+      - description: ID của cửa hàng
+        in: path
+        name: shop_id
+        required: true
+        type: integer
+      - description: Trạng thái chọn
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SelectAllRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+      security:
+      - BearerAuth: []
+      summary: Chọn sản phẩm theo Shop
+      tags:
+      - Cart
+  /cart/shops/{shop_id}/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set selection state for all items from a shop
+      parameters:
+      - description: ID của cửa hàng
+        in: path
+        name: shop_id
+        required: true
+        type: integer
+      - description: Trạng thái chọn
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SelectShopRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Dữ liệu không hợp lệ
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Chưa xác thực
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Lỗi hệ thống
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set selection for shop items
+      tags:
+      - Cart
+  /cart/validate:
+    post:
+      description: Kiểm tra tồn kho và trạng thái của các sản phẩm đã chọn trước khi
+        chuyển sang bước thanh toán
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Kết quả kiểm tra
+          schema:
+            $ref: '#/definitions/models.CartValidationResponse'
+        "400":
+          description: Sản phẩm không hợp lệ hoặc hết hàng
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Kiểm tra giỏ hàng trước thanh toán
+      tags:
+      - Cart
   /categories:
     get:
       consumes:
@@ -1197,6 +1721,128 @@ paths:
       summary: Health check
       tags:
       - Gateway
+  /orders:
+    get:
+      description: Lấy danh sách đơn hàng theo user_id hoặc session_id
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Session ID
+        in: query
+        name: session_id
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.OrderResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Lấy danh sách đơn hàng
+      tags:
+      - Order
+    post:
+      consumes:
+      - application/json
+      description: Tạo đơn hàng (hỗ trợ multi-shop). Hỗ trợ cả user_id (header X-User-Id)
+        hoặc session_id cho guest
+      parameters:
+      - description: Thông tin tạo đơn
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Tạo đơn hàng từ giỏ hàng
+      tags:
+      - Order
+  /orders/{id}:
+    get:
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrderResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Lấy đơn hàng theo ID
+      tags:
+      - Order
+  /orders/number/{order_number}:
+    get:
+      parameters:
+      - description: Order number
+        in: path
+        name: order_number
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrderResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Lấy đơn hàng theo số đơn
+      tags:
+      - Order
   /products:
     get:
       consumes:
@@ -1403,6 +2049,171 @@ paths:
       summary: Update product inventory
       tags:
       - Products
+  /products/{id}/items:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all SKUs/variations for a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of product items
+          schema:
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all product items (SKUs) for a product
+      tags:
+      - Product Items
+    post:
+      consumes:
+      - application/json
+      description: Create a new SKU for a product (Auth required)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created product item
+          schema:
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create new product item (SKU)
+      tags:
+      - Product Items
+  /products/{id}/items/{item_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a SKU (Auth required)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Product item deleted successfully
+        "404":
+          description: Product item not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete product item (SKU)
+      tags:
+      - Product Items
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific SKU by product ID and item ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product item details
+          schema:
+            type: object
+        "404":
+          description: Product item not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get specific product item (SKU)
+      tags:
+      - Product Items
+    put:
+      consumes:
+      - application/json
+      description: Update an existing SKU (Auth required)
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product Item ID
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated product item
+          schema:
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Product item not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update product item (SKU)
+      tags:
+      - Product Items
+  /products/{id}/variations:
+    get:
+      consumes:
+      - application/json
+      description: Get all variations (Color, Size, etc.) with their options for a
+        product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of variations with options
+          schema:
+            type: object
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get product variations with options
+      tags:
+      - Product Variations
   /products/search:
     get:
       consumes:

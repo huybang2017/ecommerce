@@ -226,6 +226,10 @@ func main() {
 				{Path: "/api/v1/cart", Methods: []string{"GET", "DELETE"}, RequireAuth: false},
 				{Path: "/api/v1/cart/items", Methods: []string{"POST"}, RequireAuth: false},
 				{Path: "/api/v1/cart/items/:product_id", Methods: []string{"PUT", "DELETE"}, RequireAuth: false},
+				// Orders
+				{Path: "/api/v1/orders", Methods: []string{"POST", "GET"}, RequireAuth: false},
+				{Path: "/api/v1/orders/:id", Methods: []string{"GET"}, RequireAuth: false},
+				{Path: "/api/v1/orders/number/:order_number", Methods: []string{"GET"}, RequireAuth: false},
 			},
 		}
 
@@ -253,9 +257,11 @@ func main() {
 	productHandler := handler.NewProductHandler(gatewayService, appLogger)
 	categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
 	searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
+	cartHandler := handler.NewCartHandler(gatewayService, appLogger)
+	orderHandler := handler.NewOrderHandler(gatewayService, appLogger)
 
 	// Setup router
-	r := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cfg, appLogger, redisClient)
+	r := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cartHandler, orderHandler, cfg, appLogger, redisClient)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{

@@ -11,6 +11,11 @@ import (
 	"gorm.io/datatypes"
 )
 
+// ⚠️  DEPRECATED: Seed file này đang cần refactor
+// Product model đã xóa Price, SKU, Stock fields
+// Hãy dùng comprehensive_seed.sql thay vì file Go này
+// TODO: Refactor để tạo Product + ProductItem + Variation + SKU đúng chuẩn
+
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig("./config")
@@ -307,39 +312,30 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Áo Thun Nam Cotton Compact Form Rộng Unisex",
 			Description: "Áo thun nam cotton 100%, form rộng thoải mái, nhiều màu",
-			Price:       129000,
 			BasePrice:   159000,
-			SKU:         "AOTHUN-NAM-001",
 			CategoryID:  &thoiTrangNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       200,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Quần Jeans Nam Ống Rộng Suông Baggy",
 			Description: "Quần jean nam ống rộng, chất liệu denim cao cấp",
-			Price:       299000,
-			BasePrice:   399000,
-			SKU:         "JEAN-NAM-001",
-			CategoryID:  &thoiTrangNamID,
-			Status:      "ACTIVE",
-			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       150,
-			IsActive:    true,
+			BasePrice: 399000,
+			CategoryID: &thoiTrangNamID,
+			Status:     "ACTIVE",
+			Images:     createImagesJSON([]string{"https://placehold.co/400x400"}),
+			IsActive: true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Áo Khoác Nam Bomber Jacket 2 Lớp Chống Nước",
 			Description: "Áo khoác bomber 2 lớp, chống nước, nhiều màu sắc",
-			Price:       459000,
 			BasePrice:   599000,
-			SKU:         "KHOAC-NAM-001",
 			CategoryID:  &thoiTrangNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       80,
 			IsActive:    true,
 		},
 		// Thời Trang Nữ
@@ -347,26 +343,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Váy Babydoll Hoa Nhí Tay Bồng",
 			Description: "Váy babydoll dáng xòe, họa tiết hoa nhí xinh xắn",
-			Price:       189000,
 			BasePrice:   249000,
-			SKU:         "VAY-NU-001",
 			CategoryID:  &thoiTrangNuID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       120,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Áo Kiểu Nữ Dài Tay Công Sở",
 			Description: "Áo kiểu nữ dài tay, chất liệu lụa mềm mại",
-			Price:       159000,
 			BasePrice:   199000,
-			SKU:         "AOKIEU-NU-001",
 			CategoryID:  &thoiTrangNuID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       180,
 			IsActive:    true,
 		},
 		// Điện Thoại
@@ -374,13 +364,10 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "iPhone 15 Pro Max 256GB Chính Hãng VN/A",
 			Description: "iPhone 15 Pro Max - Chip A17 Pro, Camera 48MP, Màn hình 6.7 inch",
-			Price:       29990000,
 			BasePrice:   33990000,
-			SKU:         "IPHONE15PM-256",
 			CategoryID:  &dienThoaiID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       50,
 			IsActive:    true,
 		},
 		{

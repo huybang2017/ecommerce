@@ -22,6 +22,8 @@ import (
 	"syscall"
 	"time"
 
+	docs "order-service/docs"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -41,6 +43,9 @@ import (
 // @host localhost:8083
 // @BasePath /api/v1
 // @schemes http https
+// @securityDefinitions.apikey UserAuth
+// @in header
+// @name X-User-Id
 
 func main() {
 	log.Println("🚀 Starting Order Service...")
@@ -133,6 +138,10 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderService, appLogger)
 
 	// Setup router
+	docs.SwaggerInfo.Title = "Order Service API"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", cfg.Server.Port)
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	router := router.SetupRouter(cartHandler, orderHandler)
 
 	// Create HTTP server

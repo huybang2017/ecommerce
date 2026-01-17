@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"product-service/docs"
 	"product-service/internal/handler"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // RequestLogger middleware logs all incoming requests
@@ -39,6 +42,10 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 
 	// Add request logging middleware
 	router.Use(RequestLogger())
+
+	// Swagger UI (serve generated docs)
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

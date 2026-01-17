@@ -1,165 +1,88 @@
 basePath: /api/v1
 definitions:
-  domain.Cart:
-    properties:
-      items:
-        additionalProperties:
-          $ref: '#/definitions/domain.CartItem'
-        description: Map of product_id -> CartItem
-        type: object
-      session_id:
-        description: 'Deprecated: No longer used, kept for backward compatibility'
-        type: string
-      total:
-        description: Total price of all items
-        type: number
-      updated_at:
-        description: Unix timestamp
-        type: integer
-      user_id:
-        description: User ID (required - authentication required)
-        type: string
-    type: object
   domain.CartItem:
     properties:
-      image:
+      image_url:
         type: string
-      name:
-        type: string
+      is_selected:
+        type: boolean
       price:
         type: number
-      product_id:
+      product_item_id:
+        description: ✅ STORED in Redis
         type: integer
+      product_name:
+        type: string
       quantity:
         type: integer
-      sku:
+      shop_id:
+        description: ❌ NOT stored in Redis - Fetched from Product Service on-demand
+        type: integer
+      sku_code:
         type: string
     type: object
   domain.Order:
     properties:
-      created_at:
-        description: Timestamps
-        type: string
-      discount:
-        description: GIỮ LẠI
-        type: number
       earning_amount:
-        description: THÊM MỚI - Shop thực nhận
         type: number
       final_amount:
-        description: THÊM MỚI - Khách thực trả
         type: number
       id:
         type: integer
       items:
-        description: Order items
+        description: Relations
         items:
           $ref: '#/definitions/domain.OrderItem'
         type: array
       merchandise_subtotal:
-        description: Financial breakdown (theo db-diagram.db)
+        description: Financial snapshot (SOURCE OF TRUTH)
         type: number
       order_number:
-        description: Order identification
+        description: Business identifiers
         type: string
       ordered_at:
-        description: THÊM MỚI
+        description: Time
         type: string
       payment_method:
-        description: Payment & timestamps
+        description: Payment
         type: string
       platform_fee:
-        description: THÊM MỚI - Phí sàn
         type: number
-      session_id:
-        description: GIỮ LẠI deprecated
-        type: string
-      shipping_address:
-        type: string
       shipping_address_id:
-        description: THÊM MỚI - Reference address table
+        description: Shipping
         type: integer
-      shipping_city:
-        type: string
-      shipping_country:
-        type: string
       shipping_discount:
-        description: THÊM MỚI - Mã freeship
         type: number
       shipping_fee:
-        description: Phí vận chuyển
         type: number
-      shipping_name:
-        description: Shipping information (GIỮ LẠI)
-        type: string
-      shipping_phone:
-        type: string
-      shipping_postal_code:
-        type: string
-      shipping_province:
-        type: string
       shop_id:
-        description: THÊM MỚI - Order từ shop (theo db-diagram.db)
         type: integer
       status:
         allOf:
         - $ref: '#/definitions/domain.OrderStatus'
         description: Status
-      subtotal:
-        description: GIỮ LẠI (sẽ sync với MerchandiseSubtotal)
-        type: number
-      tax:
-        description: GIỮ LẠI (không có trong diagram)
-        type: number
-      total_amount:
-        description: GIỮ LẠI để backward compatibility
-        type: number
       updated_at:
         type: string
       user_id:
-        description: ĐỔI thành NOT NULL (bỏ guest orders)
+        description: Ownership
         type: integer
       voucher_discount:
-        description: THÊM MỚI - Mã giảm giá
         type: number
     type: object
   domain.OrderItem:
     properties:
       created_at:
-        description: Timestamps
         type: string
       id:
         type: integer
       order_id:
         type: integer
-      price:
-        description: GIỮ LẠI backward compatibility (sync với PriceAtPurchase)
-        type: number
       price_at_purchase:
-        description: THÊM MỚI - Đúng tên theo diagram
         type: number
-      product_id:
-        description: GIỮ LẠI backward compatibility
-        type: integer
-      product_image:
-        description: GIỮ LẠI
-        type: string
       product_item_id:
-        description: THÊM MỚI - Reference product_item (SKU)
         type: integer
-      product_name:
-        description: GIỮ LẠI
-        type: string
-      product_sku:
-        description: GIỮ LẠI
-        type: string
       quantity:
         type: integer
-      subtotal:
-        description: GIỮ LẠI
-        type: number
-      updated_at:
-        type: string
     type: object
   domain.OrderStatus:
     enum:
@@ -191,27 +114,79 @@ definitions:
     - OrderStatusShipped
     - OrderStatusDelivered
     - OrderStatusCancelled
+  domain.ShoppingCart:
+    properties:
+      item_count:
+        description: |-
+          ✅ COMPUTED FIELDS - Cart Service responsibility ONLY
+          These are DISPLAY metrics for Cart UI/Badge, NOT checkout logic
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/domain.CartItem'
+        type: array
+      selected_item_count:
+        description: Selected items (rows)
+        type: integer
+      selected_quantity:
+        description: Sum of selected quantities
+        type: integer
+      selected_total_price:
+        description: Total price (selected)
+        type: number
+      total_price:
+        description: Total price (all)
+        type: number
+      total_quantity:
+        description: Sum of all quantities
+        type: integer
+      user_id:
+        type: string
+      version:
+        type: integer
+    type: object
   handler.AddItemRequest:
     properties:
-      image:
-        type: string
-      name:
-        type: string
-      price:
-        minimum: 0
-        type: number
-      product_id:
+      product_item_id:
         type: integer
       quantity:
         minimum: 1
         type: integer
-      sku:
-        type: string
     required:
-    - name
-    - price
-    - product_id
     - quantity
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: description of the error
+        type: string
+    type: object
+  handler.SelectAllRequest:
+    properties:
+      selected:
+        type: boolean
+    required:
+    - selected
+    type: object
+  handler.SelectShopRequest:
+    properties:
+      selected:
+        type: boolean
+    required:
+    - selected
+    type: object
+  handler.SelectionRequest:
+    properties:
+      selected:
+        type: boolean
+    required:
+    - selected
+    type: object
+  handler.SuccessResponse:
+    properties:
+      message:
+        example: operation completed successfully
+        type: string
     type: object
   handler.UpdateItemRequest:
     properties:
@@ -223,18 +198,25 @@ definitions:
     type: object
   service.CreateOrderRequest:
     properties:
-      discount:
-        type: number
+      payment_method:
+        type: string
       session_id:
+        description: Deprecated
         type: string
       shipping_address:
         type: string
+      shipping_address_id:
+        description: THÊM MỚI - Reference address table
+        type: integer
       shipping_city:
         type: string
       shipping_country:
         type: string
+      shipping_discount:
+        description: Mã freeship
+        type: number
       shipping_fee:
-        description: Optional
+        description: Financial (theo db-diagram.db)
         type: number
       shipping_name:
         description: Shipping information
@@ -245,15 +227,29 @@ definitions:
         type: string
       shipping_province:
         type: string
-      tax:
-        type: number
       user_id:
         type: integer
+      voucher_discount:
+        description: Mã giảm giá
+        type: number
     required:
     - shipping_address
     - shipping_city
     - shipping_name
     - shipping_phone
+    type: object
+  service.CreateOrderResponse:
+    properties:
+      order_numbers:
+        description: Order numbers for each shop_order
+        items:
+          type: string
+        type: array
+      orders:
+        description: Multiple shop_orders (1 per shop)
+        items:
+          $ref: '#/definitions/domain.Order'
+        type: array
     type: object
 host: localhost:8083
 info:
@@ -273,69 +269,45 @@ paths:
   /cart:
     delete:
       description: Remove all items from the shopping cart
-      parameters:
-      - description: User ID (if authenticated)
-        in: query
-        name: user_id
-        type: string
-      - description: Session ID (if guest)
-        in: query
-        name: session_id
-        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Cart cleared successfully
           schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid request parameters
+            $ref: '#/definitions/handler.SuccessResponse'
+        "401":
+          description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
       summary: Clear cart
       tags:
       - Cart
     get:
-      description: Get the shopping cart for the current user or session
-      parameters:
-      - description: User ID (if authenticated)
-        in: query
-        name: user_id
-        type: string
-      - description: Session ID (if guest)
-        in: query
-        name: session_id
-        type: string
+      description: Get the shopping cart for the current user
       produces:
       - application/json
       responses:
         "200":
           description: Cart retrieved successfully
           schema:
-            $ref: '#/definitions/domain.Cart'
-        "400":
-          description: Invalid request parameters
+            $ref: '#/definitions/domain.ShoppingCart'
+        "401":
+          description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
       summary: Get cart
       tags:
       - Cart
@@ -343,16 +315,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a product to the shopping cart
+      description: Add a product item (SKU) to the shopping cart
       parameters:
-      - description: User ID (if authenticated)
-        in: query
-        name: user_id
-        type: string
-      - description: Session ID (if guest)
-        in: query
-        name: session_id
-        type: string
       - description: Add Item Request
         in: body
         name: request
@@ -365,64 +329,58 @@ paths:
         "200":
           description: Item added successfully
           schema:
-            $ref: '#/definitions/domain.Cart'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Invalid request payload
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
       summary: Add item to cart
       tags:
       - Cart
-  /cart/items/{product_id}:
+  /cart/items/{product_item_id}:
     delete:
       description: Remove an item from the shopping cart
       parameters:
-      - description: Product ID
+      - description: Product Item ID (SKU)
         in: path
-        name: product_id
+        name: product_item_id
         required: true
         type: integer
-      - description: User ID (if authenticated)
-        in: query
-        name: user_id
-        type: string
-      - description: Session ID (if guest)
-        in: query
-        name: session_id
-        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Item removed successfully
           schema:
-            $ref: '#/definitions/domain.Cart'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Invalid request parameters
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Item not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
       summary: Remove item from cart
       tags:
       - Cart
@@ -431,19 +389,11 @@ paths:
       - application/json
       description: Update the quantity of an item in the cart
       parameters:
-      - description: Product ID
+      - description: Product Item ID (SKU)
         in: path
-        name: product_id
+        name: product_item_id
         required: true
         type: integer
-      - description: User ID (if authenticated)
-        in: query
-        name: user_id
-        type: string
-      - description: Session ID (if guest)
-        in: query
-        name: session_id
-        type: string
       - description: Update Item Request
         in: body
         name: request
@@ -456,26 +406,237 @@ paths:
         "200":
           description: Item updated successfully
           schema:
-            $ref: '#/definitions/domain.Cart'
+            $ref: '#/definitions/handler.SuccessResponse'
         "400":
           description: Invalid request payload
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
         "404":
           description: Item not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
       summary: Update item quantity
+      tags:
+      - Cart
+  /cart/items/{product_item_id}/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set the selection state (selected/deselected) for a cart item
+      parameters:
+      - description: Product Item ID (SKU)
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      - description: Selection Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SelectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item selection updated successfully
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Item not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Set item selection
+      tags:
+      - Cart
+  /cart/items/{product_item_id}/toggle:
+    post:
+      deprecated: true
+      description: Toggle the selection state of a cart item
+      parameters:
+      - description: Product Item ID (SKU)
+        in: path
+        name: product_item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item selection toggled successfully
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "400":
+          description: Invalid request parameters
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Item not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Toggle item selection
+      tags:
+      - Cart
+  /cart/selected:
+    delete:
+      description: Remove only items that are marked selected (used after checkout)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected items cleared successfully
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Clear selected items
+      tags:
+      - Cart
+  /cart/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set selection state for all items in the cart
+      parameters:
+      - description: Select All Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SelectAllRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selection updated successfully
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Set selection for all items
+      tags:
+      - Cart
+  /cart/shops/{shop_id}/selection:
+    patch:
+      consumes:
+      - application/json
+      description: Set selection state for all items from a shop
+      parameters:
+      - description: Shop ID
+        in: path
+        name: shop_id
+        required: true
+        type: integer
+      - description: Select Shop Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SelectShopRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selection updated successfully
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Set selection for shop items
+      tags:
+      - Cart
+  /cart/validate:
+    post:
+      description: Validate selected items in the cart (ensure stock and availability)
+        before checkout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cart is valid
+          schema:
+            $ref: '#/definitions/handler.SuccessResponse'
+        "400":
+          description: Cart invalid
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - UserAuth: []
+      summary: Validate cart
       tags:
       - Cart
   /orders:
@@ -509,22 +670,19 @@ paths:
         "400":
           description: Invalid request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: List orders
       tags:
       - Order
     post:
       consumes:
       - application/json
-      description: Create a new order from the shopping cart
+      description: Create shop_order(s) from the shopping cart. If cart contains items
+        from multiple shops, creates multiple shop_orders (1 per shop).
       parameters:
       - description: Order creation request
         in: body
@@ -536,22 +694,18 @@ paths:
       - application/json
       responses:
         "201":
-          description: Order created successfully
+          description: Order(s) created successfully (can be multiple shop_orders)
           schema:
-            $ref: '#/definitions/domain.Order'
+            $ref: '#/definitions/service.CreateOrderResponse'
         "400":
           description: Invalid request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Create order from cart
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Create order(s) from cart (Marketplace - Multi-shop)
       tags:
       - Order
   /orders/{id}:
@@ -573,15 +727,11 @@ paths:
         "404":
           description: Order not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get order by ID
       tags:
       - Order
@@ -604,19 +754,20 @@ paths:
         "404":
           description: Order not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handler.ErrorResponse'
       summary: Get order by order number
       tags:
       - Order
 schemes:
 - http
 - https
+securityDefinitions:
+  UserAuth:
+    in: header
+    name: X-User-Id
+    type: apiKey
 swagger: "2.0"

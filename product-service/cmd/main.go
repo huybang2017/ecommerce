@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	docs "product-service/docs"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -280,10 +282,15 @@ func main() {
 	skuHandler := handler.NewSKUHandler(productItemService, appLogger)
 	attrHandler := handler.NewAttributeHandler(attributeService, appLogger)
 	stockHandler := handler.NewStockHandler(stockService, appLogger)
+	variationHandler := handler.NewVariationHandler(variationRepo, variationOptRepo, appLogger)
 	fmt.Fprintf(os.Stderr, "✅ Handlers created - ProductHandler: %p, eventPublisher in service: %p\n", productHandler, productService)
 
 	// Setup router
-	router := router.SetupRouter(productHandler, categoryHandler, skuHandler, attrHandler, stockHandler)
+	docs.SwaggerInfo.Title = "Product Service API"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%d", cfg.Server.Port)
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	router := router.SetupRouter(productHandler, categoryHandler, skuHandler, attrHandler, stockHandler, variationHandler)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{

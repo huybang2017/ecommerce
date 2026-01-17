@@ -3,8 +3,11 @@ package handler
 import (
 	"api-gateway/internal/service"
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -83,7 +86,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 	serviceName := h.getServiceName(c.Request.URL.Path)
 
 	// Read request body
-	body, err := service.ReadRequestBody(c.Request)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		h.logger.Error("Failed to read request body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
@@ -283,6 +286,58 @@ func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 			"gateway":  "ok",
 			"services": healthStatus,
 		})
+	}
+}
+
+// ProxySwagger proxies swagger documentation from microservices
+func (h *GatewayHandler) ProxySwagger(serviceName string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get service from registry
+		service, err := h.gatewayService.GetServiceRegistry().GetService(serviceName)
+		if err != nil {
+			h.logger.Error("service not found", zap.String("service", serviceName), zap.Error(err))
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service unavailable"})
+			return
+		}
+
+		// Construct swagger URL (assume /swagger/doc.json endpoint)
+		swaggerURL := fmt.Sprintf("%s/swagger/doc.json", service.BaseURL)
+
+		// Create HTTP request to microservice
+		req, err := http.NewRequest("GET", swaggerURL, nil)
+		if err != nil {
+			h.logger.Error("failed to create request", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		// Forward headers if needed
+		req.Header.Set("User-Agent", "API-Gateway/1.0")
+
+		// Execute request using standard http client
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			h.logger.Error("failed to proxy swagger request",
+				zap.String("service", serviceName),
+				zap.String("url", swaggerURL),
+				zap.Error(err))
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service unavailable"})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Read response body
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			h.logger.Error("failed to read response body", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		// Set content type and return JSON
+		c.Header("Content-Type", "application/json")
+		c.Data(resp.StatusCode, "application/json", body)
 	}
 }
 

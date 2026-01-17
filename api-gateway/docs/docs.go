@@ -801,6 +801,600 @@ const docTemplate = `{
                 }
             }
         },
+        "/cart": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Lấy danh sách sản phẩm trong giỏ hàng của người dùng hiện tại (yêu cầu đăng nhập)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Lấy nội dung giỏ hàng",
+                "responses": {
+                    "200": {
+                        "description": "Thông tin giỏ hàng",
+                        "schema": {
+                            "$ref": "#/definitions/models.CartResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Xóa tất cả sản phẩm trong giỏ hàng của người dùng",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Xóa toàn bộ giỏ hàng",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Thêm một sản phẩm cụ thể (SKU) vào giỏ hàng với số lượng nhất định",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Thêm sản phẩm vào giỏ",
+                "parameters": [
+                    {
+                        "description": "Thông tin sản phẩm thêm vào",
+                        "name": "item",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AddToCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.CartResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Dữ liệu không hợp lệ hoặc thiếu hàng",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{product_item_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Thay đổi số lượng của một SKU cụ thể trong giỏ hàng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Cập nhật số lượng sản phẩm",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của SKU sản phẩm",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Số lượng mới",
+                        "name": "quantity",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CartResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Xóa một sản phẩm cụ thể ra khỏi giỏ hàng",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Xóa sản phẩm khỏi giỏ hàng",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của SKU sản phẩm",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Tham số không hợp lệ",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{product_item_id}/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Set the selection state (selected/deselected) for a cart item",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set item selection",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của SKU sản phẩm",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trạng thái chọn",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SelectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Dữ liệu không hợp lệ",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{product_item_id}/toggle": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Thay đổi trạng thái được chọn (tick) của một sản phẩm để chuẩn bị thanh toán",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Bật/Tắt chọn sản phẩm",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của SKU sản phẩm",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CartResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/select_all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Chọn hoặc bỏ chọn toàn bộ sản phẩm có trong giỏ hàng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Chọn/Bỏ chọn tất cả",
+                "parameters": [
+                    {
+                        "description": "Trạng thái chọn (true/false)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SelectAllRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/selected": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Xóa tất cả sản phẩm đang được tick chọn ra khỏi giỏ hàng",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Xóa các mục đã chọn",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Set selection state for all items in the cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set selection for all items",
+                "parameters": [
+                    {
+                        "description": "Trạng thái chọn",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SelectAllRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Dữ liệu không hợp lệ",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/shops/{shop_id}/select": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Chọn hoặc bỏ chọn tất cả sản phẩm thuộc về một cửa hàng cụ thể",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Chọn sản phẩm theo Shop",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của cửa hàng",
+                        "name": "shop_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trạng thái chọn",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SelectAllRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/shops/{shop_id}/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Set selection state for all items from a shop",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set selection for shop items",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID của cửa hàng",
+                        "name": "shop_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trạng thái chọn",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SelectShopRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Dữ liệu không hợp lệ",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Chưa xác thực",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi hệ thống",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/validate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Kiểm tra tồn kho và trạng thái của các sản phẩm đã chọn trước khi chuyển sang bước thanh toán",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Kiểm tra giỏ hàng trước thanh toán",
+                "responses": {
+                    "200": {
+                        "description": "Kết quả kiểm tra",
+                        "schema": {
+                            "$ref": "#/definitions/models.CartValidationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Sản phẩm không hợp lệ hoặc hết hàng",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/categories": {
             "get": {
                 "description": "Get a list of all categories",
@@ -1144,6 +1738,191 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "description": "Lấy danh sách đơn hàng theo user_id hoặc session_id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "summary": "Lấy danh sách đơn hàng",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.OrderResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Tạo đơn hàng (hỗ trợ multi-shop). Hỗ trợ cả user_id (header X-User-Id) hoặc session_id cho guest",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "summary": "Tạo đơn hàng từ giỏ hàng",
+                "parameters": [
+                    {
+                        "description": "Thông tin tạo đơn",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/number/{order_number}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "summary": "Lấy đơn hàng theo số đơn",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "order_number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.OrderResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Order"
+                ],
+                "summary": "Lấy đơn hàng theo ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.OrderResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     }
                 }
@@ -1513,6 +2292,252 @@ const docTemplate = `{
                 }
             }
         },
+        "/products/{id}/items": {
+            "get": {
+                "description": "Get list of all SKUs/variations for a specific product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Items"
+                ],
+                "summary": "Get all product items (SKUs) for a product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of product items",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new SKU for a product (Auth required)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Items"
+                ],
+                "summary": "Create new product item (SKU)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created product item",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{id}/items/{item_id}": {
+            "get": {
+                "description": "Get details of a specific SKU by product ID and item ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Items"
+                ],
+                "summary": "Get specific product item (SKU)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product item details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Product item not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing SKU (Auth required)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Items"
+                ],
+                "summary": "Update product item (SKU)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated product item",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Product item not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a SKU (Auth required)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Items"
+                ],
+                "summary": "Delete product item (SKU)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Product item deleted successfully"
+                    },
+                    "404": {
+                        "description": "Product item not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{id}/variations": {
+            "get": {
+                "description": "Get all variations (Color, Size, etc.) with their options for a product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Product Variations"
+                ],
+                "summary": "Get product variations with options",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of variations with options",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/search": {
             "get": {
                 "description": "Search products by keyword with filters (category, price range, status) and sort options. Uses Elasticsearch for full-text search. This service indexes products from Kafka events and provides fast search capabilities.",
@@ -1741,6 +2766,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.AddToCartRequest": {
+            "type": "object",
+            "properties": {
+                "product_item_id": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "models.AddressInfo": {
             "type": "object",
             "properties": {
@@ -1775,6 +2813,98 @@ const docTemplate = `{
                 "user_id": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "models.CartItem": {
+            "type": "object",
+            "properties": {
+                "image_url": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/images/1.jpg"
+                },
+                "is_selected": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "price": {
+                    "type": "number",
+                    "example": 15100
+                },
+                "product_item_id": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "product_name": {
+                    "type": "string",
+                    "example": "Găng tay chơi game"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "shop_id": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "sku": {
+                    "type": "string",
+                    "example": "GT-123"
+                },
+                "subtotal": {
+                    "type": "number",
+                    "example": 30200
+                }
+            }
+        },
+        "models.CartResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CartItem"
+                    }
+                },
+                "total_items": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "total_price": {
+                    "type": "number",
+                    "example": 30200
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-01-15T12:00:00Z"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "models.CartValidationResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "['Product out of stock'",
+                        "'Invalid item']"
+                    ]
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Cart is valid for checkout"
+                },
+                "valid": {
+                    "description": "Whether the cart is valid for checkout",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -1898,6 +3028,19 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CreateOrderRequest": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "payment_method": {
+                    "type": "string",
+                    "example": "cod"
+                }
+            }
+        },
         "models.CreateProductRequest": {
             "type": "object",
             "required": [
@@ -1991,6 +3134,62 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/models.UserInfo"
+                }
+            }
+        },
+        "models.OrderItem": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "number",
+                    "example": 15100
+                },
+                "product_item_id": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "product_name": {
+                    "type": "string",
+                    "example": "Găng tay chơi game"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "subtotal": {
+                    "type": "number",
+                    "example": 30200
+                }
+            }
+        },
+        "models.OrderResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-01-15T12:05:00Z"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.OrderItem"
+                    }
+                },
+                "order_id": {
+                    "type": "integer",
+                    "example": 5001
+                },
+                "order_number": {
+                    "type": "string",
+                    "example": "ORD-20260115-5001"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "total_amount": {
+                    "type": "number",
+                    "example": 30200
                 }
             }
         },
@@ -2164,6 +3363,33 @@ const docTemplate = `{
                 }
             }
         },
+        "models.SelectAllRequest": {
+            "type": "object",
+            "properties": {
+                "selected": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.SelectShopRequest": {
+            "type": "object",
+            "properties": {
+                "selected": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.SelectionRequest": {
+            "type": "object",
+            "properties": {
+                "selected": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "models.SuccessResponse": {
             "type": "object",
             "properties": {
@@ -2200,6 +3426,15 @@ const docTemplate = `{
                 "street": {
                     "type": "string",
                     "example": "123 Main St"
+                }
+            }
+        },
+        "models.UpdateCartRequest": {
+            "type": "object",
+            "properties": {
+                "quantity": {
+                    "type": "integer",
+                    "example": 2
                 }
             }
         },

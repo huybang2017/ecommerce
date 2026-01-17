@@ -335,6 +335,37 @@ func (s *CartService) ToggleItemSelection(ctx context.Context, userID string, pr
 	return nil
 }
 
+// SetItemSelection sets selection state of a single item (idempotent)
+func (s *CartService) SetItemSelection(ctx context.Context, userID string, productItemID uint, selected bool) error {
+	if userID == "" {
+		return errors.New("user_id is required")
+	}
+
+	cart, err := s.cartRepo.GetCart(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get cart: %w", err)
+	}
+
+	item := cart.FindItemByProductItemID(productItemID)
+	if item == nil {
+		return domain.ErrCartItemNotFound
+	}
+
+	item.IsSelected = selected
+
+	if err := s.cartRepo.SaveCart(cart); err != nil {
+		return fmt.Errorf("failed to save cart: %w", err)
+	}
+
+	s.logger.Info("item selection set",
+		zap.String("user_id", userID),
+		zap.Uint("product_item_id", productItemID),
+		zap.Bool("is_selected", item.IsSelected),
+	)
+
+	return nil
+}
+
 // SelectAllItems selects/deselects all items
 func (s *CartService) SelectAllItems(ctx context.Context, userID string, selected bool) error {
 	if userID == "" {

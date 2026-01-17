@@ -2,10 +2,8 @@ package service
 
 import (
 	"api-gateway/internal/domain"
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -170,13 +168,12 @@ func (s *GatewayService) HealthCheck(ctx context.Context) map[string]error {
 	return results
 }
 
-// ReadRequestBody reads the request body
-func ReadRequestBody(r *http.Request) ([]byte, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	// Restore the body so it can be read again if needed
-	r.Body = io.NopCloser(bytes.NewBuffer(body))
-	return body, nil
+// GetServiceRegistry returns the service registry
+func (s *GatewayService) GetServiceRegistry() domain.ServiceRegistry {
+	return s.serviceRegistry
+}
+
+// GetProxyClient returns the proxy client
+func (s *GatewayService) GetProxyClient() domain.ProxyClient {
+	return s.proxyClient
 }

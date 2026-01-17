@@ -217,3 +217,87 @@ type SearchResponse struct {
 	Page     int       `json:"page" example:"1"`
 	Limit    int       `json:"limit" example:"20"`
 }
+
+// ==================== CART MODELS ====================
+
+// CartItem represents a single item in the cart
+type CartItem struct {
+	ProductItemID uint    `json:"product_item_id" example:"1001"`
+	ProductName   string  `json:"product_name" example:"Găng tay chơi game"`
+	SKU           string  `json:"sku,omitempty" example:"GT-123"`
+	ImageURL      string  `json:"image_url,omitempty" example:"https://cdn.example.com/images/1.jpg"`
+	Price         float64 `json:"price" example:"15100"`
+	Quantity      int     `json:"quantity" example:"2"`
+	Subtotal      float64 `json:"subtotal" example:"30200"`
+	ShopID        uint    `json:"shop_id" example:"10"`
+	IsSelected    bool    `json:"is_selected" example:"true"`
+}
+
+// CartResponse represents the cart returned to the client
+type CartResponse struct {
+	UserID     uint       `json:"user_id" example:"1"`
+	Items      []CartItem `json:"items"`
+	TotalItems int        `json:"total_items" example:"2"`
+	TotalPrice float64    `json:"total_price" example:"30200"`
+	UpdatedAt  string     `json:"updated_at" example:"2026-01-15T12:00:00Z"`
+}
+
+// AddToCartRequest represents request to add an item to cart
+type AddToCartRequest struct {
+	ProductItemID uint `json:"product_item_id" example:"1001"`
+	Quantity      int  `json:"quantity" example:"1"`
+}
+
+// UpdateCartRequest represents request to update quantity
+type UpdateCartRequest struct {
+	Quantity int `json:"quantity" example:"2"`
+}
+
+// SelectionRequest represents selection request for single item
+type SelectionRequest struct {
+	Selected bool `json:"selected" example:"true"`
+}
+
+// SelectAllRequest represents select/deselect all request
+type SelectAllRequest struct {
+	Selected bool `json:"selected" example:"true"`
+}
+
+// SelectShopRequest represents request to select/deselect shop items
+type SelectShopRequest struct {
+	Selected bool `json:"selected" example:"true"`
+}
+
+// CartValidationResponse represents the result of cart validation before checkout
+type CartValidationResponse struct {
+	Valid   bool     `json:"valid" example:"true"` // Whether the cart is valid for checkout
+	Message string   `json:"message,omitempty" example:"Cart is valid for checkout"`
+	Errors  []string `json:"errors,omitempty" example:"['Product out of stock','Invalid item']"`
+}
+
+// ==================== ORDER MODELS ====================
+
+// OrderItem represents an order line item
+type OrderItem struct {
+	ProductItemID uint    `json:"product_item_id" example:"1001"`
+	ProductName   string  `json:"product_name" example:"Găng tay chơi game"`
+	Quantity      int     `json:"quantity" example:"2"`
+	Price         float64 `json:"price" example:"15100"`
+	Subtotal      float64 `json:"subtotal" example:"30200"`
+}
+
+// CreateOrderRequest represents request to create an order from cart
+type CreateOrderRequest struct {
+	AddressID     uint   `json:"address_id" example:"11"`
+	PaymentMethod string `json:"payment_method" example:"cod"`
+}
+
+// OrderResponse represents a created order
+type OrderResponse struct {
+	OrderID     uint        `json:"order_id" example:"5001"`
+	OrderNumber string      `json:"order_number" example:"ORD-20260115-5001"`
+	Items       []OrderItem `json:"items"`
+	TotalAmount float64     `json:"total_amount" example:"30200"`
+	Status      string      `json:"status" example:"pending"`
+	CreatedAt   string      `json:"created_at" example:"2026-01-15T12:05:00Z"`
+}

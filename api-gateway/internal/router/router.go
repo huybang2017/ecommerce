@@ -4,6 +4,7 @@ import (
 	"api-gateway/config"
 	"api-gateway/internal/handler"
 	"api-gateway/internal/middleware"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -21,6 +22,8 @@ func SetupRouter(
 	productHandler *handler.ProductHandler,
 	categoryHandler *handler.CategoryHandler,
 	searchHandler *handler.SearchHandler,
+	cartHandler *handler.CartHandler,
+	orderHandler *handler.OrderHandler,
 	cfg *config.Config,
 	logger *zap.Logger,
 	redisClient *redis.Client,
@@ -46,6 +49,25 @@ func SetupRouter(
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Swagger multi-service configuration
+	router.GET("/swagger-config", func(c *gin.Context) {
+		config := gin.H{
+			"urls": []gin.H{
+				{"url": "/swagger/services/product", "name": "Product Service"},
+				{"url": "/swagger/services/order", "name": "Order Service"},
+				{"url": "/swagger/services/identity", "name": "Identity Service"},
+				{"url": "/swagger/services/search", "name": "Search Service"},
+			},
+		}
+		c.JSON(http.StatusOK, config)
+	})
+
+	// Proxy swagger docs from microservices
+	router.GET("/swagger/services/product", gatewayHandler.ProxySwagger("product_service"))
+	router.GET("/swagger/services/order", gatewayHandler.ProxySwagger("order_service"))
+	router.GET("/swagger/services/identity", gatewayHandler.ProxySwagger("identity_service"))
+	router.GET("/swagger/services/search", gatewayHandler.ProxySwagger("search_service"))
 
 	// Health check endpoint (no auth required)
 	router.GET("/health", gatewayHandler.HealthCheck)
@@ -113,11 +135,28 @@ func SetupRouter(
 			cart := v1.Group("/cart")
 			cart.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
 			{
-				cart.GET("", gatewayHandler.ProxyRequest)
-				cart.DELETE("", gatewayHandler.ProxyRequest)
-				cart.POST("/items", gatewayHandler.ProxyRequest)
-				cart.PUT("/items/:product_item_id", gatewayHandler.ProxyRequest)
-				cart.DELETE("/items/:product_item_id", gatewayHandler.ProxyRequest)
+				cart.GET("", cartHandler.GetCart)
+				cart.DELETE("", cartHandler.ClearCart)
+				cart.POST("/items", cartHandler.AddItem)
+				cart.PUT("/items/:product_item_id", cartHandler.UpdateItem)
+				cart.DELETE("/items/:product_item_id", cartHandler.RemoveItem)
+				cart.POST("/items/:product_item_id/toggle", cartHandler.ToggleItemSelection) // toggle selection
+				// New PATCH routes to set selection state (idempotent)
+				cart.PATCH("/items/:product_item_id/selection", cartHandler.SetItemSelection) // set selection for single item
+				cart.PATCH("/selection", cartHandler.SetAllSelection)                        // set selection for all items
+				cart.PATCH("/shops/:shop_id/selection", cartHandler.SetShopSelection)         // set selection by shop
+
+				cart.DELETE("/selected", cartHandler.ClearSelected) // clear selected items
+				cart.POST("/validate", cartHandler.ValidateCart)   // validate cart before checkout
+			}
+
+			// Order routes (Order Service)
+			orders := v1.Group("/orders")
+			{
+				orders.POST("", orderHandler.CreateOrder)
+				orders.GET("", orderHandler.ListOrders)
+				orders.GET("/:id", orderHandler.GetOrder)
+				orders.GET("/number/:order_number", orderHandler.GetOrderByNumber)
 			}
 
 			// Identity service routes - Auth

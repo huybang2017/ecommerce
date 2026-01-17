@@ -24,7 +24,12 @@
     "paths": {
         "/cart": {
             "get": {
-                "description": "Get the shopping cart for the current user or session",
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Get the shopping cart for the current user",
                 "produces": [
                     "application/json"
                 ],
@@ -32,48 +37,33 @@
                     "Cart"
                 ],
                 "summary": "Get cart",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID (if authenticated)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Session ID (if guest)",
-                        "name": "session_id",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Cart retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.Cart"
+                            "$ref": "#/definitions/domain.ShoppingCart"
                         }
                     },
-                    "400": {
-                        "description": "Invalid request parameters",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
                 "description": "Remove all items from the shopping cart",
                 "produces": [
                     "application/json"
@@ -82,46 +72,23 @@
                     "Cart"
                 ],
                 "summary": "Clear cart",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID (if authenticated)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Session ID (if guest)",
-                        "name": "session_id",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Cart cleared successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.SuccessResponse"
                         }
                     },
-                    "400": {
-                        "description": "Invalid request parameters",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
@@ -129,7 +96,12 @@
         },
         "/cart/items": {
             "post": {
-                "description": "Add a product to the shopping cart",
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Add a product item (SKU) to the shopping cart",
                 "consumes": [
                     "application/json"
                 ],
@@ -141,18 +113,6 @@
                 ],
                 "summary": "Add item to cart",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID (if authenticated)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Session ID (if guest)",
-                        "name": "session_id",
-                        "in": "query"
-                    },
                     {
                         "description": "Add Item Request",
                         "name": "request",
@@ -167,32 +127,37 @@
                     "200": {
                         "description": "Item added successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.Cart"
+                            "$ref": "#/definitions/handler.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/cart/items/{product_id}": {
+        "/cart/items/{product_item_id}": {
             "put": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
                 "description": "Update the quantity of an item in the cart",
                 "consumes": [
                     "application/json"
@@ -207,22 +172,10 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Product ID",
-                        "name": "product_id",
+                        "description": "Product Item ID (SKU)",
+                        "name": "product_item_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "User ID (if authenticated)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Session ID (if guest)",
-                        "name": "session_id",
-                        "in": "query"
                     },
                     {
                         "description": "Update Item Request",
@@ -238,39 +191,41 @@
                     "200": {
                         "description": "Item updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.Cart"
+                            "$ref": "#/definitions/handler.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Item not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
                 "description": "Remove an item from the shopping cart",
                 "produces": [
                     "application/json"
@@ -282,56 +237,371 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Product ID",
-                        "name": "product_id",
+                        "description": "Product Item ID (SKU)",
+                        "name": "product_item_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "User ID (if authenticated)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Session ID (if guest)",
-                        "name": "session_id",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Item removed successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.Cart"
+                            "$ref": "#/definitions/handler.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request parameters",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Item not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{product_item_id}/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Set the selection state (selected/deselected) for a cart item",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set item selection",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID (SKU)",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Selection Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.SelectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item selection updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Item not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/items/{product_item_id}/toggle": {
+            "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Toggle the selection state of a cart item",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Toggle item selection",
+                "deprecated": true,
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID (SKU)",
+                        "name": "product_item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item selection toggled successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request parameters",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Item not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/selected": {
+            "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Remove only items that are marked selected (used after checkout)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Clear selected items",
+                "responses": {
+                    "200": {
+                        "description": "Selected items cleared successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Set selection state for all items in the cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set selection for all items",
+                "parameters": [
+                    {
+                        "description": "Select All Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.SelectAllRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selection updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/shops/{shop_id}/selection": {
+            "patch": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Set selection state for all items from a shop",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Set selection for shop items",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Shop ID",
+                        "name": "shop_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Select Shop Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.SelectShopRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selection updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cart/validate": {
+            "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Validate selected items in the cart (ensure stock and availability) before checkout",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Validate cart",
+                "responses": {
+                    "200": {
+                        "description": "Cart is valid",
+                        "schema": {
+                            "$ref": "#/definitions/handler.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Cart invalid",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
@@ -384,25 +654,19 @@
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Create a new order from the shopping cart",
+                "description": "Create shop_order(s) from the shopping cart. If cart contains items from multiple shops, creates multiple shop_orders (1 per shop).",
                 "consumes": [
                     "application/json"
                 ],
@@ -412,7 +676,7 @@
                 "tags": [
                     "Order"
                 ],
-                "summary": "Create order from cart",
+                "summary": "Create order(s) from cart (Marketplace - Multi-shop)",
                 "parameters": [
                     {
                         "description": "Order creation request",
@@ -426,27 +690,21 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "Order created successfully",
+                        "description": "Order(s) created successfully (can be multiple shop_orders)",
                         "schema": {
-                            "$ref": "#/definitions/domain.Order"
+                            "$ref": "#/definitions/service.CreateOrderResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
@@ -481,19 +739,13 @@
                     "404": {
                         "description": "Order not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
@@ -528,19 +780,13 @@
                     "404": {
                         "description": "Order not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     }
                 }
@@ -548,53 +794,33 @@
         }
     },
     "definitions": {
-        "domain.Cart": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "description": "Map of product_id -\u003e CartItem",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/domain.CartItem"
-                    }
-                },
-                "session_id": {
-                    "description": "Deprecated: No longer used, kept for backward compatibility",
-                    "type": "string"
-                },
-                "total": {
-                    "description": "Total price of all items",
-                    "type": "number"
-                },
-                "updated_at": {
-                    "description": "Unix timestamp",
-                    "type": "integer"
-                },
-                "user_id": {
-                    "description": "User ID (required - authentication required)",
-                    "type": "string"
-                }
-            }
-        },
         "domain.CartItem": {
             "type": "object",
             "properties": {
-                "image": {
+                "image_url": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
+                "is_selected": {
+                    "type": "boolean"
                 },
                 "price": {
                     "type": "number"
                 },
-                "product_id": {
+                "product_item_id": {
+                    "description": "✅ STORED in Redis",
                     "type": "integer"
+                },
+                "product_name": {
+                    "type": "string"
                 },
                 "quantity": {
                     "type": "integer"
                 },
-                "sku": {
+                "shop_id": {
+                    "description": "❌ NOT stored in Redis - Fetched from Product Service on-demand",
+                    "type": "integer"
+                },
+                "sku_code": {
                     "type": "string"
                 }
             }
@@ -602,92 +828,52 @@
         "domain.Order": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "description": "Timestamps",
-                    "type": "string"
-                },
-                "discount": {
-                    "description": "GIỮ LẠI",
-                    "type": "number"
-                },
                 "earning_amount": {
-                    "description": "THÊM MỚI - Shop thực nhận",
                     "type": "number"
                 },
                 "final_amount": {
-                    "description": "THÊM MỚI - Khách thực trả",
                     "type": "number"
                 },
                 "id": {
                     "type": "integer"
                 },
                 "items": {
-                    "description": "Order items",
+                    "description": "Relations",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/domain.OrderItem"
                     }
                 },
                 "merchandise_subtotal": {
-                    "description": "Financial breakdown (theo db-diagram.db)",
+                    "description": "Financial snapshot (SOURCE OF TRUTH)",
                     "type": "number"
                 },
                 "order_number": {
-                    "description": "Order identification",
+                    "description": "Business identifiers",
                     "type": "string"
                 },
                 "ordered_at": {
-                    "description": "THÊM MỚI",
+                    "description": "Time",
                     "type": "string"
                 },
                 "payment_method": {
-                    "description": "Payment \u0026 timestamps",
+                    "description": "Payment",
                     "type": "string"
                 },
                 "platform_fee": {
-                    "description": "THÊM MỚI - Phí sàn",
                     "type": "number"
                 },
-                "session_id": {
-                    "description": "GIỮ LẠI deprecated",
-                    "type": "string"
-                },
-                "shipping_address": {
-                    "type": "string"
-                },
                 "shipping_address_id": {
-                    "description": "THÊM MỚI - Reference address table",
+                    "description": "Shipping",
                     "type": "integer"
                 },
-                "shipping_city": {
-                    "type": "string"
-                },
-                "shipping_country": {
-                    "type": "string"
-                },
                 "shipping_discount": {
-                    "description": "THÊM MỚI - Mã freeship",
                     "type": "number"
                 },
                 "shipping_fee": {
-                    "description": "Phí vận chuyển",
                     "type": "number"
                 },
-                "shipping_name": {
-                    "description": "Shipping information (GIỮ LẠI)",
-                    "type": "string"
-                },
-                "shipping_phone": {
-                    "type": "string"
-                },
-                "shipping_postal_code": {
-                    "type": "string"
-                },
-                "shipping_province": {
-                    "type": "string"
-                },
                 "shop_id": {
-                    "description": "THÊM MỚI - Order từ shop (theo db-diagram.db)",
                     "type": "integer"
                 },
                 "status": {
@@ -698,27 +884,14 @@
                         }
                     ]
                 },
-                "subtotal": {
-                    "description": "GIỮ LẠI (sẽ sync với MerchandiseSubtotal)",
-                    "type": "number"
-                },
-                "tax": {
-                    "description": "GIỮ LẠI (không có trong diagram)",
-                    "type": "number"
-                },
-                "total_amount": {
-                    "description": "GIỮ LẠI để backward compatibility",
-                    "type": "number"
-                },
                 "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
-                    "description": "ĐỔI thành NOT NULL (bỏ guest orders)",
+                    "description": "Ownership",
                     "type": "integer"
                 },
                 "voucher_discount": {
-                    "description": "THÊM MỚI - Mã giảm giá",
                     "type": "number"
                 }
             }
@@ -727,7 +900,6 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "Timestamps",
                     "type": "string"
                 },
                 "id": {
@@ -736,43 +908,14 @@
                 "order_id": {
                     "type": "integer"
                 },
-                "price": {
-                    "description": "GIỮ LẠI backward compatibility (sync với PriceAtPurchase)",
-                    "type": "number"
-                },
                 "price_at_purchase": {
-                    "description": "THÊM MỚI - Đúng tên theo diagram",
                     "type": "number"
-                },
-                "product_id": {
-                    "description": "GIỮ LẠI backward compatibility",
-                    "type": "integer"
-                },
-                "product_image": {
-                    "description": "GIỮ LẠI",
-                    "type": "string"
                 },
                 "product_item_id": {
-                    "description": "THÊM MỚI - Reference product_item (SKU)",
                     "type": "integer"
-                },
-                "product_name": {
-                    "description": "GIỮ LẠI",
-                    "type": "string"
-                },
-                "product_sku": {
-                    "description": "GIỮ LẠI",
-                    "type": "string"
                 },
                 "quantity": {
                     "type": "integer"
-                },
-                "subtotal": {
-                    "description": "GIỮ LẠI",
-                    "type": "number"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -811,34 +954,110 @@
                 "OrderStatusCancelled"
             ]
         },
+        "domain.ShoppingCart": {
+            "type": "object",
+            "properties": {
+                "item_count": {
+                    "description": "✅ COMPUTED FIELDS - Cart Service responsibility ONLY\nThese are DISPLAY metrics for Cart UI/Badge, NOT checkout logic",
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CartItem"
+                    }
+                },
+                "selected_item_count": {
+                    "description": "Selected items (rows)",
+                    "type": "integer"
+                },
+                "selected_quantity": {
+                    "description": "Sum of selected quantities",
+                    "type": "integer"
+                },
+                "selected_total_price": {
+                    "description": "Total price (selected)",
+                    "type": "number"
+                },
+                "total_price": {
+                    "description": "Total price (all)",
+                    "type": "number"
+                },
+                "total_quantity": {
+                    "description": "Sum of all quantities",
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.AddItemRequest": {
             "type": "object",
             "required": [
-                "name",
-                "price",
-                "product_id",
                 "quantity"
             ],
             "properties": {
-                "image": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "product_id": {
+                "product_item_id": {
                     "type": "integer"
                 },
                 "quantity": {
                     "type": "integer",
                     "minimum": 1
-                },
-                "sku": {
-                    "type": "string"
+                }
+            }
+        },
+        "handler.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "description of the error"
+                }
+            }
+        },
+        "handler.SelectAllRequest": {
+            "type": "object",
+            "required": [
+                "selected"
+            ],
+            "properties": {
+                "selected": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handler.SelectShopRequest": {
+            "type": "object",
+            "required": [
+                "selected"
+            ],
+            "properties": {
+                "selected": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handler.SelectionRequest": {
+            "type": "object",
+            "required": [
+                "selected"
+            ],
+            "properties": {
+                "selected": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handler.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "operation completed successfully"
                 }
             }
         },
@@ -863,14 +1082,19 @@
                 "shipping_phone"
             ],
             "properties": {
-                "discount": {
-                    "type": "number"
+                "payment_method": {
+                    "type": "string"
                 },
                 "session_id": {
+                    "description": "Deprecated",
                     "type": "string"
                 },
                 "shipping_address": {
                     "type": "string"
+                },
+                "shipping_address_id": {
+                    "description": "THÊM MỚI - Reference address table",
+                    "type": "integer"
                 },
                 "shipping_city": {
                     "type": "string"
@@ -878,8 +1102,12 @@
                 "shipping_country": {
                     "type": "string"
                 },
+                "shipping_discount": {
+                    "description": "Mã freeship",
+                    "type": "number"
+                },
                 "shipping_fee": {
-                    "description": "Optional",
+                    "description": "Financial (theo db-diagram.db)",
                     "type": "number"
                 },
                 "shipping_name": {
@@ -895,13 +1123,40 @@
                 "shipping_province": {
                     "type": "string"
                 },
-                "tax": {
-                    "type": "number"
-                },
                 "user_id": {
                     "type": "integer"
+                },
+                "voucher_discount": {
+                    "description": "Mã giảm giá",
+                    "type": "number"
                 }
             }
+        },
+        "service.CreateOrderResponse": {
+            "type": "object",
+            "properties": {
+                "order_numbers": {
+                    "description": "Order numbers for each shop_order",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "orders": {
+                    "description": "Multiple shop_orders (1 per shop)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Order"
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "UserAuth": {
+            "type": "apiKey",
+            "name": "X-User-Id",
+            "in": "header"
         }
     }
 }

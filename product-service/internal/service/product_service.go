@@ -220,6 +220,13 @@ func (s *ProductService) UpdateProduct(ctx context.Context, product *domain.Prod
 // GetProduct retrieves a product by ID with cache-first strategy
 // This demonstrates the cache-aside pattern
 func (s *ProductService) GetProduct(ctx context.Context, id uint) (*domain.Product, error) {
+	// TODO: Flash Sale Feature
+	// - Check if product is in flash sale (Redis key: "flash_sale:{product_id}")
+	// - Apply flash sale price if active
+	// - Track flash sale stock separately (prevent overselling)
+	// - Handle concurrent requests during flash sale spike
+	// - Auto-expire flash sale cache when event ends
+
 	// 1. Try cache first (fast path)
 	product, err := s.cacheRepo.GetProduct(ctx, id)
 	if err == nil && product != nil {

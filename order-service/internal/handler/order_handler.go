@@ -33,8 +33,8 @@ func NewOrderHandler(orderService *service.OrderService, logger *zap.Logger) *Or
 // @Produce json
 // @Param order body service.CreateOrderRequest true "Order creation request"
 // @Success 201 {object} service.CreateOrderResponse "Order(s) created successfully (can be multiple shop_orders)"
-// @Failure 400 {object} map[string]string "Invalid request"
-// @Failure 500 {object} map[string]string "Internal server error"
+// @Failure 400 {object} handler.ErrorResponse "Invalid request"
+// @Failure 500 {object} handler.ErrorResponse "Internal server error"
 // @Router /orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	var req service.CreateOrderRequest
@@ -82,8 +82,8 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Order ID"
 // @Success 200 {object} domain.Order "Order retrieved successfully"
-// @Failure 404 {object} map[string]string "Order not found"
-// @Failure 500 {object} map[string]string "Internal server error"
+// @Failure 404 {object} handler.ErrorResponse "Order not found"
+// @Failure 500 {object} handler.ErrorResponse "Internal server error"
 // @Router /orders/{id} [get]
 func (h *OrderHandler) GetOrder(c *gin.Context) {
 	idStr := c.Param("id")
@@ -110,8 +110,8 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 // @Produce json
 // @Param order_number path string true "Order Number"
 // @Success 200 {object} domain.Order "Order retrieved successfully"
-// @Failure 404 {object} map[string]string "Order not found"
-// @Failure 500 {object} map[string]string "Internal server error"
+// @Failure 404 {object} handler.ErrorResponse "Order not found"
+// @Failure 500 {object} handler.ErrorResponse "Internal server error"
 // @Router /orders/number/{order_number} [get]
 func (h *OrderHandler) GetOrderByOrderNumber(c *gin.Context) {
 	orderNumber := c.Param("order_number")
@@ -140,8 +140,8 @@ func (h *OrderHandler) GetOrderByOrderNumber(c *gin.Context) {
 // @Param limit query int false "Limit (default: 20)"
 // @Param offset query int false "Offset (default: 0)"
 // @Success 200 {object} map[string]interface{} "Orders retrieved successfully"
-// @Failure 400 {object} map[string]string "Invalid request"
-// @Failure 500 {object} map[string]string "Internal server error"
+// @Failure 400 {object} handler.ErrorResponse "Invalid request"
+// @Failure 500 {object} handler.ErrorResponse "Internal server error"
 // @Router /orders [get]
 func (h *OrderHandler) ListOrders(c *gin.Context) {
 	// Get user_id from header (preferred - set by API Gateway)
