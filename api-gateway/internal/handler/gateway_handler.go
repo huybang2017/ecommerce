@@ -3,7 +3,7 @@ package handler
 import (
 	"api-gateway/internal/service"
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -49,22 +49,7 @@ func NewGatewayHandler(gatewayService *service.GatewayService, logger *zap.Logge
 }
 
 // ProxyRequest proxies a request to the appropriate microservice
-// This is the main handler that routes requests to backend services
-// @Summary Proxy request to microservice
-// @Description Routes requests to appropriate backend microservices (Identity Service, Product Service, etc.)
-// @Tags Gateway
-// @Accept json
-// @Produce json
-// @Param Authorization header string false "Bearer token for protected routes"
-// @Success 200 {object} map[string]interface{} "Response from backend service"
-// @Failure 400 {object} map[string]interface{} "Bad request"
-// @Failure 401 {object} map[string]interface{} "Unauthorized"
-// @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /api/v1/{path} [get]
-// @Router /api/v1/{path} [post]
-// @Router /api/v1/{path} [put]
-// @Router /api/v1/{path} [patch]
-// @Router /api/v1/{path} [delete]
+// This is the main handler that routes requests to backend microservices
 func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 	// FIX 1: CRITICAL - OPTIONS should never reach here (handled by CORS middleware)
 	if c.Request.Method == "OPTIONS" {
@@ -73,14 +58,8 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		return
 	}
 
-	// DEBUG: Log incoming request immediately
-	_, hasAuthInContext := c.Get("auth_header")
-	h.logger.Info("ProxyRequest called",
-		zap.String("path", c.Request.URL.Path),
-		zap.String("method", c.Request.Method),
-		zap.String("auth_header_in_request", c.Request.Header.Get("Authorization")),
-		zap.Bool("auth_in_context", hasAuthInContext),
-	)
+	// Minimal logging: method and path
+	h.logger.Debug("ProxyRequest", zap.String("path", c.Request.URL.Path), zap.String("method", c.Request.Method))
 
 	// Extract service name from path
 	serviceName := h.getServiceName(c.Request.URL.Path)
@@ -137,13 +116,10 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		h.logger.Debug("Authorization header ready for forwarding", zap.String("header_preview", headers["Authorization"][:min(30, len(headers["Authorization"]))]))
 	}
 
-	// CRITICAL: Forward user context headers to backend microservices
-	// This allows backend services to know WHO is making the request without re-validating JWT
-	// This is the BFF (Backend For Frontend) pattern
+	// Forward user context headers to backend microservices (injected by gateway)
 	if userID, exists := c.Get("user_id"); exists {
 		if userIDStr, ok := userID.(string); ok {
 			headers["X-User-Id"] = userIDStr
-			h.logger.Debug("Forwarding X-User-Id header", zap.String("user_id", userIDStr))
 		}
 	}
 
@@ -204,19 +180,7 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL: Forward response headers from backend to client
-	// EXCEPT CORS headers which are handled by Gateway middleware
-	// This is essential for Set-Cookie headers in authentication
-	h.logger.Info("Forwarding response headers",
-		zap.Int("header_count", len(proxyResponse.Headers)),
-		zap.Strings("header_keys", func() []string {
-			keys := make([]string, 0, len(proxyResponse.Headers))
-			for k := range proxyResponse.Headers {
-				keys = append(keys, k)
-			}
-			return keys
-		}()),
-	)
+	// Forward response headers from backend to client (except CORS)
 
 	// FIX 2: Skip ALL CORS headers from backend (case-insensitive)
 	for headerKey, headerValues := range proxyResponse.Headers {
@@ -255,14 +219,6 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 }
 
 // HealthCheck returns the health status of the gateway and all services
-// @Summary Health check
-// @Description Returns the health status of the API Gateway and all registered microservices
-// @Tags Gateway
-// @Produce json
-// @Success 200 {object} map[string]interface{} "Gateway and services are healthy"
-// @Failure 503 {object} map[string]interface{} "One or more services are unhealthy"
-// @Router /health [get]
-// @Router /api/gateway/health [get]
 func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 	healthStatus := h.gatewayService.HealthCheck(c.Request.Context())
 
@@ -289,57 +245,163 @@ func (h *GatewayHandler) HealthCheck(c *gin.Context) {
 	}
 }
 
-// ProxySwagger proxies swagger documentation from microservices
-func (h *GatewayHandler) ProxySwagger(serviceName string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Get service from registry
-		service, err := h.gatewayService.GetServiceRegistry().GetService(serviceName)
-		if err != nil {
-			h.logger.Error("service not found", zap.String("service", serviceName), zap.Error(err))
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service unavailable"})
-			return
+// SpecProxy fetches a service's swagger.json server-side, rewrites the
+// `servers` entry to point to the gateway, and returns the modified spec.
+func (h *GatewayHandler) SpecProxy(c *gin.Context) {
+	serviceParam := c.Param("service")
+	// Fallback: some router edge-cases may not populate c.Param correctly.
+	// Parse from URL path if param is empty.
+	if serviceParam == "" {
+		raw := c.Request.URL.Path
+		h.logger.Debug("SpecProxy: c.Param empty, parsing from URL", zap.String("path", raw))
+		// trim prefix
+		if strings.HasPrefix(raw, "/specs/") {
+			raw = strings.TrimPrefix(raw, "/specs/")
 		}
-
-		// Construct swagger URL (assume /swagger/doc.json endpoint)
-		swaggerURL := fmt.Sprintf("%s/swagger/doc.json", service.BaseURL)
-
-		// Create HTTP request to microservice
-		req, err := http.NewRequest("GET", swaggerURL, nil)
-		if err != nil {
-			h.logger.Error("failed to create request", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
+		// remove leading/trailing slashes
+		raw = strings.Trim(raw, "/ ")
+		// if it contains query params, strip
+		if idx := strings.Index(raw, "?"); idx != -1 {
+			raw = raw[:idx]
 		}
-
-		// Forward headers if needed
-		req.Header.Set("User-Agent", "API-Gateway/1.0")
-
-		// Execute request using standard http client
-		client := &http.Client{Timeout: 10 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			h.logger.Error("failed to proxy swagger request",
-				zap.String("service", serviceName),
-				zap.String("url", swaggerURL),
-				zap.Error(err))
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service unavailable"})
-			return
-		}
-		defer resp.Body.Close()
-
-		// Read response body
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			h.logger.Error("failed to read response body", zap.Error(err))
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
-			return
-		}
-
-		// Set content type and return JSON
-		c.Header("Content-Type", "application/json")
-		c.Data(resp.StatusCode, "application/json", body)
+		serviceParam = strings.TrimSuffix(raw, ".json")
 	}
+	if serviceParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing service parameter"})
+		return
+	}
+
+	// Trim common suffixes if the route captured them
+	serviceParam = strings.TrimSuffix(serviceParam, ".json")
+	serviceParam = strings.Trim(serviceParam, "/ ")
+
+	// Map short name (e.g. product) -> service key (product_service)
+	svcKey := strings.ReplaceAll(serviceParam, "-", "_") + "_service"
+
+	sr := h.gatewayService.GetServiceRegistry()
+	svc, err := sr.GetService(svcKey)
+	if err != nil {
+		// Try exact key as fallback (serviceParam might already be full key)
+		svc, err = sr.GetService(serviceParam)
+		if err != nil {
+			h.logger.Warn("SpecProxy: service not found", zap.String("service_param", serviceParam), zap.String("svc_key", svcKey))
+			c.JSON(http.StatusNotFound, gin.H{"error": "service not found", "service": serviceParam})
+			return
+		}
+	}
+
+	// Construct remote spec URL (service is expected to expose /<short>/swagger/doc.json)
+	remoteURL := strings.TrimRight(svc.BaseURL, "/") + "/" + serviceParam + "/swagger/doc.json"
+	h.logger.Debug("SpecProxy fetching remote spec", zap.String("remote_url", remoteURL))
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(remoteURL)
+	if err != nil {
+		h.logger.Error("SpecProxy failed to fetch remote spec", zap.Error(err))
+		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to fetch remote spec", "details": err.Error(), "remote_url": remoteURL})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		h.logger.Warn("SpecProxy remote spec returned non-200", zap.Int("status", resp.StatusCode), zap.String("remote_url", remoteURL))
+		c.JSON(http.StatusBadGateway, gin.H{"error": "remote spec returned non-200", "status": resp.StatusCode, "remote_url": remoteURL})
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		h.logger.Error("SpecProxy failed reading remote body", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read remote spec"})
+		return
+	}
+
+	// Try to unmarshal JSON and rewrite servers
+	var doc map[string]interface{}
+	if err := json.Unmarshal(body, &doc); err != nil {
+		// If not JSON, just proxy raw body
+		h.logger.Warn("SpecProxy: remote spec not JSON, proxying raw body")
+		c.Data(http.StatusOK, "application/json", body)
+		return
+	}
+
+	// Build gateway base URL (scheme + host) and set /api/v1 as base for runtime
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	gatewayBase := scheme + "://" + c.Request.Host + "/api/v1"
+
+	// If OpenAPI v3 (has `openapi` or `servers`), rewrite `servers`.
+	if _, ok := doc["openapi"]; ok {
+		servers := []map[string]string{{"url": gatewayBase}}
+		doc["servers"] = servers
+	}
+
+	// If Swagger 2.0 (has `swagger` == "2.0"), rewrite `host` and `basePath`.
+	if v, ok := doc["swagger"]; ok {
+		if s, ok2 := v.(string); ok2 && s == "2.0" {
+			// For swagger2, set host and basePath so UI builds URLs like scheme://host{basePath}{path}
+			doc["host"] = c.Request.Host
+			doc["basePath"] = "/api/v1"
+			// also remove servers if present
+			delete(doc, "servers")
+		}
+	}
+
+	out, err := json.Marshal(doc)
+	if err != nil {
+		h.logger.Error("SpecProxy failed to marshal modified spec", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate spec"})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", out)
 }
+
+// SetSessionCookie allows the Swagger UI to request the gateway set an httpOnly session cookie.
+// This is intended for local/dev use to let the browser send the session cookie while keeping it httpOnly.
+func (h *GatewayHandler) SetSessionCookie(c *gin.Context) {
+	var payload struct {
+		SessionID string `json:"session_id"`
+		MaxAge    int    `json:"max_age"`
+	}
+
+	if err := c.BindJSON(&payload); err != nil {
+		h.logger.Warn("SetSessionCookie: invalid payload", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	// Security: ensure this endpoint is only usable from the same origin (Swagger UI served by gateway)
+	origin := c.Request.Header.Get("Origin")
+	if origin != "" && !strings.Contains(origin, c.Request.Host) {
+		h.logger.Warn("SetSessionCookie: origin mismatch", zap.String("origin", origin), zap.String("host", c.Request.Host))
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	// If SessionID empty => clear cookie
+	if payload.SessionID == "" {
+		// set cookie with max-age 0 to delete
+		c.SetCookie("session_id", "", 0, "/", "", false, true)
+		c.JSON(http.StatusOK, gin.H{"status": "cleared"})
+		return
+	}
+
+	// Use provided MaxAge if positive, otherwise default (e.g., 3600 seconds)
+	maxAge := payload.MaxAge
+	if maxAge <= 0 {
+		maxAge = 3600
+	}
+
+	// Set httpOnly cookie so browser will send it but JS cannot read it
+	// For local dev, Secure=false; in production set Secure=true and SameSite as needed
+	c.SetCookie("session_id", payload.SessionID, maxAge, "/", "", false, true)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// Note: Gateway does not proxy or merge service OpenAPI specs; it exposes /swagger-config which lists service spec URLs.
 
 // getServiceName maps request paths to service names
 func (h *GatewayHandler) getServiceName(path string) string {

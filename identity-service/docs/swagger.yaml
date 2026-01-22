@@ -382,6 +382,50 @@ paths:
       summary: Login user
       tags:
       - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke session and clear cookies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Use session_id from cookie to get a new access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid or expired session
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
   /auth/register:
     post:
       consumes:

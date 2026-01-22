@@ -23,22 +23,118 @@ definitions:
       id:
         type: integer
       image_url:
-        description: Image for this specific SKU
         type: string
       price:
-        description: Price for this SKU
         type: number
       product_id:
         type: integer
       qty_in_stock:
-        description: Stock for this SKU
         type: integer
       sku_code:
-        description: Unique SKU
         type: string
       status:
-        description: ACTIVE, OUT_OF_STOCK, DISABLED
         type: string
+    type: object
+  domain.StockCheckItem:
+    properties:
+      product_item_id:
+        type: integer
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_item_id
+    - quantity
+    type: object
+  domain.StockCheckRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.StockCheckItem'
+        type: array
+    required:
+    - items
+    type: object
+  domain.StockCheckResponse:
+    properties:
+      available:
+        type: boolean
+      unavailable_items:
+        items:
+          $ref: '#/definitions/domain.UnavailableStockItem'
+        type: array
+    type: object
+  domain.StockDeductItem:
+    properties:
+      product_item_id:
+        type: integer
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_item_id
+    - quantity
+    type: object
+  domain.StockDeductRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.StockDeductItem'
+        type: array
+      order_id:
+        type: string
+    required:
+    - items
+    - order_id
+    type: object
+  domain.StockReleaseRequest:
+    properties:
+      order_id:
+        type: string
+    required:
+    - order_id
+    type: object
+  domain.StockReserveItem:
+    properties:
+      product_item_id:
+        type: integer
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_item_id
+    - quantity
+    type: object
+  domain.StockReserveRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.StockReserveItem'
+        type: array
+      order_id:
+        type: string
+    required:
+    - items
+    - order_id
+    type: object
+  domain.UnavailableStockItem:
+    properties:
+      available:
+        type: integer
+      product_item_id:
+        type: integer
+      requested:
+        type: integer
+    type: object
+  domain.VariationOption:
+    properties:
+      id:
+        type: integer
+      value:
+        description: '"M", "L", "XL", "Red", "Blue"'
+        type: string
+      variation_id:
+        type: integer
     type: object
   handler.CategoryResponse:
     properties:
@@ -48,6 +144,10 @@ definitions:
         type: string
       id:
         type: integer
+      image_url:
+        type: string
+      is_active:
+        type: boolean
       name:
         type: string
       parent_id:
@@ -72,7 +172,11 @@ definitions:
     type: object
   handler.CreateProductRequest:
     properties:
+      base_price:
+        minimum: 0
+        type: number
       category_id:
+        description: Must be leaf category
         type: integer
       description:
         type: string
@@ -84,22 +188,16 @@ definitions:
         type: boolean
       name:
         type: string
-      price:
-        minimum: 0
-        type: number
-      sku:
-        type: string
       status:
         type: string
-      stock:
-        type: integer
     required:
+    - base_price
     - name
-    - price
-    - sku
     type: object
   handler.ProductResponse:
     properties:
+      base_price:
+        type: number
       category_id:
         type: integer
       created_at:
@@ -116,14 +214,12 @@ definitions:
         type: boolean
       name:
         type: string
-      price:
-        type: number
-      sku:
-        type: string
+      shop_id:
+        type: integer
+      sold_count:
+        type: integer
       status:
         type: string
-      stock:
-        type: integer
       updated_at:
         type: string
     type: object
@@ -140,6 +236,9 @@ definitions:
     type: object
   handler.UpdateProductRequest:
     properties:
+      base_price:
+        minimum: 0
+        type: number
       category_id:
         type: integer
       description:
@@ -152,13 +251,20 @@ definitions:
         type: boolean
       name:
         type: string
-      price:
-        minimum: 0
-        type: number
       status:
         type: string
-      stock:
+    type: object
+  handler.VariationWithOptions:
+    properties:
+      id:
         type: integer
+      name:
+        description: '"Màu Sắc", "Kích Thước"'
+        type: string
+      options:
+        items:
+          $ref: '#/definitions/domain.VariationOption'
+        type: array
     type: object
   service.CreateCategoryAttributeRequest:
     properties:
@@ -619,6 +725,75 @@ paths:
       summary: Get a category by slug
       tags:
       - Categories
+  /product-items/{id}/stock:
+    get:
+      description: Get current stock quantity for a product item (SKU)
+      parameters:
+      - description: Product Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get stock for a product item
+      tags:
+      - stock
+    put:
+      consumes:
+      - application/json
+      description: Update stock quantity for a product item (for shop owners)
+      parameters:
+      - description: Product Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'Stock update request {new_stock: 100}'
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update stock quantity
+      tags:
+      - stock
   /product-items/{sku_code}:
     get:
       description: Get product item by SKU code
@@ -648,6 +823,162 @@ paths:
       summary: Get SKU by code
       tags:
       - skus
+  /product-items/batch:
+    get:
+      description: Fetch multiple product items in one request for cart/order services
+      parameters:
+      - description: Comma-separated product item IDs (e.g., 1,2,3)
+        in: query
+        name: ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: items array with product details
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get multiple product items by IDs (batch)
+      tags:
+      - skus
+  /product-items/check-stock:
+    post:
+      consumes:
+      - application/json
+      description: Check if enough stock is available for multiple items
+      parameters:
+      - description: Stock check request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StockCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.StockCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check stock availability
+      tags:
+      - stock
+  /product-items/deduct-stock:
+    post:
+      consumes:
+      - application/json
+      description: Deduct stock from product_item.qty_in_stock (after payment confirmed)
+      parameters:
+      - description: Stock deduct request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StockDeductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Deduct stock permanently
+      tags:
+      - stock
+  /product-items/release-stock:
+    post:
+      consumes:
+      - application/json
+      description: Release stock reservation when order is cancelled or payment failed
+      parameters:
+      - description: Stock release request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StockReleaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Release reserved stock
+      tags:
+      - stock
+  /product-items/reserve-stock:
+    post:
+      consumes:
+      - application/json
+      description: Temporarily reserve stock during checkout (15 minutes TTL)
+      parameters:
+      - description: Stock reserve request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StockReserveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reserve stock for an order
+      tags:
+      - stock
   /products:
     get:
       description: Get a paginated list of products with optional filters (category_id,
@@ -858,6 +1189,35 @@ paths:
       summary: Update product inventory
       tags:
       - Products
+  /products/{id}/variations:
+    get:
+      consumes:
+      - application/json
+      description: Get variations (Color, Size, etc.) with their options for product
+        detail page
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.VariationWithOptions'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all variations for a product
+      tags:
+      - variations
   /products/{product_id}/attributes:
     get:
       description: Get all attribute values for a product
