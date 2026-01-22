@@ -47,6 +47,22 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Expose OpenAPI spec at service-scoped path for Gateway to consume
+	// e.g. GET /product/swagger/doc.json
+	router.GET("/product/swagger/doc.json", func(c *gin.Context) {
+		// Allow the Gateway (and browsers) to fetch this JSON cross-origin
+		c.Header("Content-Type", "application/json")
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.File("docs/swagger.json")
+	})
+	// Respond to preflight just in case
+	router.OPTIONS("/product/swagger/doc.json", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Status(204)
+	})
+
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

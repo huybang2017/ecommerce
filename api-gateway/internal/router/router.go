@@ -4,7 +4,9 @@ import (
 	"api-gateway/config"
 	"api-gateway/internal/handler"
 	"api-gateway/internal/middleware"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -37,6 +39,9 @@ func SetupRouter(
 	// CRITICAL: Custom CORS middleware MUST be first
 	router.Use(middleware.CORSMiddleware(&cfg.CORS, logger))
 
+	// Strip any client-supplied internal headers before auth
+	router.Use(middleware.StripInternalHeaders(logger))
+
 	// Skip logging OPTIONS requests (CORS preflight) to reduce noise
 	router.Use(middleware.SkipOptionsLoggingMiddleware(logger))
 
@@ -47,27 +52,53 @@ func SetupRouter(
 	// Rate limiting middleware
 	router.Use(middleware.RateLimitMiddleware(&cfg.RateLimit, logger))
 
-	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Swagger multi-service configuration
-	router.GET("/swagger-config", func(c *gin.Context) {
-		config := gin.H{
-			"urls": []gin.H{
-				{"url": "/swagger/services/product", "name": "Product Service"},
-				{"url": "/swagger/services/order", "name": "Order Service"},
-				{"url": "/swagger/services/identity", "name": "Identity Service"},
-				{"url": "/swagger/services/search", "name": "Search Service"},
-			},
-		}
-		c.JSON(http.StatusOK, config)
+	// Serve a custom multi-spec Swagger UI index (at a non-conflicting prefix)
+	router.GET("/swagger-ui/index.html", func(c *gin.Context) {
+		c.File("docs/swagger-index.html")
 	})
 
-	// Proxy swagger docs from microservices
-	router.GET("/swagger/services/product", gatewayHandler.ProxySwagger("product_service"))
-	router.GET("/swagger/services/order", gatewayHandler.ProxySwagger("order_service"))
-	router.GET("/swagger/services/identity", gatewayHandler.ProxySwagger("identity_service"))
-	router.GET("/swagger/services/search", gatewayHandler.ProxySwagger("search_service"))
+	// Accept requests to the directory path and plain `/swagger-ui` and redirect or serve index
+	router.GET("/swagger-ui/", func(c *gin.Context) {
+		c.File("docs/swagger-index.html")
+	})
+	router.GET("/swagger-ui", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/swagger-ui/")
+	})
+
+	// Convenience redirect from /swagger to the UI under /swagger-ui
+	router.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/swagger-ui/index.html")
+	})
+
+	// Swagger UI (single wildcard at the end) - keep gin-swagger assets for gateway's own docs
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Swagger UI configuration endpoint (returns gateway-scoped spec URLs)
+	// The gateway will serve service specs at /specs/{short}.json which
+	// are fetched server-side and rewritten so that runtime calls go to the gateway.
+	router.GET("/swagger-config", func(c *gin.Context) {
+		urls := make([]gin.H, 0, len(cfg.Services))
+		for key := range cfg.Services {
+			short := strings.TrimSuffix(key, "_service")
+			short = strings.ReplaceAll(short, "_", "-")
+			// Point UI to gateway's spec proxy endpoint
+			specURL := fmt.Sprintf("/specs/%s.json", short)
+			name := strings.Title(short) + " Service"
+			urls = append(urls, gin.H{"url": specURL, "name": name})
+		}
+		c.JSON(http.StatusOK, gin.H{"urls": urls})
+	})
+
+	// Gateway-side spec proxy endpoint. Returns the service's swagger.json
+	// with `servers` rewritten to point at the gateway so the UI and Try-it-out
+	// calls go through the gateway.
+	// Single wildcard route to handle both `/specs/service` and `/specs/service.json`
+	router.GET("/specs/*service", gatewayHandler.SpecProxy)
+
+	// Endpoint used by Swagger UI to ask gateway to set an httpOnly session cookie
+	router.POST("/auth/session", gatewayHandler.SetSessionCookie)
+
+	// Gateway does not proxy or merge service OpenAPI specs. Each service must expose its own spec (e.g. /product/swagger/doc.json).
 
 	// Health check endpoint (no auth required)
 	router.GET("/health", gatewayHandler.HealthCheck)
@@ -143,11 +174,11 @@ func SetupRouter(
 				cart.POST("/items/:product_item_id/toggle", cartHandler.ToggleItemSelection) // toggle selection
 				// New PATCH routes to set selection state (idempotent)
 				cart.PATCH("/items/:product_item_id/selection", cartHandler.SetItemSelection) // set selection for single item
-				cart.PATCH("/selection", cartHandler.SetAllSelection)                        // set selection for all items
+				cart.PATCH("/selection", cartHandler.SetAllSelection)                         // set selection for all items
 				cart.PATCH("/shops/:shop_id/selection", cartHandler.SetShopSelection)         // set selection by shop
 
 				cart.DELETE("/selected", cartHandler.ClearSelected) // clear selected items
-				cart.POST("/validate", cartHandler.ValidateCart)   // validate cart before checkout
+				cart.POST("/validate", cartHandler.ValidateCart)    // validate cart before checkout
 			}
 
 			// Order routes (Order Service)
@@ -198,10 +229,6 @@ func SetupRouter(
 			}
 		}
 	}
-
-	// REMOVED: NoRoute catch-all prevents CORS middleware from working properly
-	// If you need fallback routing, handle it in specific route groups
-	// router.NoRoute(gatewayHandler.ProxyRequest)
 
 	return router
 }

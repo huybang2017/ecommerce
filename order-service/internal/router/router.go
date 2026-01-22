@@ -17,6 +17,21 @@ func SetupRouter(cartHandler *handler.CartHandler, orderHandler *handler.OrderHa
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Expose OpenAPI spec at service-scoped path for Gateway to consume
+	// e.g. GET /order/swagger/doc.json
+	router.GET("/order/swagger/doc.json", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.File("docs/swagger.json")
+	})
+	// Preflight support
+	router.OPTIONS("/order/swagger/doc.json", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Status(204)
+	})
+
 	// Health check endpoint
 	router.GET("/health", cartHandler.HealthCheck)
 

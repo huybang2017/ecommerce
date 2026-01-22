@@ -585,6 +585,339 @@
                 }
             }
         },
+        "/product-items/batch": {
+            "get": {
+                "description": "Fetch multiple product items in one request for cart/order services",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skus"
+                ],
+                "summary": "Get multiple product items by IDs (batch)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated product item IDs (e.g., 1,2,3)",
+                        "name": "ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "items array with product details",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/product-items/check-stock": {
+            "post": {
+                "description": "Check if enough stock is available for multiple items",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Check stock availability",
+                "parameters": [
+                    {
+                        "description": "Stock check request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StockCheckRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.StockCheckResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/product-items/deduct-stock": {
+            "post": {
+                "description": "Deduct stock from product_item.qty_in_stock (after payment confirmed)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Deduct stock permanently",
+                "parameters": [
+                    {
+                        "description": "Stock deduct request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StockDeductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/product-items/release-stock": {
+            "post": {
+                "description": "Release stock reservation when order is cancelled or payment failed",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Release reserved stock",
+                "parameters": [
+                    {
+                        "description": "Stock release request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StockReleaseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/product-items/reserve-stock": {
+            "post": {
+                "description": "Temporarily reserve stock during checkout (15 minutes TTL)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Reserve stock for an order",
+                "parameters": [
+                    {
+                        "description": "Stock reserve request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StockReserveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/product-items/{id}/stock": {
+            "get": {
+                "description": "Get current stock quantity for a product item (SKU)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Get stock for a product item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update stock quantity for a product item (for shop owners)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stock"
+                ],
+                "summary": "Update stock quantity",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product Item ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Stock update request {new_stock: 100}",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/product-items/{sku_code}": {
             "get": {
                 "description": "Get product item by SKU code",
@@ -979,6 +1312,48 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{id}/variations": {
+            "get": {
+                "description": "Get variations (Color, Size, etc.) with their options for product detail page",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "variations"
+                ],
+                "summary": "Get all variations for a product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.VariationWithOptions"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1390,27 +1765,174 @@
                     "type": "integer"
                 },
                 "image_url": {
-                    "description": "Image for this specific SKU",
                     "type": "string"
                 },
                 "price": {
-                    "description": "Price for this SKU",
                     "type": "number"
                 },
                 "product_id": {
                     "type": "integer"
                 },
                 "qty_in_stock": {
-                    "description": "Stock for this SKU",
                     "type": "integer"
                 },
                 "sku_code": {
-                    "description": "Unique SKU",
                     "type": "string"
                 },
                 "status": {
-                    "description": "ACTIVE, OUT_OF_STOCK, DISABLED",
                     "type": "string"
+                }
+            }
+        },
+        "domain.StockCheckItem": {
+            "type": "object",
+            "required": [
+                "product_item_id",
+                "quantity"
+            ],
+            "properties": {
+                "product_item_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "domain.StockCheckRequest": {
+            "type": "object",
+            "required": [
+                "items"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.StockCheckItem"
+                    }
+                }
+            }
+        },
+        "domain.StockCheckResponse": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "boolean"
+                },
+                "unavailable_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.UnavailableStockItem"
+                    }
+                }
+            }
+        },
+        "domain.StockDeductItem": {
+            "type": "object",
+            "required": [
+                "product_item_id",
+                "quantity"
+            ],
+            "properties": {
+                "product_item_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "domain.StockDeductRequest": {
+            "type": "object",
+            "required": [
+                "items",
+                "order_id"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.StockDeductItem"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.StockReleaseRequest": {
+            "type": "object",
+            "required": [
+                "order_id"
+            ],
+            "properties": {
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.StockReserveItem": {
+            "type": "object",
+            "required": [
+                "product_item_id",
+                "quantity"
+            ],
+            "properties": {
+                "product_item_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "domain.StockReserveRequest": {
+            "type": "object",
+            "required": [
+                "items",
+                "order_id"
+            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.StockReserveItem"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UnavailableStockItem": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "integer"
+                },
+                "product_item_id": {
+                    "type": "integer"
+                },
+                "requested": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.VariationOption": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "\"M\", \"L\", \"XL\", \"Red\", \"Blue\"",
+                    "type": "string"
+                },
+                "variation_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1425,6 +1947,12 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -1463,12 +1991,16 @@
         "handler.CreateProductRequest": {
             "type": "object",
             "required": [
-                "name",
-                "price",
-                "sku"
+                "base_price",
+                "name"
             ],
             "properties": {
+                "base_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "category_id": {
+                    "description": "Must be leaf category",
                     "type": "integer"
                 },
                 "description": {
@@ -1486,24 +2018,17 @@
                 "name": {
                     "type": "string"
                 },
-                "price": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "sku": {
-                    "type": "string"
-                },
                 "status": {
                     "type": "string"
-                },
-                "stock": {
-                    "type": "integer"
                 }
             }
         },
         "handler.ProductResponse": {
             "type": "object",
             "properties": {
+                "base_price": {
+                    "type": "number"
+                },
                 "category_id": {
                     "type": "integer"
                 },
@@ -1528,17 +2053,14 @@
                 "name": {
                     "type": "string"
                 },
-                "price": {
-                    "type": "number"
+                "shop_id": {
+                    "type": "integer"
                 },
-                "sku": {
-                    "type": "string"
+                "sold_count": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
-                },
-                "stock": {
-                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"
@@ -1565,6 +2087,10 @@
         "handler.UpdateProductRequest": {
             "type": "object",
             "properties": {
+                "base_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "category_id": {
                     "type": "integer"
                 },
@@ -1583,15 +2109,26 @@
                 "name": {
                     "type": "string"
                 },
-                "price": {
-                    "type": "number",
-                    "minimum": 0
-                },
                 "status": {
                     "type": "string"
-                },
-                "stock": {
+                }
+            }
+        },
+        "handler.VariationWithOptions": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "integer"
+                },
+                "name": {
+                    "description": "\"Màu Sắc\", \"Kích Thước\"",
+                    "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.VariationOption"
+                    }
                 }
             }
         },
