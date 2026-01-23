@@ -164,7 +164,7 @@ func SetupRouter(
 
 			// Cart routes (Order Service) - Protected routes (require authentication)
 			cart := v1.Group("/cart")
-			cart.Use(middleware.AuthMiddleware(&cfg.JWT, logger))
+			cart.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
 			{
 				cart.GET("", cartHandler.GetCart)
 				cart.DELETE("", cartHandler.ClearCart)
@@ -183,6 +183,7 @@ func SetupRouter(
 
 			// Order routes (Order Service)
 			orders := v1.Group("/orders")
+			orders.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
 			{
 				orders.POST("", orderHandler.CreateOrder)
 				orders.GET("", orderHandler.ListOrders)
