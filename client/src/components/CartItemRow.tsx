@@ -21,10 +21,15 @@ export default function CartItemRow({
 }: Props) {
   const displayImage = item.image || item.product_image;
   const displayName = item.name || item.product_name;
+  const shopId = (item as any).shop_id;
 
   return (
-    <div className="flex items-start gap-4 rounded-lg border border-neutral-200 bg-white p-4">
-      <div className="flex items-start">
+    <div
+      className={`flex items-start gap-4 rounded-md border border-[#eee] bg-white p-4 shadow-sm ${
+        checked ? "ring-2 ring-[#ee4d2d]/20" : ""
+      }`}
+    >
+      <div className="flex items-start pt-1">
         <input
           type="checkbox"
           checked={checked}
@@ -34,7 +39,7 @@ export default function CartItemRow({
       </div>
 
       <div className="flex flex-1 gap-4">
-        <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100">
+        <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-sm border border-neutral-200 bg-neutral-100">
           {displayImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -61,60 +66,75 @@ export default function CartItemRow({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col gap-1">
+        <div className="flex flex-1 flex-col">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
+            <div className="flex-1 pr-4">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="rounded bg-[#fff2ef] px-2 py-0.5 text-xs font-medium text-[#ee4d2d]">
+                  Yêu thích
+                </span>
+                {shopId ? (
+                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">{`Nhựa_Việt_Nhật`}</span>
+                ) : null}
+              </div>
               <Link
                 href={`/products/${item.product_item_id}`}
                 className="text-sm font-medium text-neutral-900 hover:text-neutral-700"
               >
                 {displayName}
               </Link>
-              {item.sku && (
-                <p className="mt-1 text-xs text-neutral-500">SKU: {item.sku}</p>
+              {(item as any).variant && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Phân Loại Hàng: {(item as any).variant}
+                </p>
               )}
             </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-neutral-900">
+
+            <div className="text-right flex-shrink-0">
+              <p className="text-sm font-semibold text-[#ee4d2d]">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
                 }).format(item.price * item.quantity)}
               </p>
-              <p className="text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-neutral-500">
                 {new Intl.NumberFormat("vi-VN", {
                   style: "currency",
                   currency: "VND",
                 }).format(item.price)}{" "}
-                each
+                / cái
               </p>
             </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-sm text-neutral-600">
-              <span className="text-sm">Số lượng</span>
+          <div className="mt-3 flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-neutral-600">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() =>
-                    onQuantityChange(item.product_item_id, item.quantity - 1)
+                    onQuantityChange(
+                      item.product_item_id,
+                      Math.max(1, item.quantity - 1),
+                    )
                   }
                   disabled={
                     updating === item.product_item_id || item.quantity <= 1
                   }
-                  className="flex h-7 w-7 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
-                <span className="w-9 text-center text-sm font-medium text-neutral-900">
-                  {item.quantity}
-                </span>
+                <div className="w-11">
+                  <span className="block w-full text-center text-sm font-medium text-neutral-900">
+                    {item.quantity}
+                  </span>
+                </div>
                 <button
                   onClick={() =>
                     onQuantityChange(item.product_item_id, item.quantity + 1)
                   }
                   disabled={updating === item.product_item_id}
-                  className="flex h-7 w-7 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-8 w-8 items-center justify-center rounded border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
@@ -125,7 +145,7 @@ export default function CartItemRow({
               <button
                 onClick={() => onRemove(item.product_item_id)}
                 disabled={updating === item.product_item_id}
-                className="text-neutral-500 hover:text-red-600 disabled:opacity-50"
+                className="text-[#ee4d2d] hover:underline disabled:opacity-50"
               >
                 Xóa
               </button>

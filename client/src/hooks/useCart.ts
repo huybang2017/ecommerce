@@ -10,6 +10,8 @@ export interface CartItem {
   name?: string;
   image?: string;
   sku?: string;
+  shop_id?: number;
+  is_selected?: boolean;
   price: number;
   quantity: number;
   subtotal: number;
@@ -32,6 +34,18 @@ export interface UpdateCartRequest {
   quantity: number;
 }
 
+export interface ValidateCartSuccess {
+  message: string;
+}
+
+export interface ValidateCartError {
+  error: string;
+}
+
+export interface SetSelectionRequest {
+  selected: boolean;
+}
+
 // API functions
 const cartApi = {
   getCart: async (): Promise<Cart> => {
@@ -46,7 +60,7 @@ const cartApi = {
 
   updateCartItem: async (
     productItemId: number,
-    request: UpdateCartRequest
+    request: UpdateCartRequest,
   ): Promise<Cart> => {
     console.log("🔄 updateCartItem called:", {
       productItemId,
@@ -56,7 +70,7 @@ const cartApi = {
 
     const { data } = await apiClient.put<Cart>(
       `/api/v1/cart/items/${productItemId}`,
-      request
+      request,
     );
 
     console.log("✅ updateCartItem response:", data);
@@ -65,13 +79,55 @@ const cartApi = {
 
   removeFromCart: async (productItemId: number): Promise<Cart> => {
     const { data } = await apiClient.delete<Cart>(
-      `/api/v1/cart/items/${productItemId}`
+      `/api/v1/cart/items/${productItemId}`,
     );
     return data;
   },
 
   clearCart: async (): Promise<void> => {
     await apiClient.delete("/api/v1/cart");
+  },
+
+  setItemSelection: async (
+    productItemId: number,
+    request: SetSelectionRequest,
+  ): Promise<Cart> => {
+    const { data } = await apiClient.patch<Cart>(
+      `/api/v1/cart/items/${productItemId}/selection`,
+      request,
+    );
+    return data;
+  },
+
+  setSelection: async (request: SetSelectionRequest): Promise<Cart> => {
+    const { data } = await apiClient.patch<Cart>(
+      `/api/v1/cart/selection`,
+      request,
+    );
+    return data;
+  },
+
+  setShopSelection: async (
+    shopId: number,
+    request: SetSelectionRequest,
+  ): Promise<Cart> => {
+    const { data } = await apiClient.patch<Cart>(
+      `/api/v1/cart/shops/${shopId}/selection`,
+      request,
+    );
+    return data;
+  },
+
+  clearSelected: async (): Promise<Cart> => {
+    const { data } = await apiClient.delete<Cart>(`/api/v1/cart/selected`);
+    return data;
+  },
+
+  validateCart: async (): Promise<ValidateCartSuccess> => {
+    const { data } = await apiClient.post<ValidateCartSuccess>(
+      `/api/v1/cart/validate`,
+    );
+    return data;
   },
 };
 
@@ -151,6 +207,91 @@ export const useClearCart = () => {
     },
     onError: (error) => {
       console.error("❌ Failed to clear cart:", error.response?.data);
+    },
+  });
+};
+
+export const useSetItemSelection = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Cart,
+    AxiosError,
+    { productItemId: number; selected: boolean }
+  >({
+    mutationFn: ({ productItemId, selected }) =>
+      cartApi.setItemSelection(productItemId, { selected }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Item selection updated");
+    },
+    onError: (error) => {
+      console.error(
+        "❌ Failed to update item selection:",
+        error.response?.data,
+      );
+    },
+  });
+};
+
+export const useSetSelection = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Cart, AxiosError, { selected: boolean }>({
+    mutationFn: ({ selected }) => cartApi.setSelection({ selected }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Selection updated for all items");
+    },
+    onError: (error) => {
+      console.error("❌ Failed to set selection:", error.response?.data);
+    },
+  });
+};
+
+export const useSetShopSelection = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Cart, AxiosError, { shopId: number; selected: boolean }>({
+    mutationFn: ({ shopId, selected }) =>
+      cartApi.setShopSelection(shopId, { selected }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Shop selection updated");
+    },
+    onError: (error) => {
+      console.error("❌ Failed to set shop selection:", error.response?.data);
+    },
+  });
+};
+
+export const useClearSelectedItems = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Cart, AxiosError, void>({
+    mutationFn: cartApi.clearSelected,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Cleared selected items");
+    },
+    onError: (error) => {
+      console.error("❌ Failed to clear selected items:", error.response?.data);
+    },
+  });
+};
+
+export const useValidateCart = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ValidateCartSuccess, AxiosError, void>({
+    mutationFn: () => cartApi.validateCart(),
+    onSuccess: (data) => {
+      // validation may not change cart, but refetch to be safe
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      console.log("✅ Cart validated", data.message);
+    },
+    onError: (error) => {
+      console.error("❌ Failed to validate cart:", error.response?.data);
     },
   });
 };

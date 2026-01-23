@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { useCartContext as useCart } from "@/contexts/CartContext";
+import {
+  useSetItemSelection,
+  useSetSelection,
+  useClearSelectedItems,
+  useValidateCart,
+} from "@/hooks/useCart";
 import CartItemRow from "@/components/CartItemRow";
 
 function formatPrice(value: number) {
@@ -16,30 +22,57 @@ export default function CartPage() {
   const { cart, loading, itemCount, total, updateItem, removeItem, clear } =
     useCart();
   const items = useMemo(() => cart?.items || [], [cart?.items]);
+  const [searchKeyword, setSearchKeyword] = useState("");
+
+  const visibleItems = useMemo(() => {
+    const q = searchKeyword.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((i) => {
+      const name = (i.name || i.product_name || "").toString().toLowerCase();
+      const sku = (i.sku || "").toString().toLowerCase();
+      return name.includes(q) || sku.includes(q);
+    });
+  }, [items, searchKeyword]);
   const [updating, setUpdating] = useState<number | null>(null);
 
   // Selection state for items (to support selecting items like Shopee)
   const [selected, setSelected] = useState<number[]>([]);
 
   useEffect(() => {
-    // default: select all items when cart changes
-    setSelected(items.map((i) => i.product_item_id));
+    // Initialize selected state from backend `is_selected` field when cart changes
+    const initiallySelected = items
+      .filter((i) => (i as any).is_selected)
+      .map((i) => i.product_item_id);
+    if (initiallySelected.length > 0) setSelected(initiallySelected);
   }, [items]);
 
-  const isAllSelected = items.length > 0 && selected.length === items.length;
+  const isAllSelected =
+    visibleItems.length > 0 &&
+    visibleItems.every((i) => selected.includes(i.product_item_id));
   const selectedTotal = items
     .filter((i) => selected.includes(i.product_item_id))
     .reduce((s, i) => s + i.price * i.quantity, 0);
 
   const toggleSelect = (id: number) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    const next = selected.includes(id)
+      ? selected.filter((x) => x !== id)
+      : [...selected, id];
+
+    // optimistically update UI
+    setSelected(next);
+
+    // persist selection to backend
+    setItemSelection.mutate({ productItemId: id, selected: next.includes(id) });
   };
 
   const toggleSelectAll = () => {
-    if (isAllSelected) setSelected([]);
-    else setSelected(items.map((i) => i.product_item_id));
+    const selectAll = !isAllSelected;
+    const visibleIds = visibleItems.map((i) => i.product_item_id);
+    if (selectAll) setSelected(visibleIds);
+    else setSelected([]);
+
+    // persist select all state for backend (best-effort)
+    setSelection.mutate({ selected: selectAll });
   };
 
   const handleRemove = async (productItemId: number) => {
@@ -53,7 +86,7 @@ export default function CartPage() {
 
   const handleQuantityChange = async (
     productItemId: number,
-    quantity: number
+    quantity: number,
   ) => {
     if (quantity < 1) return;
     setUpdating(productItemId);
@@ -65,15 +98,31 @@ export default function CartPage() {
   };
 
   const handleClear = async () => {
-    await clear();
+    // clear selected items on backend
+    if (selected.length > 0) {
+      clearSelected.mutate();
+      setSelected([]);
+    } else {
+      // fallback: clear entire cart
+      await clear();
+    }
   };
+
+  const handleValidate = async () => {
+    validateCart.mutate();
+  };
+
+  const setItemSelection = useSetItemSelection();
+  const setSelection = useSetSelection();
+  const clearSelected = useClearSelectedItems();
+  const validateCart = useValidateCart();
 
   return (
     <div className="min-h-screen bg-white">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 pb-24">
-        <h1 className="mb-8 text-4xl font-semibold tracking-tight text-neutral-900">
+        {/* <h1 className="mb-8 text-4xl font-semibold tracking-tight text-neutral-900">
           Shopping Cart
-        </h1>
+        </h1> */}
 
         {items.length === 0 ? (
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-12 text-center">
@@ -102,41 +151,69 @@ export default function CartPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-8">
               {/* Cart Items */}
-              <div className="lg:col-span-2">
-                {/* Header: checkbox and column labels */}
-                <div className="mb-4 flex items-center justify-between rounded-t-lg border border-neutral-200 bg-white p-3">
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm font-medium">Sản Phẩm</span>
+              <div>
+                {/* Header: checkbox, column labels and cart-local search */}
+                <div className="mb-4 flex flex-col gap-3 rounded-t-lg border border-neutral-200 bg-white p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-medium">Sản Phẩm</span>
+                    </div>
+
+                    <div className="hidden sm:flex gap-6 text-sm text-neutral-600">
+                      <span className="w-28 text-right">Đơn Giá</span>
+                      <span className="w-24 text-center">Số Lượng</span>
+                      <span className="w-28 text-right">Số Tiền</span>
+                      <span className="w-24 text-right">Thao Tác</span>
+                    </div>
                   </div>
 
-                  <div className="hidden sm:flex gap-6 text-sm text-neutral-600">
-                    <span className="w-28 text-right">Đơn Giá</span>
-                    <span className="w-24 text-center">Số Lượng</span>
-                    <span className="w-28 text-right">Số Tiền</span>
-                    <span className="w-24 text-right">Thao Tác</span>
+                  <div className="mx-auto w-full max-w-[720px]">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchKeyword}
+                        onChange={(e) => setSearchKeyword(e.target.value)}
+                        placeholder="TÌM KIẾM TRONG GIỎ HÀNG"
+                        className="w-full rounded-sm border border-[#ee4d2d] py-2 pl-4 pr-36 text-sm outline-none"
+                      />
+                      <button
+                        onClick={(e) => e.preventDefault()}
+                        className="absolute right-1 top-1 bottom-1 flex h-[36px] w-14 items-center justify-center rounded-sm bg-[#ee4d2d] text-white"
+                      >
+                        Tìm
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  {items.map((item) => (
+                  {visibleItems.map((item) => (
                     <CartItemRow
                       key={item.product_item_id}
                       item={item}
                       updating={updating}
-                      checked={selected.includes(item.product_item_id)}
+                      checked={
+                        selected.includes(item.product_item_id) ||
+                        (item as any).is_selected
+                      }
                       onToggle={toggleSelect}
                       onRemove={handleRemove}
                       onQuantityChange={handleQuantityChange}
                     />
                   ))}
+                  {visibleItems.length === 0 && (
+                    <div className="p-6 text-center text-neutral-500">
+                      Không có sản phẩm phù hợp
+                    </div>
+                  )}
                 </div>
 
                 {/* Vouchers / Shipping placeholders */}
@@ -172,39 +249,6 @@ export default function CartPage() {
                   <button className="text-sm text-[#ee4d2d]">
                     Lưu vào mục Đã thích
                   </button>
-                </div>
-              </div>
-
-              {/* Order Summary */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-8 rounded-xl border border-neutral-200 bg-neutral-50 p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-neutral-900">
-                    Order Summary
-                  </h2>
-                  <div className="space-y-3 border-b border-neutral-200 pb-4">
-                    <div className="flex justify-between text-sm text-neutral-600">
-                      <span>Items ({itemCount})</span>
-                      <span>{formatPrice(total)}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex justify-between text-lg font-semibold text-neutral-900">
-                    <span>Tổng</span>
-                    <span>{formatPrice(total)}</span>
-                  </div>
-
-                  <Link
-                    href="/checkout"
-                    className="mt-6 block w-full rounded-sm bg-[#ee4d2d] px-6 py-3 text-center text-sm font-medium uppercase text-white transition-colors hover:bg-[#d73211] disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
-                  >
-                    Mua Hàng
-                  </Link>
-                  <Link
-                    href="/products"
-                    className="mt-3 block w-full rounded-sm border border-neutral-300 bg-white px-6 py-3 text-center text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
-                  >
-                    Tiếp Tục Mua Sắm
-                  </Link>
                 </div>
               </div>
             </div>
