@@ -38,8 +38,8 @@ export default function CheckoutPage() {
     if (!addressesData || addressesData.length === 0) return;
 
     // Prefer address marked as default, otherwise first address
-    const defaultAddr = addressesData.find((a) => a.is_default) ||
-      addressesData[0];
+    const defaultAddr =
+      addressesData.find((a) => a.is_default) || addressesData[0];
 
     if (!selectedAddressId) {
       setSelectedAddressId(defaultAddr.id);
@@ -387,12 +387,14 @@ export default function CheckoutPage() {
                 >
                   <div>
                     <div className="font-medium">
-                      {a.recipient_name} {" "}
+                      {a.recipient_name}{" "}
                       <span className="text-sm text-neutral-500">
                         {a.phone_number}
                       </span>
                     </div>
-                    <div className="text-sm text-neutral-600">{a.address_line}</div>
+                    <div className="text-sm text-neutral-600">
+                      {a.address_line}
+                    </div>
                     {a.label && (
                       <div className="text-xs text-neutral-500">{a.label}</div>
                     )}

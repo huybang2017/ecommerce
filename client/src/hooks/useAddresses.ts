@@ -55,7 +55,8 @@ const addressApi = {
   create: async (payload: CreateAddressRequest): Promise<Address> => {
     const resp = await apiClient.post<any>("/api/v1/addresses", payload);
     const body = resp.data;
-    if (body && typeof body === "object" && "data" in body) return body.data as Address;
+    if (body && typeof body === "object" && "data" in body)
+      return body.data as Address;
     return body as Address;
   },
 
@@ -65,7 +66,8 @@ const addressApi = {
   ): Promise<Address> => {
     const resp = await apiClient.put<any>(`/api/v1/addresses/${id}`, payload);
     const body = resp.data;
-    if (body && typeof body === "object" && "data" in body) return body.data as Address;
+    if (body && typeof body === "object" && "data" in body)
+      return body.data as Address;
     return body as Address;
   },
 
@@ -76,7 +78,8 @@ const addressApi = {
   setDefault: async (id: number): Promise<Address> => {
     const resp = await apiClient.put<any>(`/api/v1/addresses/${id}/default`);
     const body = resp.data;
-    if (body && typeof body === "object" && "data" in body) return body.data as Address;
+    if (body && typeof body === "object" && "data" in body)
+      return body.data as Address;
     return body as Address;
   },
 };

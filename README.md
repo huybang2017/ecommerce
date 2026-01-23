@@ -248,8 +248,8 @@ ecommerce/
 | API Gateway          | 8000 | ✅ Live    | Single entry point, routing, CORS handling |
 | Identity Service     | 8081 | ✅ Live    | Authentication, user management, sessions  |
 | Product Service      | 8082 | 🔄 WIP     | Product catalog, categories, variants      |
-| Search Service       | 8083 | 📋 Planned | Full-text search, filters, suggestions     |
-| Order Service        | 8084 | 📋 Planned | Cart, checkout, order processing           |
+| Search Service       | 8083 | 📋 WIP     | Full-text search, filters, suggestions     |
+| Order Service        | 8084 | 📋 WIP     | Cart, checkout, order processing           |
 | Inventory Service    | 8085 | 📋 Planned | Stock management, reservations             |
 | Promotion Service    | 8086 | 📋 Planned | Discounts, flash sales, coupons            |
 | Payment Service      | 8087 | 📋 Planned | Payment processing (mock)                  |
@@ -389,14 +389,34 @@ docker-compose logs -f identity-service
 
 Kubernetes manifests will be added for production deployment.
 
-## 🗺️ Roadmap
+## 📘 Project Overview
 
-### ✅ Gate 1: Identity Service (Completed)
+This repository implements a production-ready e-commerce platform using a microservices architecture. It is a learning and reference project that demonstrates how to build a scalable online store with clear separation of concerns, service isolation, and practical developer ergonomics for local development.
 
-- User registration and authentication
-- Session-based auth with Redis
-- JWT token management
-- User profile management
+Key goals of the project:
+
+- Provide a modular microservices reference implementation for common e-commerce features (identity, products, search, orders, inventory, promotions, payments, notifications).
+- Show integration patterns such as API Gateway routing, session + token-based authentication, service-to-service communication, and OpenAPI documentation.
+- Make it easy to run locally using Docker Compose and to iterate on services independently (hot-reload / small, focused services).
+
+Intended audience:
+
+- Engineers learning microservices design and integration patterns.
+- Teams prototyping an e-commerce backend with realistic components.
+- Developers who want a practical reference for building a full-stack, cloud-native application using Go (backend) and Next.js (frontend).
+
+Current status:
+
+- Identity and API Gateway are implemented and functional (Gate 1 complete).
+- Other services (product, search, orders, inventory, promotions, payment, notifications) have scaffolding and documentation in `docs/` and are planned or partially implemented as noted in the Features section.
+
+How to contribute or extend:
+
+- Implement or expand a service under its folder (follow the existing service structure and conventions).
+- Add OpenAPI docs for new endpoints and register the spec with the API Gateway.
+- Add CI checks, tests, and health checks for each service.
+
+See the top-of-file sections for setup, running locally, and service-specific notes under each service folder.
 
 ### 🔄 Gate 2: Product Service (In Progress)
 
