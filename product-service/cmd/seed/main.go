@@ -322,11 +322,11 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Quần Jeans Nam Ống Rộng Suông Baggy",
 			Description: "Quần jean nam ống rộng, chất liệu denim cao cấp",
-			BasePrice: 399000,
-			CategoryID: &thoiTrangNamID,
-			Status:     "ACTIVE",
-			Images:     createImagesJSON([]string{"https://placehold.co/400x400"}),
-			IsActive: true,
+			BasePrice:   399000,
+			CategoryID:  &thoiTrangNamID,
+			Status:      "ACTIVE",
+			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
+			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
@@ -374,26 +374,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Samsung Galaxy S24 Ultra 12GB/256GB",
 			Description: "Galaxy S24 Ultra - Snapdragon 8 Gen 3, Camera 200MP, S Pen",
-			Price:       26990000,
 			BasePrice:   31990000,
-			SKU:         "SAMSUNG-S24U-256",
 			CategoryID:  &dienThoaiID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       60,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Xiaomi Redmi Note 13 Pro 8GB/256GB",
 			Description: "Redmi Note 13 Pro - Camera 200MP, Màn hình AMOLED 120Hz",
-			Price:       6990000,
 			BasePrice:   8990000,
-			SKU:         "XIAOMI-RN13P-256",
 			CategoryID:  &dienThoaiID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       200,
 			IsActive:    true,
 		},
 		// Thiết Bị Điện Tử
@@ -401,26 +395,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Laptop Dell Inspiron 15 3520 i5-1235U/8GB/512GB",
 			Description: "Dell Inspiron 15 - Intel Core i5 Gen 12, RAM 8GB, SSD 512GB",
-			Price:       13990000,
 			BasePrice:   16990000,
-			SKU:         "DELL-INS15-3520",
 			CategoryID:  &thietBiDienTuID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       40,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Tai Nghe Bluetooth Sony WH-1000XM5",
 			Description: "Tai nghe chống ồn chủ động hàng đầu, pin 30 giờ",
-			Price:       7990000,
 			BasePrice:   9990000,
-			SKU:         "SONY-WH1000XM5",
 			CategoryID:  &thietBiDienTuID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       75,
 			IsActive:    true,
 		},
 		// Giày Dép Nam
@@ -428,26 +416,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Giày Sneaker Nam Thể Thao Cổ Thấp",
 			Description: "Giày sneaker nam, đế cao su, êm ái thoáng khí",
-			Price:       249000,
 			BasePrice:   399000,
-			SKU:         "GIAY-NAM-001",
 			CategoryID:  &giayNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       300,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Dép Quai Ngang Nam Nữ Unisex",
 			Description: "Dép quai ngang đế êm, chống trơn trượt",
-			Price:       89000,
 			BasePrice:   129000,
-			SKU:         "DEP-NAM-001",
 			CategoryID:  &giayNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       500,
 			IsActive:    true,
 		},
 		// Túi Ví Nam
@@ -455,26 +437,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Balo Laptop 15.6 inch Chống Nước",
 			Description: "Balo laptop đa ngăn, chống nước, chống sốc",
-			Price:       299000,
 			BasePrice:   449000,
-			SKU:         "BALO-NAM-001",
 			CategoryID:  &tuiNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       100,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Ví Da Nam Cao Cấp Đựng Thẻ ATM",
 			Description: "Ví da bò thật, nhiều ngăn đựng thẻ tiện lợi",
-			Price:       159000,
 			BasePrice:   259000,
-			SKU:         "VI-NAM-001",
 			CategoryID:  &tuiNamID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       200,
 			IsActive:    true,
 		},
 		// Sắc Đẹp
@@ -482,26 +458,20 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Kem Chống Nắng Anessa SPF50+ PA++++",
 			Description: "Kem chống nắng Nhật Bản, chống nước, lâu trôi",
-			Price:       459000,
 			BasePrice:   599000,
-			SKU:         "ANESSA-SPF50",
 			CategoryID:  &sacDepID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       150,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Son Kem Lì 3CE Velvet Lip Tint",
 			Description: "Son kem lì Hàn Quốc, lên màu chuẩn, bền màu",
-			Price:       249000,
 			BasePrice:   329000,
-			SKU:         "3CE-VELVET-001",
 			CategoryID:  &sacDepID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       250,
 			IsActive:    true,
 		},
 		// Nhà Cửa & Đời Sống
@@ -509,37 +479,34 @@ func main() {
 			ShopID:      defaultShopID,
 			Name:        "Nồi Cơm Điện Tử Sharp 1.8L",
 			Description: "Nồi cơm điện tử công nghệ Nhật, lòng chống dính",
-			Price:       1290000,
 			BasePrice:   1690000,
-			SKU:         "SHARP-RC18",
 			CategoryID:  &nhaCuaID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       60,
 			IsActive:    true,
 		},
 		{
 			ShopID:      defaultShopID,
 			Name:        "Đèn LED Thông Minh Xiaomi",
 			Description: "Đèn LED điều khiển qua app, 16 triệu màu",
-			Price:       299000,
 			BasePrice:   499000,
-			SKU:         "XIAOMI-LED-001",
 			CategoryID:  &nhaCuaID,
 			Status:      "ACTIVE",
 			Images:      createImagesJSON([]string{"https://placehold.co/400x400"}),
-			Stock:       180,
 			IsActive:    true,
 		},
 	}
 
 	createdCount := 0
 	skippedCount := 0
+
+	// (moved helper to top-level)
+
 	for _, product := range products {
-		// Check if product with same SKU already exists
-		existing, err := productRepo.GetBySKU(product.SKU)
+		// Check if product already exists by name
+		existing, err := findProductByName(productRepo, product.Name)
 		if err == nil && existing != nil {
-			log.Printf("⏭️  Skipped product (already exists): %s (SKU: %s)", product.Name, product.SKU)
+			log.Printf("⏭️  Skipped product (already exists): %s", product.Name)
 			skippedCount++
 			continue
 		}
@@ -550,17 +517,14 @@ func main() {
 			continue
 		}
 
-		// Get the created product to get its ID
-		created, err := productRepo.GetBySKU(product.SKU)
-		if err != nil {
-			log.Printf("⚠️  Created product %s but failed to retrieve it: %v", product.Name, err)
-			createdCount++
-			continue
-		}
-
+		// retrieve created product by name
+		created, _ := findProductByName(productRepo, product.Name)
 		createdCount++
-		log.Printf("✅ Created product: %s (ID: %d, SKU: %s, Price: $%.2f)",
-			created.Name, created.ID, created.SKU, created.Price)
+		if created != nil {
+			log.Printf("✅ Created product: %s (ID: %d)", created.Name, created.ID)
+		} else {
+			log.Printf("✅ Created product: %s", product.Name)
+		}
 	}
 
 	log.Printf("\n=== Seeding Complete ===")
@@ -578,6 +542,25 @@ func main() {
 	log.Println("\n✅ Data seeding finished!")
 }
 
+// findProductByName returns the first product whose name matches exactly
+// or the first search hit when exact match cannot be found.
+func findProductByName(repo domain.ProductRepository, name string) (*domain.Product, error) {
+	filters := map[string]interface{}{"search": name}
+	items, _, err := repo.ListProducts(filters, 1, 5)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+	for _, p := range items {
+		if p.Name == name {
+			return p, nil
+		}
+	}
+	return items[0], nil
+}
+
 func seedProductItems(
 	productRepo domain.ProductRepository,
 	variationRepo domain.VariationRepository,
@@ -585,10 +568,10 @@ func seedProductItems(
 	productItemRepo domain.ProductItemRepository,
 	skuConfigRepo domain.SKUConfigurationRepository,
 ) {
-	// Get some products to add variations
-	aoThun, _ := productRepo.GetBySKU("AOTHUN-NAM-001")
-	iphone, _ := productRepo.GetBySKU("IPHONE15PM-256")
-	giay, _ := productRepo.GetBySKU("GIAY-NAM-001")
+	// Get some products to add variations (lookup by product name)
+	aoThun, _ := findProductByName(productRepo, "Áo Thun Nam Cotton Compact Form Rộng Unisex")
+	iphone, _ := findProductByName(productRepo, "iPhone 15 Pro Max 256GB Chính Hãng VN/A")
+	giay, _ := findProductByName(productRepo, "Giày Sneaker Nam Thể Thao Cổ Thấp")
 
 	if aoThun == nil || iphone == nil || giay == nil {
 		log.Println("⚠️  Required products not found, skipping product items seeding")
@@ -899,8 +882,7 @@ func seedCategoryAndProductAttributes(
 			}
 		}
 
-		// Add attribute values for iPhone 15 Pro
-		iphone, _ := productRepo.GetBySKU("IPH15P-001")
+		iphone, _ := findProductByName(productRepo, "iPhone 15 Pro Max 256GB Chính Hãng VN/A")
 		if iphone != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", iphone.Name)
 
@@ -923,7 +905,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for Samsung Galaxy S24 Ultra
-		samsung, _ := productRepo.GetBySKU("SGS24U-001")
+		samsung, _ := findProductByName(productRepo, "Samsung Galaxy S24 Ultra 12GB/256GB")
 		if samsung != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", samsung.Name)
 
@@ -945,7 +927,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for MacBook Pro
-		macbook, _ := productRepo.GetBySKU("MBP16-001")
+		macbook, _ := findProductByName(productRepo, "MacBook Pro 16")
 		if macbook != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", macbook.Name)
 
@@ -1020,7 +1002,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for Nike Air Max 90
-		nike, _ := productRepo.GetBySKU("NIKE-AM90-001")
+		nike, _ := findProductByName(productRepo, "Giày Sneaker Nam Thể Thao Cổ Thấp")
 		if nike != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", nike.Name)
 
@@ -1040,7 +1022,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for Adidas T-Shirt
-		adidas, _ := productRepo.GetBySKU("ADIDAS-TS-001")
+		adidas, _ := findProductByName(productRepo, "Áo Kiểu Nữ Dài Tay Công Sở")
 		if adidas != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", adidas.Name)
 
@@ -1120,7 +1102,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for Clean Code
-		cleanCode, _ := productRepo.GetBySKU("BOOK-CC-001")
+		cleanCode, _ := findProductByName(productRepo, "Clean Code")
 		if cleanCode != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", cleanCode.Name)
 
@@ -1141,7 +1123,7 @@ func seedCategoryAndProductAttributes(
 		}
 
 		// Add attribute values for DDIA
-		ddia, _ := productRepo.GetBySKU("BOOK-DDIA-001")
+		ddia, _ := findProductByName(productRepo, "Designing Data-Intensive Applications")
 		if ddia != nil && len(attrMap) > 0 {
 			log.Printf("\n--- Adding attributes for: %s ---", ddia.Name)
 
