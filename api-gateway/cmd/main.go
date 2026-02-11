@@ -45,8 +45,8 @@ import (
 
 // @securityDefinitions.apikey CookieAuth
 // @in cookie
-// @name access_token
-// @description HttpOnly cookie containing JWT access token. Automatically set after login/register. Used for authentication in browser-based applications.
+// @name {role}_access_token
+// @description HttpOnly cookie containing JWT access token with role prefix (admin_access_token, buyer_access_token, seller_access_token). Automatically set after login/register based on X-App-Role header. Used for authentication in browser-based applications. IMPORTANT: All authenticated requests MUST include "X-App-Role" header (admin | buyer | seller) to specify which role context to use.
 
 func main() {
 	// Load configuration
@@ -232,7 +232,6 @@ func main() {
 				{Path: "/api/v1/orders/number/:order_number", Methods: []string{"GET"}, RequireAuth: false},
 			},
 		}
-
 		if err := serviceRegistry.RegisterService(orderService); err != nil {
 			appLogger.Fatal("Failed to register order service", zap.Error(err))
 		}
@@ -245,23 +244,19 @@ func main() {
 		maxTimeout = identityServiceConfig.Timeout
 	}
 	proxyClient := repository.NewProxyClient(maxTimeout)
-
-	// Initialize gateway service
 	gatewayService := service.NewGatewayService(serviceRegistry, proxyClient, appLogger)
-
-	// Initialize handlers
 	gatewayHandler := handler.NewGatewayHandler(gatewayService, appLogger)
-	authHandler := handler.NewAuthHandler(gatewayService, appLogger)
-	userHandler := handler.NewUserHandler(gatewayService, appLogger)
-	addressHandler := handler.NewAddressHandler(gatewayService, appLogger)
-	productHandler := handler.NewProductHandler(gatewayService, appLogger)
-	categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
-	searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
-	cartHandler := handler.NewCartHandler(gatewayService, appLogger)
-	orderHandler := handler.NewOrderHandler(gatewayService, appLogger)
+	// authHandler := handler.NewAuthHandler(gatewayService, appLogger)
+	// userHandler := handler.NewUserHandler(gatewayService, appLogger)
+	// addressHandler := handler.NewAddressHandler(gatewayService, appLogger)
+	// productHandler := handler.NewProductHandler(gatewayService, appLogger)
+	// categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
+	// searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
+	// cartHandler := handler.NewCartHandler(gatewayService, appLogger)
+	// orderHandler := handler.NewOrderHandler(gatewayService, appLogger)
 
 	// Setup router
-	r := router.SetupRouter(gatewayHandler, authHandler, userHandler, addressHandler, productHandler, categoryHandler, searchHandler, cartHandler, orderHandler, cfg, appLogger, redisClient)
+	r := router.SetupRouter(gatewayHandler, cfg, appLogger, redisClient)
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{

@@ -17,27 +17,25 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required" example:"password123"`
 }
 
-// LoginResponse represents the login response with access_token in body
-// refresh_token is sent via HttpOnly cookie, NOT in response body
+// LoginResponse represents the login response
+// All tokens (access_token, refresh_token, session_id) are in HttpOnly cookies
 type LoginResponse struct {
-	Message     string    `json:"message" example:"login successful"`
-	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	User        *UserInfo `json:"user"`
+	Message string    `json:"message" example:"login successful"`
+	User    *UserInfo `json:"user"`
 }
 
-// RegisterResponse represents the registration response with access_token in body
-// refresh_token is sent via HttpOnly cookie, NOT in response body
+// RegisterResponse represents the registration response
+// All tokens (access_token, refresh_token, session_id) are in HttpOnly cookies
 type RegisterResponse struct {
-	Message     string    `json:"message" example:"user registered successfully"`
-	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	User        *UserInfo `json:"user"`
+	Message string    `json:"message" example:"user registered successfully"`
+	User    *UserInfo `json:"user"`
 }
 
-// RefreshResponse represents the refresh token response with new access_token
+// RefreshResponse represents the refresh token response
+// New access_token is set as HttpOnly cookie
 type RefreshResponse struct {
-	Message     string    `json:"message" example:"token refreshed successfully"`
-	AccessToken string    `json:"access_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-	User        *UserInfo `json:"user"`
+	Message string    `json:"message" example:"token refreshed successfully"`
+	User    *UserInfo `json:"user"`
 }
 
 // AuthResponse represents the authentication response (DEPRECATED - use LoginResponse/RegisterResponse)

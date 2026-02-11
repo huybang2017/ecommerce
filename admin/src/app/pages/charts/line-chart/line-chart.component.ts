@@ -11,7 +11,7 @@ import { LineChartOneComponent } from '../../../shared/components/charts/line/li
     PageBreadcrumbComponent,
     ComponentCardComponent,
     LineChartOneComponent
-],
+  ],
   templateUrl: './line-chart.component.html',
   styles: ``
 })

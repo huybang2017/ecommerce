@@ -19,6 +19,10 @@ func StripInternalHeaders(logger *zap.Logger) gin.HandlerFunc {
 			if strings.HasPrefix(lower, "x-user-") || strings.HasPrefix(lower, "x-internal-") {
 				toDelete = append(toDelete, key)
 			}
+			// X-Resolved-Role is injected by RoleCookieRouter — never trust from client
+			if lower == "x-resolved-role" {
+				toDelete = append(toDelete, key)
+			}
 		}
 		for _, k := range toDelete {
 			c.Request.Header.Del(k)

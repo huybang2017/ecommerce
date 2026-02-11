@@ -49,38 +49,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Set HttpOnly session_id cookie (session-based auth, 7 days)
-	c.SetCookie(
-		"session_id",
-		response.SessionID,
-		604800, // 7 days
-		"/",
-		"",
-		false, // secure (true in production)
-		true,  // httpOnly
-	)
-
-	// Set access_token as HttpOnly cookie (15 min)
-	c.SetCookie(
-		"access_token",
-		response.AccessToken,
-		900, // 15 minutes
-		"/",
-		"",
-		false, // secure (true in production with HTTPS)
-		true,  // httpOnly (prevents XSS)
-	)
-
-	// Also set refresh_token cookie for backward compatibility (deprecated)
-	c.SetCookie(
-		"refresh_token",
-		response.RefreshToken,
-		604800, // 7 days
-		"/",
-		"",
-		false, // secure (true in production)
-		true,  // httpOnly
-	)
+	// Set role-scoped HttpOnly cookies
+	setAuthCookies(c, response.SessionID, response.AccessToken, response.RefreshToken)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
@@ -113,38 +83,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Set HttpOnly session_id cookie (session-based auth, 7 days)
-	c.SetCookie(
-		"session_id",
-		response.SessionID,
-		604800, // 7 days
-		"/",
-		"",
-		false, // secure (true in production with HTTPS)
-		true,  // httpOnly (prevents JavaScript access)
-	)
-
-	// Set access_token as HttpOnly cookie (15 min)
-	c.SetCookie(
-		"access_token",
-		response.AccessToken,
-		900, // 15 minutes
-		"/",
-		"",
-		false, // secure (true in production with HTTPS)
-		true,  // httpOnly (prevents XSS)
-	)
-
-	// Also set refresh_token cookie for backward compatibility (deprecated)
-	c.SetCookie(
-		"refresh_token",       // name
-		response.RefreshToken, // value
-		604800,                // maxAge in seconds (7 days)
-		"/",                   // path
-		"",                    // domain
-		false,                 // secure (true in production with HTTPS)
-		true,                  // httpOnly (prevents JavaScript access)
-	)
+	// Set role-scoped HttpOnly cookies
+	setAuthCookies(c, response.SessionID, response.AccessToken, response.RefreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "login successful",
@@ -162,10 +102,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Failure 401 {object} map[string]interface{} "Invalid or expired session"
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	// Try to get session_id from cookie first (new session-based approach)
-	sessionID, err := c.Cookie("session_id")
+	prefix := cookiePrefix(c)
+
+	// Try session_id cookie (role-scoped)
+	sessionID, err := getAuthCookie(c, "session_id")
 	if err == nil && sessionID != "" {
-		// Use session-based refresh
 		response, err := h.authService.RefreshAccessTokenBySession(sessionID)
 		if err != nil {
 			h.logger.Error("failed to refresh token by session", zap.Error(err))
@@ -173,16 +114,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 			return
 		}
 
-		// Set new access_token as HttpOnly cookie
-		c.SetCookie(
-			"access_token",
-			response.AccessToken,
-			900, // 15 minutes
-			"/",
-			"",
-			false, // secure (true in production)
-			true,  // httpOnly
-		)
+		// Set new access_token with role prefix
+		c.SetCookie(prefix+"access_token", response.AccessToken, 900, "/", "", false, true)
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "token refreshed successfully",
@@ -191,15 +124,14 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Fallback: Try refresh_token from cookie (legacy approach)
-	refreshToken, err := c.Cookie("refresh_token")
+	// Fallback: refresh_token cookie (role-scoped)
+	refreshToken, err := getAuthCookie(c, "refresh_token")
 	if err != nil || refreshToken == "" {
 		h.logger.Warn("neither session_id nor refresh_token found in cookie")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "session or refresh token required"})
 		return
 	}
 
-	// Use legacy refresh token approach
 	response, err := h.authService.RefreshAccessToken(refreshToken)
 	if err != nil {
 		h.logger.Error("failed to refresh token", zap.Error(err))
@@ -207,16 +139,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Set new access_token as HttpOnly cookie
-	c.SetCookie(
-		"access_token",
-		response.AccessToken,
-		900, // 15 minutes
-		"/",
-		"",
-		false, // secure (true in production)
-		true,  // httpOnly
-	)
+	c.SetCookie(prefix+"access_token", response.AccessToken, 900, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "token refreshed successfully",
@@ -235,20 +158,16 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // @Failure 401 {object} map[string]interface{} "Unauthorized"
 // @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// Try to get session_id from cookie first (new session-based approach)
-	sessionID, err := c.Cookie("session_id")
+	// Try session_id from role-scoped cookie
+	sessionID, err := getAuthCookie(c, "session_id")
 	if err == nil && sessionID != "" {
-		// Delete session from Redis
 		if err := h.authService.LogoutBySession(sessionID); err != nil {
 			h.logger.Error("failed to logout session", zap.Error(err))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to logout"})
 			return
 		}
 
-		// Clear all cookies: session_id, access_token, refresh_token
-		c.SetCookie("session_id", "", -1, "/", "", false, true)
-		c.SetCookie("access_token", "", -1, "/", "", false, true)
-		c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+		clearAuthCookies(c)
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "logout successful",
@@ -289,9 +208,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	// Clear both access_token and refresh_token cookies
-	c.SetCookie("access_token", "", -1, "/", "", false, true)
-	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	clearAuthCookies(c)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logout successful",

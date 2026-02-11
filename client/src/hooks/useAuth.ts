@@ -46,7 +46,6 @@ const authApi = {
       "/api/v1/auth/login",
       credentials
     );
-    // access_token is now in HttpOnly cookie, no need to store
     return data;
   },
 
@@ -87,7 +86,6 @@ export const useLogin = () => {
       // Cache user profile
       queryClient.setQueryData(["user"], data.user);
       console.log("✅ Login successful:", data.user.email);
-      console.log("🍪 Access token stored in HttpOnly cookie");
     },
     onError: (error) => {
       console.error(
@@ -107,7 +105,6 @@ export const useRegister = () => {
       // Cache user profile
       queryClient.setQueryData(["user"], data.user);
       console.log("✅ Register successful:", data.user.email);
-      console.log("🍪 Access token stored in HttpOnly cookie");
     },
     onError: (error) => {
       console.error(
@@ -127,7 +124,6 @@ export const useLogout = () => {
       // Clear all cached data
       queryClient.clear();
       console.log("✅ Logout successful");
-      console.log("🍪 All cookies cleared by server");
     },
     onError: (error) => {
       console.error(

@@ -15,63 +15,39 @@ import (
 	"go.uber.org/zap"
 )
 
-// SetupRouter configures all API Gateway routes
 func SetupRouter(
 	gatewayHandler *handler.GatewayHandler,
-	authHandler *handler.AuthHandler,
-	userHandler *handler.UserHandler,
-	addressHandler *handler.AddressHandler,
-	productHandler *handler.ProductHandler,
-	categoryHandler *handler.CategoryHandler,
-	searchHandler *handler.SearchHandler,
-	cartHandler *handler.CartHandler,
-	orderHandler *handler.OrderHandler,
 	cfg *config.Config,
 	logger *zap.Logger,
 	redisClient *redis.Client,
 ) *gin.Engine {
-	// Use gin.New() instead of gin.Default() to avoid default middlewares
 	router := gin.New()
-
 	// Add recovery middleware
 	router.Use(gin.Recovery())
-
 	// CRITICAL: Custom CORS middleware MUST be first
 	router.Use(middleware.CORSMiddleware(&cfg.CORS, logger))
-
 	// Strip any client-supplied internal headers before auth
 	router.Use(middleware.StripInternalHeaders(logger))
-
 	// Skip logging OPTIONS requests (CORS preflight) to reduce noise
 	router.Use(middleware.SkipOptionsLoggingMiddleware(logger))
-
 	// Request logging middleware
 	router.Use(middleware.RequestLoggingMiddleware(logger))
 	router.Use(middleware.ErrorLoggingMiddleware(logger))
-
 	// Rate limiting middleware
 	router.Use(middleware.RateLimitMiddleware(&cfg.RateLimit, logger))
 
-	// Serve a custom multi-spec Swagger UI index (at a non-conflicting prefix)
-	router.GET("/swagger-ui/index.html", func(c *gin.Context) {
-		c.File("docs/swagger-index.html")
+	router.GET("/swagger-ui/*any", func(c *gin.Context) {
+		path := c.Param("any")
+		if path == "/" || path == "/index.html" || path == "" {
+			c.File("docs/swagger-index.html")
+			return
+		}
+		ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.InstanceName("gateway"))(c)
 	})
 
-	// Accept requests to the directory path and plain `/swagger-ui` and redirect or serve index
-	router.GET("/swagger-ui/", func(c *gin.Context) {
-		c.File("docs/swagger-index.html")
-	})
-	router.GET("/swagger-ui", func(c *gin.Context) {
+	router.GET("/swagger", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/swagger-ui/")
 	})
-
-	// Convenience redirect from /swagger to the UI under /swagger-ui
-	router.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/swagger-ui/index.html")
-	})
-
-	// Swagger UI (single wildcard at the end) - keep gin-swagger assets for gateway's own docs
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Swagger UI configuration endpoint (returns gateway-scoped spec URLs)
 	// The gateway will serve service specs at /specs/{short}.json which
@@ -95,137 +71,152 @@ func SetupRouter(
 	// Single wildcard route to handle both `/specs/service` and `/specs/service.json`
 	router.GET("/specs/*service", gatewayHandler.SpecProxy)
 
-	// Endpoint used by Swagger UI to ask gateway to set an httpOnly session cookie
 	router.POST("/auth/session", gatewayHandler.SetSessionCookie)
-
-	// Gateway does not proxy or merge service OpenAPI specs. Each service must expose its own spec (e.g. /product/swagger/doc.json).
-
-	// Health check endpoint (no auth required)
 	router.GET("/health", gatewayHandler.HealthCheck)
 	router.GET("/api/gateway/health", gatewayHandler.HealthCheck)
 
-	// API routes - all requests go through the gateway
 	api := router.Group("/api")
 	{
 		v1 := api.Group("/v1")
 		{
-			// Product service routes
 			products := v1.Group("/products")
 			{
-				// Public routes (no auth required)
-				products.GET("", productHandler.ListProducts)
-				products.GET("/:id", productHandler.GetProduct)
-				products.GET("/search", productHandler.SearchProducts)
+				products.GET("", gatewayHandler.ProxyRequest)
+				products.GET("/:id", gatewayHandler.ProxyRequest)
+				products.GET("/search", gatewayHandler.ProxyRequest)
+				products.GET("/:id/items", gatewayHandler.ProxyRequest)
+				products.GET("/:id/items/:item_id", gatewayHandler.ProxyRequest)
+				products.GET("/:id/variations", gatewayHandler.ProxyRequest)
+				products.POST("", gatewayHandler.ProxyRequest)
 
-				// Product Items (SKU) routes - Public
-				products.GET("/:id/items", productHandler.GetProductItems)
-				products.GET("/:id/items/:item_id", productHandler.GetProductItem)
-
-				// Variation routes - Public (for UI selectors)
-				products.GET("/:id/variations", productHandler.GetProductVariations)
-
-				products.POST("", productHandler.CreateProduct) // Protected in handler
-
-				// Protected routes (auth required)
+				// Protected: RoleCookieRouter → Auth → Session
 				protected := products.Group("")
-				protected.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
+				protected.Use(
+					middleware.RoleCookieRouter(logger),
+					middleware.AuthMiddleware(&cfg.JWT, logger),
+					middleware.SessionMiddleware(logger, redisClient),
+				)
 				{
-					protected.PUT("/:id", productHandler.UpdateProduct)
-					protected.PATCH("/:id", productHandler.UpdateProduct)
-					protected.PATCH("/:id/inventory", productHandler.UpdateInventory)
-					protected.DELETE("/:id", productHandler.DeleteProduct)
-
-					// Product Items (SKU) - Protected operations
-					protected.POST("/:id/items", productHandler.CreateProductItem)
-					protected.PUT("/:id/items/:item_id", productHandler.UpdateProductItem)
-					protected.DELETE("/:id/items/:item_id", productHandler.DeleteProductItem)
+					protected.PUT("/:id", gatewayHandler.ProxyRequest)
+					protected.PATCH("/:id", gatewayHandler.ProxyRequest)
+					protected.PATCH("/:id/inventory", gatewayHandler.ProxyRequest)
+					protected.DELETE("/:id", gatewayHandler.ProxyRequest)
+					protected.POST("/:id/items", gatewayHandler.ProxyRequest)
+					protected.PUT("/:id/items/:item_id", gatewayHandler.ProxyRequest)
+					protected.DELETE("/:id/items/:item_id", gatewayHandler.ProxyRequest)
 				}
 			}
-
-			// Category routes (Product Service)
 			categories := v1.Group("/categories")
 			{
-				// Public routes (no auth required)
-				categories.GET("", categoryHandler.ListCategories)
-				categories.GET("/:id", categoryHandler.GetCategory)
-				categories.GET("/slug/:slug", categoryHandler.GetCategoryBySlug)
-				categories.GET("/:id/children", categoryHandler.GetCategoryChildren)
-				categories.GET("/:id/products", categoryHandler.GetCategoryProducts)
-				categories.POST("", categoryHandler.CreateCategory)
-				categories.PUT("/:id", categoryHandler.UpdateCategory)
-				categories.DELETE("/:id", categoryHandler.DeleteCategory)
-			}
+				categories.GET("", gatewayHandler.ProxyRequest)
+				categories.GET("/:id", gatewayHandler.ProxyRequest)
+				categories.GET("/slug/:slug", gatewayHandler.ProxyRequest)
+				categories.GET("/:id/children", gatewayHandler.ProxyRequest)
+				categories.GET("/:id/products", gatewayHandler.ProxyRequest)
 
-			// Search routes (Search Service)
+				// Protected: RoleCookieRouter → Auth → Session
+				protected := categories.Group("")
+				protected.Use(
+					middleware.RoleCookieRouter(logger),
+					middleware.AuthMiddleware(&cfg.JWT, logger),
+					middleware.SessionMiddleware(logger, redisClient),
+				)
+				{
+					protected.POST("", gatewayHandler.ProxyRequest)
+					protected.PUT(":id", gatewayHandler.ProxyRequest)
+					protected.PATCH(":id/active", gatewayHandler.ProxyRequest)
+					protected.DELETE(":id", gatewayHandler.ProxyRequest)
+				}
+				admin := categories.Group("/admin")
+				admin.Use(
+					middleware.RoleCookieRouter(logger),
+					middleware.AuthMiddleware(&cfg.JWT, logger),
+					middleware.SessionMiddleware(logger, redisClient),
+					middleware.RoleMiddleware(logger, "ADMIN"),
+				)
+				{
+					admin.GET("", gatewayHandler.ProxyRequest)
+				}
+			}
 			search := v1.Group("/search")
 			{
-				search.GET("", searchHandler.SearchProducts)
+				search.GET("", gatewayHandler.ProxyRequest)
 			}
-
-			// Cart routes (Order Service) - Protected routes (require authentication)
 			cart := v1.Group("/cart")
-			cart.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
+			cart.Use(
+				middleware.RoleCookieRouter(logger),
+				middleware.AuthMiddleware(&cfg.JWT, logger),
+				middleware.SessionMiddleware(logger, redisClient),
+			)
 			{
-				cart.GET("", cartHandler.GetCart)
-				cart.DELETE("", cartHandler.ClearCart)
-				cart.POST("/items", cartHandler.AddItem)
-				cart.PUT("/items/:product_item_id", cartHandler.UpdateItem)
-				cart.DELETE("/items/:product_item_id", cartHandler.RemoveItem)
-				cart.POST("/items/:product_item_id/toggle", cartHandler.ToggleItemSelection) // toggle selection
-				// New PATCH routes to set selection state (idempotent)
-				cart.PATCH("/items/:product_item_id/selection", cartHandler.SetItemSelection) // set selection for single item
-				cart.PATCH("/selection", cartHandler.SetAllSelection)                         // set selection for all items
-				cart.PATCH("/shops/:shop_id/selection", cartHandler.SetShopSelection)         // set selection by shop
-
-				cart.DELETE("/selected", cartHandler.ClearSelected) // clear selected items
-				cart.POST("/validate", cartHandler.ValidateCart)    // validate cart before checkout
+				cart.GET("", gatewayHandler.ProxyRequest)
+				cart.DELETE("", gatewayHandler.ProxyRequest)
+				cart.POST("/items", gatewayHandler.ProxyRequest)
+				cart.PUT("/items/:product_item_id", gatewayHandler.ProxyRequest)
+				cart.DELETE("/items/:product_item_id", gatewayHandler.ProxyRequest)
+				cart.POST("/items/:product_item_id/toggle", gatewayHandler.ProxyRequest)
+				cart.PATCH("/items/:product_item_id/selection", gatewayHandler.ProxyRequest)
+				cart.PATCH("/selection", gatewayHandler.ProxyRequest)
+				cart.PATCH("/shops/:shop_id/selection", gatewayHandler.ProxyRequest)
+				cart.DELETE("/selected", gatewayHandler.ProxyRequest)
+				cart.POST("/validate", gatewayHandler.ProxyRequest)
 			}
-
-			// Order routes (Order Service)
 			orders := v1.Group("/orders")
-			orders.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
+			orders.Use(
+				middleware.RoleCookieRouter(logger),
+				middleware.AuthMiddleware(&cfg.JWT, logger),
+				middleware.SessionMiddleware(logger, redisClient),
+			)
 			{
-				orders.POST("", orderHandler.CreateOrder)
-				orders.GET("", orderHandler.ListOrders)
-				orders.GET("/:id", orderHandler.GetOrder)
-				orders.GET("/number/:order_number", orderHandler.GetOrderByNumber)
+				orders.POST("", gatewayHandler.ProxyRequest)
+				orders.GET("", gatewayHandler.ProxyRequest)
+				orders.GET("/:id", gatewayHandler.ProxyRequest)
+				orders.GET("/number/:order_number", gatewayHandler.ProxyRequest)
 			}
 
-			// Identity service routes - Auth
+			// Auth endpoints: RoleCookieRouterLax (validate header, don't require cookie)
 			auth := v1.Group("/auth")
+			auth.Use(middleware.RoleCookieRouterLax(logger))
 			{
-				// Public routes (no auth required)
-				auth.POST("/register", authHandler.Register)
-				auth.POST("/login", authHandler.Login)
-				auth.POST("/refresh", authHandler.RefreshToken) // Refresh access token
+				auth.POST("/register", gatewayHandler.ProxyRequest)
+				auth.POST("/login", gatewayHandler.ProxyRequest)
+				auth.POST("/refresh", gatewayHandler.ProxyRequest)
 			}
 
-			// Logout requires auth to get user_id
+			// Logout: requires full auth pipeline
 			authProtected := v1.Group("/auth")
-			authProtected.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
+			authProtected.Use(
+				middleware.RoleCookieRouter(logger),
+				middleware.AuthMiddleware(&cfg.JWT, logger),
+				middleware.SessionMiddleware(logger, redisClient),
+			)
 			{
-				authProtected.POST("/logout", authHandler.Logout)
+				authProtected.POST("/logout", gatewayHandler.ProxyRequest)
 			}
 
-			// Protected identity service routes
+			// Protected identity routes
 			protectedIdentity := v1.Group("")
-			protectedIdentity.Use(middleware.AuthMiddleware(&cfg.JWT, logger), middleware.SessionMiddleware(logger, redisClient))
+			protectedIdentity.Use(
+				middleware.RoleCookieRouter(logger),
+				middleware.AuthMiddleware(&cfg.JWT, logger),
+				middleware.SessionMiddleware(logger, redisClient),
+			)
 			{
 				users := protectedIdentity.Group("/users")
 				{
-					users.GET("/profile", userHandler.GetProfile)
-					users.PUT("/profile", userHandler.UpdateProfile)
-					users.PUT("/password", userHandler.ChangePassword)
+					users.GET("/profile", gatewayHandler.ProxyRequest)
+					users.PUT("/profile", gatewayHandler.ProxyRequest)
+					users.PUT("/password", gatewayHandler.ProxyRequest)
 				}
 
 				addresses := protectedIdentity.Group("/addresses")
 				{
-					addresses.GET("", addressHandler.GetAddresses)
-					addresses.POST("", addressHandler.CreateAddress)
-					addresses.GET("/:id", addressHandler.GetAddress)
-					addresses.PUT("/:id", addressHandler.UpdateAddress)
-					addresses.DELETE("/:id", addressHandler.DeleteAddress)
-					addresses.PUT("/:id/default", addressHandler.SetDefaultAddress)
+					addresses.GET("", gatewayHandler.ProxyRequest)
+					addresses.POST("", gatewayHandler.ProxyRequest)
+					addresses.GET("/:id", gatewayHandler.ProxyRequest)
+					addresses.PUT("/:id", gatewayHandler.ProxyRequest)
+					addresses.DELETE("/:id", gatewayHandler.ProxyRequest)
+					addresses.PUT("/:id/default", gatewayHandler.ProxyRequest)
 				}
 			}
 		}

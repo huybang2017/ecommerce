@@ -31,9 +31,9 @@ const docTemplate = `{
             "in": "header"
         },
         "CookieAuth": {
-            "description": "HttpOnly cookie containing JWT access token. Automatically set after login/register. Used for authentication in browser-based applications.",
+            "description": "HttpOnly cookie containing JWT access token with role prefix (admin_access_token, buyer_access_token, seller_access_token). Automatically set after login/register based on X-App-Role header. Used for authentication in browser-based applications. IMPORTANT: All authenticated requests MUST include \"X-App-Role\" header (admin | buyer | seller) to specify which role context to use.",
             "type": "apiKey",
-            "name": "access_token",
+            "name": "{role}_access_token",
             "in": "cookie"
         }
     }

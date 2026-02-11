@@ -1,87 +1,182 @@
-// middleware.ts - Next.js Edge Runtime Middleware
-// Professional authentication and authorization for E-commerce Microservices
-// Implements: Cookie-based auth, Route protection, Role-based access, Callback URL
+/**
+ * ============================================================================
+ * NEXT.JS AUTH MIDDLEWARE - Edge Runtime Compatible
+ * ============================================================================
+ *
+ * Purpose: Protect authenticated routes from unauthenticated access.
+ *
+ * Edge Runtime Limitations:
+ * - Cannot decrypt httpOnly cookies (they're encrypted by browser)
+ * - Cannot validate JWT tokens (no crypto libraries)
+ * - Cannot access database
+ *
+ * Solution:
+ * 1. Backend sets a secondary cookie "is_logged_in" (NOT httpOnly)
+ * 2. Middleware reads this flag for preliminary check (fast, edge-compatible)
+ * 3. API Gateway does real authentication (JWT validation)
+ *
+ * Flow:
+ * - User logs in → Backend sets BOTH:
+ *   - buyer_access_token (httpOnly, secure) ← Real token
+ *   - is_logged_in=true (plain cookie) ← Middleware flag
+ *
+ * - User visits /profile:
+ *   - Middleware checks is_logged_in → true → Allow
+ *   - Page fetches data → API validates buyer_access_token → 200 OK
+ *
+ * - If JWT expires:
+ *   - Middleware checks is_logged_in → true → Allow (⚠️ still valid)
+ *   - Page fetches data → API returns 401
+ *   - Client refreshes token OR redirects to login
+ *
+ * Security Note:
+ * - is_logged_in is NOT secure (readable by JavaScript)
+ * - But it only contains a boolean flag, not sensitive data
+ * - Real authentication still uses httpOnly cookies
+ * - This is the industry-standard approach for edge middleware
+ * ============================================================================
+ */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import {
-  PUBLIC_ROUTES,
-  AUTH_ROUTES,
-  PROTECTED_ROUTES,
-  ADMIN_ROUTES,
-  isPathMatch,
-} from "./src/lib/route-config";
+import { NextRequest, NextResponse } from "next/server";
 
-// Cookie names (must match backend)
-const ACCESS_TOKEN_COOKIE = "access_token";
-const REFRESH_TOKEN_COOKIE = "refresh_token";
-const LOGIN_PAGE = "/login";
+// ────────────────────────────────────────────────────────────────────────────
+// CONFIGURATION
+// ────────────────────────────────────────────────────────────────────────────
+
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/register",
+  "/about",
+  "/contact",
+  "/products", // Public product listing
+  "/product", // Product detail pages (dynamic)
+];
+
+const PROTECTED_ROUTES = [
+  "/profile",
+  "/cart",
+  "/checkout",
+  "/orders",
+  "/wishlist",
+  "/settings",
+];
+
+const AUTH_ROUTES = ["/login", "/register"];
+
+// ────────────────────────────────────────────────────────────────────────────
+// MIDDLEWARE LOGIC
+// ────────────────────────────────────────────────────────────────────────────
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Get tokens from cookies
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  console.log("[MIDDLEWARE] Request:", pathname);
 
-  const hasValidSession = !!accessToken || !!refreshToken;
+  // ── 1. Read auth state from plain cookie ──────────────────────────────────
+  // This cookie is set by backend after login (NOT httpOnly)
+  // We can read it because it's a plain cookie (not encrypted)
+  const isLoggedIn = request.cookies.get("is_logged_in")?.value === "true";
 
-  // 2. Allow public routes (home, products, etc.) for everyone
-  if (
-    isPathMatch(pathname, PUBLIC_ROUTES) &&
-    !isPathMatch(pathname, AUTH_ROUTES)
-  ) {
-    return NextResponse.next();
+  console.log("[MIDDLEWARE] Is logged in:", isLoggedIn);
+
+  // ── 2. Check if route is protected ────────────────────────────────────────
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    pathname === route || pathname.startsWith(route)
+  );
+
+  // ── 3. Redirect logic ─────────────────────────────────────────────────────
+
+  // CASE 1: User is logged in but trying to access login/register
+  // → Redirect to home
+  if (isLoggedIn && isAuthRoute) {
+    console.log("[MIDDLEWARE] Already logged in, redirecting from auth page");
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 3. Handle auth routes (login, register)
-  if (isPathMatch(pathname, AUTH_ROUTES)) {
-    // If already logged in, redirect to home
-    if (hasValidSession) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
+  // CASE 2: User is NOT logged in but trying to access protected route
+  // → Redirect to login with returnUrl
+  if (!isLoggedIn && isProtectedRoute) {
+    console.log("[MIDDLEWARE] Not logged in, redirecting to login");
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("returnUrl", pathname); // Save intended destination
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 4. Handle protected routes (cart, orders, profile)
-  if (isPathMatch(pathname, PROTECTED_ROUTES)) {
-    if (!hasValidSession) {
-      // Redirect to login with callback URL
-      const loginUrl = new URL(LOGIN_PAGE, request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
-  }
+  // ── 4. Allow request ───────────────────────────────────────────────────────
+  console.log("[MIDDLEWARE] Request allowed");
 
-  // 5. Handle admin routes (require admin role)
-  if (isPathMatch(pathname, ADMIN_ROUTES)) {
-    if (!hasValidSession) {
-      const loginUrl = new URL(LOGIN_PAGE, request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // Optional: Add custom headers for debugging
+  const response = NextResponse.next();
+  response.headers.set("x-middleware-executed", "true");
+  response.headers.set("x-is-logged-in", isLoggedIn.toString());
 
-    // TODO: Decode JWT to check role (requires jose library)
-    // For now, allow if authenticated
-    // In production, decode accessToken and check claims.role === 'ADMIN'
-    return NextResponse.next();
-  }
-
-  // 6. Default: allow all other routes
-  return NextResponse.next();
+  return response;
 }
 
-// Configure which routes to run middleware on
+// ────────────────────────────────────────────────────────────────────────────
+// MATCHER CONFIGURATION
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Specify which routes trigger this middleware
+ * - Include all protected routes
+ * - Include auth routes (for logged-in redirect)
+ * - Exclude static files, API routes, _next internals
+ */
 export const config = {
   matcher: [
     /*
      * Match all request paths except:
      * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - _next/image (image optimization)
      * - favicon.ico (favicon file)
-     * - public folder files
+     * - public files (images, fonts, etc.)
+     * - api routes (handled separately)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)$).*)",
   ],
 };
+
+/**
+ * ============================================================================
+ * BACKEND REQUIREMENT
+ * ============================================================================
+ *
+ * Backend MUST set is_logged_in cookie after login!
+ *
+ * File: identity-service/internal/handler/cookie_helper.go
+ *
+ * func setAuthCookies(c *gin.Context, sessionID, accessToken, refreshToken string) {
+ *   prefix := cookiePrefix(c)
+ *
+ *   // Set httpOnly cookies (secure)
+ *   c.SetCookie(prefix+"session_id", sessionID, 604800, "/", "", false, true)
+ *   c.SetCookie(prefix+"access_token", accessToken, 900, "/", "", false, true)
+ *   c.SetCookie(prefix+"refresh_token", refreshToken, 604800, "/", "", false, true)
+ *
+ *   // ✅ NEW: Set plain cookie for Next.js middleware
+ *   c.SetCookie("is_logged_in", "true", 604800, "/", "", false, false)
+ *   //                                              ↑      ↑
+ *   //                                          secure  httpOnly=false
+ * }
+ *
+ * func clearAuthCookies(c *gin.Context) {
+ *   prefix := cookiePrefix(c)
+ *
+ *   c.SetCookie(prefix+"session_id", "", -1, "/", "", false, true)
+ *   c.SetCookie(prefix+"access_token", "", -1, "/", "", false, true)
+ *   c.SetCookie(prefix+"refresh_token", "", -1, "/", "", false, true)
+ *
+ *   // ✅ NEW: Clear is_logged_in flag
+ *   c.SetCookie("is_logged_in", "", -1, "/", "", false, false)
+ * }
+ *
+ * ============================================================================
+ */

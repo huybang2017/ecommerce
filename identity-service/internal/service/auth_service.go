@@ -58,14 +58,13 @@ type LoginRequest struct {
 }
 
 // AuthResponse represents the authentication response
-// NOTE: Token should NOT be in response body for production
-// Instead, it should be set as HttpOnly cookie by the handler
+// Tokens are set as HttpOnly cookies by the handler — never serialized to JSON
 type AuthResponse struct {
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"` // Deprecated: Use SessionID instead
-	SessionID    string       `json:"session_id"`    // Session ID for session-based auth
+	AccessToken  string       `json:"-"`
+	RefreshToken string       `json:"-"`
+	SessionID    string       `json:"-"`
 	User         *domain.User `json:"user"`
-	ExpiresIn    int64        `json:"expires_in"` // seconds until access token expires
+	ExpiresIn    int64        `json:"-"`
 }
 
 // Register creates a new user account

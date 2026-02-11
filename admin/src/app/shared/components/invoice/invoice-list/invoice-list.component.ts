@@ -266,7 +266,7 @@ export class InvoiceListComponent {
   showFilter: boolean = false;
   itemsPerPage: number = 10;
 
-  constructor(private elementRef: ElementRef) {}
+  constructor(private elementRef: ElementRef) { }
 
   @HostListener('document:click', ['$event'])
   handleClickOutside(event: MouseEvent) {
@@ -338,7 +338,7 @@ export class InvoiceListComponent {
     return this.paginatedInvoices.length > 0 && this.paginatedInvoices.every(invoice => this.selected.includes(invoice.id));
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   toggleSelectAll(): void {
     if (this.allPaginatedSelected) {

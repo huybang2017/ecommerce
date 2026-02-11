@@ -21,19 +21,51 @@ type SessionData struct {
 	UserID int64  `json:"user_id"`
 }
 
-// AuthMiddleware validates JWT tokens for protected routes
-// This implements authentication for the API Gateway
-// Supports both Cookie-based (preferred) and Authorization header authentication
+const (
+	RoleAdmin  = "ADMIN"
+	RoleSeller = "SELLER"
+	RoleBuyer  = "BUYER"
+)
+
+// resolvedPrefix reads the role_prefix set by RoleCookieRouter middleware.
+// Falls back to deriving it from X-App-Role if the router hasn't run (backward compat).
+func resolvedPrefix(c *gin.Context) string {
+	if p, ok := c.Get("role_prefix"); ok {
+		if prefix, ok := p.(string); ok {
+			return prefix
+		}
+	}
+	// fallback – should not happen if pipeline is wired correctly
+	role := strings.ToLower(c.GetHeader("X-App-Role"))
+	if role != "" {
+		return role + "_"
+	}
+	return ""
+}
+
+// AuthMiddleware validates JWT tokens for protected routes.
+// Expects RoleCookieRouter to have already run — cookies are pre-filtered
+// to only contain the role-matching set.
+//
+// Token source priority:
+//   1. Role-scoped HttpOnly cookie ({role}_access_token)
+//   2. Authorization header (bearer token)
 func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
-		// PRIORITY 1: Try to get token from HttpOnly cookie (most secure)
-		if cookieToken, err := c.Cookie("access_token"); err == nil && cookieToken != "" {
-			tokenString = cookieToken
-			log.Printf("[AUTH] Token found in cookie")
-		} else {
-			// PRIORITY 2: Fallback to Authorization header (for compatibility)
+		prefix := resolvedPrefix(c)
+
+		// PRIORITY 1: Role-scoped HttpOnly cookie (pre-filtered by RoleCookieRouter)
+		if prefix != "" {
+			if cookieToken, err := c.Cookie(prefix + "access_token"); err == nil && cookieToken != "" {
+				tokenString = cookieToken
+				log.Printf("[AUTH] Token from %saccess_token cookie", prefix)
+			}
+		}
+
+		// PRIORITY 2: Authorization header (API clients, Swagger, etc.)
+		if tokenString == "" {
 			authHeader := c.GetHeader("Authorization")
 			if authHeader == "" {
 				logger.Warn("Missing authorization credentials (no cookie or header)")
@@ -42,172 +74,217 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 				return
 			}
 
-			// Normalize Authorization header: auto-add "Bearer " prefix if missing
 			if strings.HasPrefix(authHeader, "Bearer ") {
 				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
-			} else if strings.HasPrefix(authHeader, "bearer ") {
-				tokenString = strings.TrimPrefix(strings.ToLower(authHeader), "bearer ")
+			} else if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+				tokenString = authHeader[7:]
 			} else {
 				tokenString = strings.TrimSpace(authHeader)
 			}
-			log.Printf("[AUTH] Token found in Authorization header")
+			log.Printf("[AUTH] Token from Authorization header")
 		}
 
-		// Validate token is not empty
 		if tokenString == "" {
-			log.Printf("[AUTH] Empty token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization credentials"})
 			c.Abort()
 			return
 		}
 
-		// Parse and validate the token
+		// Parse and validate the JWT
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate the signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				log.Printf("[AUTH] Invalid signing method: %v", token.Method)
 				return nil, jwt.ErrSignatureInvalid
 			}
-			log.Printf("[AUTH] Validating token with secret (len=%d)", len(cfg.Secret))
 			return []byte(cfg.Secret), nil
 		})
-
 		if err != nil {
 			preview := tokenString
 			if len(preview) > 20 {
 				preview = preview[:20] + "..."
 			}
-			log.Printf("[AUTH] Token validation failed: %v, token_preview=%s", err, preview)
+			log.Printf("[AUTH] Token validation failed: %v, preview=%s", err, preview)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token", "details": err.Error()})
 			c.Abort()
 			return
 		}
 
 		if !token.Valid {
-			log.Printf("[AUTH] Token is not valid")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		// Extract claims and store in context
+		// Extract claims → context
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			// Convert user_id to string for consistency
 			if userIDFloat, ok := claims["user_id"].(float64); ok {
 				userID := fmt.Sprintf("%.0f", userIDFloat)
 				c.Set("user_id", userID)
-
-				// Also set as uint for backend services compatibility
 				c.Set("user_id_uint", uint(userIDFloat))
-				log.Printf("[AUTH] User authenticated user_id=%s", userID)
+				log.Printf("[AUTH] Authenticated user_id=%s", userID)
 			}
 			if email, ok := claims["email"].(string); ok {
 				c.Set("email", email)
 			}
 			if role, ok := claims["role"].(string); ok {
 				c.Set("role", role)
+
+				// ── Role-JWT consistency check ──────────────────────────
+				// If RoleCookieRouter resolved a role, verify the JWT role
+				// is consistent with the declared app role.
+				if resolvedRole, exists := c.Get("resolved_role"); exists {
+					headerRole := strings.ToUpper(resolvedRole.(string))
+					if role != headerRole {
+						log.Printf("[AUTH] SECURITY: role mismatch jwt_role=%s header_role=%s", role, headerRole)
+						logger.Warn("Role mismatch between JWT and X-App-Role",
+							zap.String("jwt_role", role),
+							zap.String("header_role", headerRole),
+						)
+						c.JSON(http.StatusForbidden, gin.H{"error": "Role mismatch: token role does not match app role"})
+						c.Abort()
+						return
+					}
+				}
 			}
 		}
 
-		// Store token for forwarding to backend services
-		// Create Bearer token format for header forwarding
-		bearerToken := "Bearer " + tokenString
-		c.Set("auth_header", bearerToken)
+		// Store bearer token for forwarding to backend services
+		c.Set("auth_header", "Bearer "+tokenString)
 		log.Printf("[AUTH] Authentication successful")
 
 		c.Next()
 	}
 }
 
-// SessionMiddleware validates session_id từ cookie với Redis
-// Kiểm tra user có sở hữu session này không
+// SessionMiddleware validates session_id cookie against Redis.
+// Expects RoleCookieRouter to have already filtered cookies.
 func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Lấy user_id từ context (set bởi AuthMiddleware)
 		userIDVal, exists := c.Get("user_id")
 		if !exists {
-			log.Printf("[SESSION] user_id not found in context - auth middleware should run first")
+			log.Printf("[SESSION] user_id not in context – AuthMiddleware must run first")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user_id in context"})
 			c.Abort()
 			return
 		}
 		userID, ok := userIDVal.(string)
 		if !ok {
-			log.Printf("[SESSION] user_id in context is not string, type=%T, value=%v", userIDVal, userIDVal)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user_id type in context"})
 			c.Abort()
 			return
 		}
 
-		// Lấy session_id từ cookie
-		sessionID, err := c.Cookie("session_id")
-		if err != nil {
-			log.Printf("[SESSION] Missing session_id cookie user_id=%s err=%v", userID, err)
+		// Read role-scoped session_id (cookies already filtered by RoleCookieRouter)
+		prefix := resolvedPrefix(c)
+		var sessionID string
+		var err error
+
+		if prefix != "" {
+			sessionID, err = c.Cookie(prefix + "session_id")
+		}
+
+		if err != nil || sessionID == "" {
+			log.Printf("[SESSION] Missing %ssession_id cookie user_id=%s", prefix, userID)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing session_id cookie"})
 			c.Abort()
 			return
 		}
 
-		// Lấy session JSON từ Redis
+		// Validate against Redis
 		key := fmt.Sprintf("session:%s", sessionID)
 		sessionJSON, err := redisClient.Get(c.Request.Context(), key).Result()
 		if err != nil {
-			log.Printf("[SESSION] Session not found or expired key=%s user_id=%s err=%v", key, userID, err)
+			log.Printf("[SESSION] Not found key=%s user_id=%s err=%v", key, userID, err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired session"})
 			c.Abort()
 			return
 		}
-		log.Printf("[SESSION] Loaded session from redis key=%s value=%s", key, sessionJSON)
 
-		// Parse JSON -> SessionData
 		var session SessionData
 		if err := json.Unmarshal([]byte(sessionJSON), &session); err != nil {
-			log.Printf("[SESSION] Failed to unmarshal session JSON key=%s err=%v", key, err)
+			log.Printf("[SESSION] Unmarshal failed key=%s err=%v", key, err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session data"})
 			c.Abort()
 			return
 		}
-		sessionUserID := fmt.Sprintf("%d", session.UserID)
 
-		// Kiểm tra user_id từ token có match với session không
+		sessionUserID := fmt.Sprintf("%d", session.UserID)
 		if sessionUserID != userID {
-			log.Printf("\n[SESSION ERROR] ===================================\n"+
-				"| Reason: User Mismatch\n"+
-				"| Token UID:   %s\n"+
-				"| Session UID: %s\n"+
-				"| Raw Session: %s\n"+
-				"===================================================",
-				userID, sessionUserID, sessionJSON)
+			log.Printf("[SESSION] User mismatch token_uid=%s session_uid=%s", userID, sessionUserID)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session user mismatch"})
 			c.Abort()
 			return
 		}
 
-		// Lưu session_id vào context
 		c.Set("session_id", sessionID)
-		log.Printf("[SESSION] Session validated successfully user_id=%s session_id=%s", userID, sessionID)
+		log.Printf("[SESSION] Validated user_id=%s session_id=%s", userID, sessionID)
 
 		c.Next()
 	}
 }
 
-// OptionalAuthMiddleware allows requests with or without authentication
-// Useful for routes that have optional authentication
+// RoleMiddleware checks that the authenticated user has one of the allowed roles.
+func RoleMiddleware(logger *zap.Logger, allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleVal, exists := c.Get("role")
+		if !exists {
+			logger.Warn("Role not found in context")
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: role not identified"})
+			c.Abort()
+			return
+		}
+
+		userRole, _ := roleVal.(string)
+
+		isAllowed := false
+		for _, r := range allowedRoles {
+			if userRole == r {
+				isAllowed = true
+				break
+			}
+		}
+
+		if !isAllowed {
+			logger.Warn("Unauthorized role access attempt",
+				zap.String("user_role", userRole),
+				zap.Strings("allowed_roles", allowedRoles),
+			)
+			c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to perform this action"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// OptionalAuthMiddleware allows requests with or without authentication.
 func OptionalAuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.Next()
-			return
+		// Try role-scoped cookie first
+		prefix := resolvedPrefix(c)
+		var tokenString string
+
+		if prefix != "" {
+			if cookieToken, err := c.Cookie(prefix + "access_token"); err == nil && cookieToken != "" {
+				tokenString = cookieToken
+			}
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.Next()
-			return
+		// Fallback to Authorization header
+		if tokenString == "" {
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				c.Next()
+				return
+			}
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				c.Next()
+				return
+			}
+			tokenString = parts[1]
 		}
 
-		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
@@ -217,10 +294,15 @@ func OptionalAuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.Handl
 
 		if err == nil && token.Valid {
 			if claims, ok := token.Claims.(jwt.MapClaims); ok {
-				userID := fmt.Sprintf("%.0f", claims["user_id"].(float64))
-				c.Set("user_id", userID)
-				c.Set("email", claims["email"])
-				c.Set("role", claims["role"])
+				if uid, ok := claims["user_id"].(float64); ok {
+					c.Set("user_id", fmt.Sprintf("%.0f", uid))
+				}
+				if email, ok := claims["email"].(string); ok {
+					c.Set("email", email)
+				}
+				if role, ok := claims["role"].(string); ok {
+					c.Set("role", role)
+				}
 			}
 		}
 
