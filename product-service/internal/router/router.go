@@ -103,6 +103,7 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 		{
 			categories.GET("", categoryHandler.GetAllCategories)
 			categories.POST("", categoryHandler.CreateCategory)
+			categories.PATCH("/:id/active", categoryHandler.PatchCategoryActive)
 			categories.GET("/slug/:slug", categoryHandler.GetCategoryBySlug) // Must be before /:id
 			categories.GET("/:id", categoryHandler.GetCategory)
 			categories.GET("/:id/children", categoryHandler.GetCategoryChildren)
@@ -114,6 +115,11 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 			categories.POST("/:id/attributes", attrHandler.CreateCategoryAttribute)
 			categories.GET("/:id/attributes", attrHandler.GetCategoryAttributes)
 			categories.DELETE("/:id/attributes/:attr_id", attrHandler.DeleteCategoryAttribute)
+
+			adminCategories := categories.Group("/admin")
+			{
+				adminCategories.GET("", categoryHandler.GetAdminCategories)
+			}
 		}
 
 		// Product item routes (standalone)

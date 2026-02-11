@@ -43,6 +43,10 @@ type UpdateCategoryRequest struct {
 	Description string `json:"description"`
 }
 
+type CategoryActiveRequest struct {
+	IsActive bool `json:"is_active"`
+}
+
 // CreateCategory handles POST /categories
 // @Summary Create a new category
 // @Description Create a new category with name, slug, optional parent_id, and description
@@ -143,6 +147,44 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	})
 }
 
+// PatchCategoryActive xử lý PATCH /categories/:id/active
+// @Summary Cập nhật trạng thái kích hoạt của danh mục
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param request body CategoryActiveRequest true "Trạng thái mới"
+// @Success 200 {object} map[string]interface{}
+// @Router /categories/{id}/active [patch]
+func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
+	// 1. Lấy ID từ URL
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		return
+	}
+
+	// 2. Bind JSON body
+	var req CategoryActiveRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// 3. Gọi xuống Service layer (hàm PatchIsActive đã viết ở câu trước)
+	if err := h.categoryService.IsActiveCategory(c.Request.Context(), uint(id), req.IsActive); err != nil {
+		h.logger.Error("failed to patch category status", zap.Uint("id", uint(id)), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 4. Trả về phản hồi thành công
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "category status updated successfully",
+		"is_active": req.IsActive,
+	})
+}
+
 // GetCategory handles GET /categories/:id
 // @Summary Get a category by ID
 // @Description Get a specific category by its ID
@@ -217,6 +259,53 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 
 	// Use DTO to prevent domain leak
 	c.JSON(http.StatusOK, ToCategoryResponses(categories))
+}
+
+// GetAdminCategories handles GET /admin/categories
+// @Summary Get categories for admin with pagination, filter and sort
+// @Tags Admin Categories
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Param search query string false "Search by name or slug"
+// @Param status query string false "Filter by status (active/inactive/all)"
+// @Param sort_by query string false "Sort field (id, name, created_at)" default(id)
+// @Param sort_order query string false "Sort order (asc/desc)" default(desc)
+// @Success 200 {object} domain.AdminCategoryResponse
+// @Router /categories/admin [get]
+func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
+	// 1. Lấy và chuẩn hóa Query Parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	params := domain.CategoryQueryParams{
+		Page:      page,
+		Limit:     limit,
+		Search:    c.Query("search"),
+		Status:    c.Query("status"),
+		SortBy:    c.DefaultQuery("sort_by", "id"),
+		SortOrder: c.DefaultQuery("sort_order", "desc"),
+	}
+
+	// 2. Gọi Service
+	result, err := h.categoryService.GetAdminCategories(c.Request.Context(), params)
+	if err != nil {
+		h.logger.Error("failed to get admin categories", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 3. Trả về dữ liệu kèm Metadata phân trang
+	// Map list domain sang list DTO để tránh lộ dữ liệu nhạy cảm
+	response := gin.H{
+		"data":        ToCategoryResponses(result.Data), // Chuyển đổi slice domain sang DTO
+		"total":       result.Total,
+		"page":        result.Page,
+		"limit":       result.Limit,
+		"total_pages": result.TotalPages,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetCategoryChildren handles GET /categories/:id/children

@@ -33,6 +33,10 @@ import (
 // migrateProductsTable handles the migration of products table with special handling for shop_id
 // This is needed because we cannot add a NOT NULL column to a table with existing data
 func migrateProductsTable(db *gorm.DB, logger *zap.Logger) error {
+	logger.Info("Running AutoMigrate for Product to ensure table exists...")
+	if err := db.AutoMigrate(&domain.Product{}); err != nil {
+		return fmt.Errorf("failed to auto-migrate Product: %w", err)
+	}
 	// Check if shop_id column already exists
 	var count int64
 	err := db.Raw(`

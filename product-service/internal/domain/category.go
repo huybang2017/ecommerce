@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 )
 
@@ -9,32 +10,44 @@ import (
 // NOTE: NO Parent/Children to avoid circular reference and N+1 queries
 type Category struct {
 	ID          uint      `json:"id"`
-	ParentID    *uint     `json:"parent_id,omitempty"` // Nullable for root categories
+	ParentID    *uint     `json:"parent_id,omitempty"`
 	Name        string    `json:"name"`
-	Slug        string    `json:"slug"`        // Backward compatibility
-	Description string    `json:"description"` // Backward compatibility
+	Slug        string    `json:"slug"`
+	Description string    `json:"description"`
 	ImageURL    string    `json:"image_url"`
 	IsActive    bool      `json:"is_active"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	// ❌ Removed: Parent *Category (circular reference)
-	// ❌ Removed: Children []Category (N+1 problem)
-	// ✅ Use repository methods to get parent/children when needed
 }
 
-// TableName specifies the table name for GORM
+type CategoryQueryParams struct {
+	Page      int    `json:"page"`
+	Limit     int    `json:"limit"`
+	Search    string `json:"search"`
+	Status    string `json:"status"`
+	SortBy    string `json:"sort_by"`
+	SortOrder string `json:"sort_order"`
+}
+
+type AdminCategoryResponse struct {
+	Data       []*Category `json:"data"`
+	Total      int64       `json:"total"`
+	Page       int         `json:"page"`
+	Limit      int         `json:"limit"`
+	TotalPages int         `json:"total_pages"`
+}
+
 func (Category) TableName() string {
 	return "categories"
 }
 
-// CategoryRepository defines the interface for category data access
-// This is part of the domain layer - it defines WHAT we need, not HOW
 type CategoryRepository interface {
 	Create(category *Category) error
 	Update(category *Category) error
 	GetByID(id uint) (*Category, error)
 	GetBySlug(slug string) (*Category, error)
 	GetAll() ([]*Category, error)
+	GetAdminList(ctx context.Context, params CategoryQueryParams) ([]*Category, int64, error)
 	GetChildren(parentID uint) ([]*Category, error)
 	Delete(id uint) error
 }

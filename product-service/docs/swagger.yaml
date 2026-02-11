@@ -1,4 +1,40 @@
 definitions:
+  domain.AdminCategoryResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Category'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  domain.Category:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
   domain.CategoryAttribute:
     properties:
       attribute_name:
@@ -135,6 +171,11 @@ definitions:
         type: string
       variation_id:
         type: integer
+    type: object
+  handler.CategoryActiveRequest:
+    properties:
+      is_active:
+        type: boolean
     type: object
   handler.CategoryResponse:
     properties:
@@ -613,6 +654,33 @@ paths:
       summary: Update an existing category
       tags:
       - Categories
+  /categories/{id}/active:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Trạng thái mới
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CategoryActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cập nhật trạng thái kích hoạt của danh mục
+      tags:
+      - Categories
   /categories/{id}/children:
     get:
       description: Get all child categories of a parent category
@@ -688,6 +756,47 @@ paths:
       summary: Get products by category
       tags:
       - Products
+  /categories/admin:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by name or slug
+        in: query
+        name: search
+        type: string
+      - description: Filter by status (active/inactive/all)
+        in: query
+        name: status
+        type: string
+      - default: id
+        description: Sort field (id, name, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.AdminCategoryResponse'
+      summary: Get categories for admin with pagination, filter and sort
+      tags:
+      - Admin Categories
   /categories/slug/{slug}:
     get:
       description: Get a specific category by its slug
