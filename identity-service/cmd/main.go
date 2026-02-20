@@ -1,5 +1,15 @@
 package main
 
+// @title Identity Service API
+// @version 1.0
+// @description Identity and authentication service for e-commerce platform
+// @host localhost:8081
+// @BasePath /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token. Example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +33,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	_ "identity-service/docs" // Swagger docs
 )
 
 func main() {

@@ -224,10 +224,3 @@ func SetupRouter(
 
 	return router
 }
-
-// InitializeServices registers all microservices from configuration
-func InitializeServices(cfg *config.Config, serviceRegistry interface{}, logger *zap.Logger) error {
-	// This would be implemented to register services from config
-	// For now, services are registered in main.go
-	return nil
-}

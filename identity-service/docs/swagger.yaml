@@ -1,3 +1,4 @@
+basePath: /api/v1
 definitions:
   domain.Shop:
     properties:
@@ -154,8 +155,12 @@ definitions:
         minLength: 3
         type: string
     type: object
+host: localhost:8081
 info:
   contact: {}
+  description: Identity and authentication service for e-commerce platform
+  title: Identity Service API
+  version: "1.0"
 paths:
   /addresses:
     get:
@@ -829,4 +834,11 @@ paths:
       summary: Update user profile
       tags:
       - users
+securityDefinitions:
+  BearerAuth:
+    description: 'Type "Bearer" followed by a space and JWT token. Example: "Bearer
+      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

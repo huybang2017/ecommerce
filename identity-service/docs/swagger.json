@@ -1,8 +1,13 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Identity and authentication service for e-commerce platform",
+        "title": "Identity Service API",
+        "contact": {},
+        "version": "1.0"
     },
+    "host": "localhost:8081",
+    "basePath": "/api/v1",
     "paths": {
         "/addresses": {
             "get": {
@@ -1249,6 +1254,14 @@
                     "minLength": 3
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token. Example: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

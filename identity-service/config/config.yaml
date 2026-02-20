@@ -25,7 +25,7 @@ redis:
 
 jwt:
   secret: your-secret-key-change-in-production
-  expiration: 15m # Short expiration for testing token refresh
+  expiration: 5m # Short expiration for testing token refresh
 
 logging:
   level: info

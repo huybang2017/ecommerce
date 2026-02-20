@@ -5,26 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 )
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func getHeaderKeys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
 
 // proxyClient implements the ProxyClient interface
 // This handles HTTP proxying to backend microservices
@@ -56,12 +40,9 @@ func (p *proxyClient) ProxyRequest(
 	// Build the full URL
 	// Ensure base URL doesn't end with / and path starts with /
 	baseURL := service.BaseURL
-	// Debug: print which base URL is used
-	log.Printf("[PROXY DEBUG] service=%s baseURL=%s path=%s method=%s", service.Name, baseURL, path, method)
-	// Safety net: if baseURL still points to docker hostname, override to localhost for local dev
+	// Safety net: if baseURL still points to a docker hostname, override to localhost for local dev
 	if strings.Contains(baseURL, "product-service") {
 		baseURL = "http://localhost:8080"
-		log.Printf("[PROXY DEBUG] overriding product-service hostname to %s", baseURL)
 	}
 	if len(baseURL) > 0 && baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
@@ -85,8 +66,7 @@ func (p *proxyClient) ProxyRequest(
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// CRITICAL: Set ALL headers from map to request
-	// This ensures Authorization header is always forwarded
+	// Set ALL headers from map to request
 	for key, value := range headers {
 		if key == "" || value == "" {
 			continue
@@ -94,21 +74,9 @@ func (p *proxyClient) ProxyRequest(
 		req.Header.Set(key, value)
 	}
 
-	// CRITICAL: Double-check Authorization header is set
-	// If it's in the headers map, ensure it's in the request
+	// Ensure Authorization header is explicitly set from the headers map
 	if authVal, exists := headers["Authorization"]; exists && authVal != "" {
-		// Force set it again to be absolutely sure
 		req.Header.Set("Authorization", authVal)
-		fmt.Printf("[PROXY] ✅ Set Authorization: %s...\n", authVal[:min(50, len(authVal))])
-
-		// Verify it's actually in the request
-		if finalAuth := req.Header.Get("Authorization"); finalAuth != "" {
-			fmt.Printf("[PROXY] ✅ Verified Authorization in request\n")
-		} else {
-			fmt.Printf("[PROXY] ❌ ERROR: Authorization missing after setting!\n")
-		}
-	} else {
-		fmt.Printf("[PROXY] ❌ ERROR: Authorization NOT in headers map! Keys: %v\n", getHeaderKeys(headers))
 	}
 
 	// Set content type if body exists
@@ -131,7 +99,7 @@ func (p *proxyClient) ProxyRequest(
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// CRITICAL: Capture ALL response headers, especially Set-Cookie
+	// Capture ALL response headers, especially Set-Cookie
 	responseHeaders := make(map[string][]string)
 	for key, values := range resp.Header {
 		responseHeaders[key] = values

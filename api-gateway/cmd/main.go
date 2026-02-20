@@ -246,14 +246,6 @@ func main() {
 	proxyClient := repository.NewProxyClient(maxTimeout)
 	gatewayService := service.NewGatewayService(serviceRegistry, proxyClient, appLogger)
 	gatewayHandler := handler.NewGatewayHandler(gatewayService, appLogger)
-	// authHandler := handler.NewAuthHandler(gatewayService, appLogger)
-	// userHandler := handler.NewUserHandler(gatewayService, appLogger)
-	// addressHandler := handler.NewAddressHandler(gatewayService, appLogger)
-	// productHandler := handler.NewProductHandler(gatewayService, appLogger)
-	// categoryHandler := handler.NewCategoryHandler(gatewayService, appLogger)
-	// searchHandler := handler.NewSearchHandler(gatewayService, appLogger)
-	// cartHandler := handler.NewCartHandler(gatewayService, appLogger)
-	// orderHandler := handler.NewOrderHandler(gatewayService, appLogger)
 
 	// Setup router
 	r := router.SetupRouter(gatewayHandler, cfg, appLogger, redisClient)

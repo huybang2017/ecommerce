@@ -4,7 +4,6 @@ import (
 	"api-gateway/config"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -48,8 +47,8 @@ func resolvedPrefix(c *gin.Context) string {
 // to only contain the role-matching set.
 //
 // Token source priority:
-//   1. Role-scoped HttpOnly cookie ({role}_access_token)
-//   2. Authorization header (bearer token)
+//  1. Role-scoped HttpOnly cookie ({role}_access_token)
+//  2. Authorization header (bearer token)
 func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
@@ -60,7 +59,7 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 		if prefix != "" {
 			if cookieToken, err := c.Cookie(prefix + "access_token"); err == nil && cookieToken != "" {
 				tokenString = cookieToken
-				log.Printf("[AUTH] Token from %saccess_token cookie", prefix)
+				logger.Debug("Token from role-scoped cookie", zap.String("cookie", prefix+"access_token"))
 			}
 		}
 
@@ -81,7 +80,7 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 			} else {
 				tokenString = strings.TrimSpace(authHeader)
 			}
-			log.Printf("[AUTH] Token from Authorization header")
+			logger.Debug("Token from Authorization header")
 		}
 
 		if tokenString == "" {
@@ -98,11 +97,7 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 			return []byte(cfg.Secret), nil
 		})
 		if err != nil {
-			preview := tokenString
-			if len(preview) > 20 {
-				preview = preview[:20] + "..."
-			}
-			log.Printf("[AUTH] Token validation failed: %v, preview=%s", err, preview)
+			logger.Warn("Token validation failed", zap.Error(err))
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token", "details": err.Error()})
 			c.Abort()
 			return
@@ -120,7 +115,7 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 				userID := fmt.Sprintf("%.0f", userIDFloat)
 				c.Set("user_id", userID)
 				c.Set("user_id_uint", uint(userIDFloat))
-				log.Printf("[AUTH] Authenticated user_id=%s", userID)
+				logger.Debug("Authenticated", zap.String("user_id", userID))
 			}
 			if email, ok := claims["email"].(string); ok {
 				c.Set("email", email)
@@ -134,7 +129,6 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 				if resolvedRole, exists := c.Get("resolved_role"); exists {
 					headerRole := strings.ToUpper(resolvedRole.(string))
 					if role != headerRole {
-						log.Printf("[AUTH] SECURITY: role mismatch jwt_role=%s header_role=%s", role, headerRole)
 						logger.Warn("Role mismatch between JWT and X-App-Role",
 							zap.String("jwt_role", role),
 							zap.String("header_role", headerRole),
@@ -149,7 +143,7 @@ func AuthMiddleware(cfg *config.JWTConfig, logger *zap.Logger) gin.HandlerFunc {
 
 		// Store bearer token for forwarding to backend services
 		c.Set("auth_header", "Bearer "+tokenString)
-		log.Printf("[AUTH] Authentication successful")
+		logger.Debug("Authentication successful")
 
 		c.Next()
 	}
@@ -161,7 +155,7 @@ func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.Handle
 	return func(c *gin.Context) {
 		userIDVal, exists := c.Get("user_id")
 		if !exists {
-			log.Printf("[SESSION] user_id not in context – AuthMiddleware must run first")
+			logger.Warn("user_id not in context — AuthMiddleware must run first")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user_id in context"})
 			c.Abort()
 			return
@@ -183,7 +177,10 @@ func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.Handle
 		}
 
 		if err != nil || sessionID == "" {
-			log.Printf("[SESSION] Missing %ssession_id cookie user_id=%s", prefix, userID)
+			logger.Warn("Missing session_id cookie",
+				zap.String("prefix", prefix),
+				zap.String("user_id", userID),
+			)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing session_id cookie"})
 			c.Abort()
 			return
@@ -193,7 +190,11 @@ func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.Handle
 		key := fmt.Sprintf("session:%s", sessionID)
 		sessionJSON, err := redisClient.Get(c.Request.Context(), key).Result()
 		if err != nil {
-			log.Printf("[SESSION] Not found key=%s user_id=%s err=%v", key, userID, err)
+			logger.Warn("Session not found in Redis",
+				zap.String("key", key),
+				zap.String("user_id", userID),
+				zap.Error(err),
+			)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired session"})
 			c.Abort()
 			return
@@ -201,7 +202,10 @@ func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.Handle
 
 		var session SessionData
 		if err := json.Unmarshal([]byte(sessionJSON), &session); err != nil {
-			log.Printf("[SESSION] Unmarshal failed key=%s err=%v", key, err)
+			logger.Error("Failed to unmarshal session data",
+				zap.String("key", key),
+				zap.Error(err),
+			)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid session data"})
 			c.Abort()
 			return
@@ -209,14 +213,20 @@ func SessionMiddleware(logger *zap.Logger, redisClient *redis.Client) gin.Handle
 
 		sessionUserID := fmt.Sprintf("%d", session.UserID)
 		if sessionUserID != userID {
-			log.Printf("[SESSION] User mismatch token_uid=%s session_uid=%s", userID, sessionUserID)
+			logger.Warn("Session user mismatch",
+				zap.String("token_uid", userID),
+				zap.String("session_uid", sessionUserID),
+			)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Session user mismatch"})
 			c.Abort()
 			return
 		}
 
 		c.Set("session_id", sessionID)
-		log.Printf("[SESSION] Validated user_id=%s session_id=%s", userID, sessionID)
+		logger.Debug("Session validated",
+			zap.String("user_id", userID),
+			zap.String("session_id", sessionID),
+		)
 
 		c.Next()
 	}
