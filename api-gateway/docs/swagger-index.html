@@ -4,109 +4,124 @@
     <meta charset="utf-8" />
     <title>API Gateway - Swagger UI (Multi-service)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/swagger-ui-dist/swagger-ui.css"
-    />
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
     <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
+      html, body { height: 100%; margin: 0; }
+      #swagger-ui { height: calc(100vh - 48px); }
+      #role_bar {
+        padding: 8px 16px;
+        background: #1a1a2e;
+        color: #eee;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: monospace;
+        font-size: 13px;
+        border-bottom: 2px solid #e74c3c;
       }
-      #swagger-ui {
-        height: 100vh;
+      #role_bar label { color: #aaa; }
+      #role_select {
+        background: #2c2c54;
+        border: 1px solid #555;
+        color: #eee;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #role_badge {
+        padding: 3px 12px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 12px;
+        background: #27ae60;
+        color: #fff;
+        transition: background 0.2s;
+      }
+      #role_hint {
+        font-size: 12px;
+        color: #888;
+        margin-left: 8px;
       }
     </style>
   </head>
   <body>
-    <div id="dev_controls" style="padding: 12px; background: #222; color: #fff">
-      <label style="margin-right: 8px">Access token:</label>
-      <input
-        id="ui_access_token"
-        style="width: 420px"
-        placeholder="Paste access token here"
-      />
-      <button id="btn_set_token">Set token</button>
-      <button id="btn_clear_token">Clear token</button>
-      <span style="margin-left: 16px"></span>
-      <label style="margin-right: 8px">Session id:</label>
-      <input
-        id="ui_session_id"
-        style="width: 240px"
-        placeholder="session id (dev)"
-      />
-      <button id="btn_set_session">Set session cookie</button>
-      <button id="btn_clear_session">Clear session</button>
+    <!-- Role selector — chỉ cần chọn role, cookie browser tự gửi -->
+    <div id="role_bar">
+      <label>X-App-Role:</label>
+      <select id="role_select">
+        <option value="buyer">buyer</option>
+        <option value="admin">admin</option>
+        <option value="seller">seller</option>
+      </select>
+      <span id="role_badge">buyer</span>
+      <span id="role_hint">
+        Cookie browser gửi tự động — chỉ cần chọn đúng role tương ứng với session đang đăng nhập
+      </span>
     </div>
-    <script>
-      // Show dev controls only when ?dev=true is present
-      (function () {
-        const params = new URLSearchParams(window.location.search);
-        const dev = params.get("dev") === "true";
-        const el = document.getElementById("dev_controls");
-        if (!dev && el) el.style.display = "none";
-      })();
-    </script>
+
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js"></script>
     <script>
-      // Fetch configuration with absolute URLs for each service spec
+      // ── Role selector ────────────────────────────────────────────────────────
+      const BADGE_COLORS = { buyer: "#27ae60", admin: "#8e44ad", seller: "#e67e22" };
+
+      function getRole() {
+        return localStorage.getItem("swagger_role") || "buyer";
+      }
+
+      function applyRole(role) {
+        localStorage.setItem("swagger_role", role);
+        document.getElementById("role_select").value = role;
+        const badge = document.getElementById("role_badge");
+        badge.textContent = role;
+        badge.style.background = BADGE_COLORS[role] || "#555";
+      }
+
+      // Restore saved role on load
+      applyRole(getRole());
+
+      document.getElementById("role_select").addEventListener("change", (e) => {
+        applyRole(e.target.value);
+      });
+
+      // ── Request interceptor — inject X-App-Role + send browser cookies ───────
+      function injectHeaders(req) {
+        req.headers["X-App-Role"] = getRole();
+        req.credentials = "include"; // browser sends httpOnly cookies automatically
+        return req;
+      }
+
+      // ── Swagger UI init ──────────────────────────────────────────────────────
       fetch("/swagger-config")
         .then((r) => {
           if (!r.ok) throw new Error("Failed to load /swagger-config");
           return r.json();
         })
         .then((cfg) => {
-          // cfg.urls expected: [{ url: 'http://product-service:8080/product/swagger/doc.json', name: 'Product Service'}, ...]
           const urls = cfg.urls || [];
 
-          // Validate each remote spec URL (checks reachability, CORS, JSON)
           async function validateSpecs(urlList) {
             const results = [];
             for (const u of urlList) {
               try {
                 const res = await fetch(u.url, { credentials: "omit" });
                 if (!res.ok) {
-                  results.push({
-                    url: u.url,
-                    name: u.name,
-                    ok: false,
-                    status: res.status,
-                  });
+                  results.push({ url: u.url, name: u.name, ok: false, status: res.status });
                   continue;
                 }
                 const ct = res.headers.get("content-type") || "";
                 if (!ct.includes("application/json")) {
-                  results.push({
-                    url: u.url,
-                    name: u.name,
-                    ok: false,
-                    status: "invalid-content-type",
-                    contentType: ct,
-                  });
+                  results.push({ url: u.url, name: u.name, ok: false, status: "invalid-content-type" });
                   continue;
                 }
-                await res
-                  .clone()
-                  .json()
-                  .catch(() => {
-                    results.push({
-                      url: u.url,
-                      name: u.name,
-                      ok: false,
-                      status: "invalid-json",
-                    });
-                  });
+                await res.clone().json().catch(() => {
+                  results.push({ url: u.url, name: u.name, ok: false, status: "invalid-json" });
+                });
                 results.push({ url: u.url, name: u.name, ok: true });
               } catch (err) {
-                results.push({
-                  url: u.url,
-                  name: u.name,
-                  ok: false,
-                  error: String(err),
-                });
+                results.push({ url: u.url, name: u.name, ok: false, error: String(err) });
               }
             }
             return results;
@@ -114,124 +129,44 @@
 
           (async () => {
             if (urls.length === 0) {
-              console.log(
-                "No remote specs configured, loading local /docs/swagger.json",
-              );
               SwaggerUIBundle({
                 dom_id: "#swagger-ui",
                 url: "/docs/swagger.json",
                 presets: [SwaggerUIBundle.presets.apis],
+                requestInterceptor: injectHeaders,
               });
               return;
             }
 
-            console.log("Validating remote spec URLs", urls);
             const validation = await validateSpecs(urls);
-            const available = validation
-              .filter((r) => r.ok)
-              .map((r) => ({ url: r.url, name: r.name }));
-            const failed = validation.filter((r) => !r.ok);
+            const available  = validation.filter((r) => r.ok).map((r) => ({ url: r.url, name: r.name }));
+            const failed     = validation.filter((r) => !r.ok);
 
             if (available.length === 0) {
-              console.error(
-                "No reachable OpenAPI specs found. Details:",
-                validation,
-              );
+              console.error("No reachable OpenAPI specs found:", validation);
               document.body.innerHTML =
-                '<h2 style="color:#c00">No reachable OpenAPI specs</h2><pre>' +
+                '<h2 style="color:#c00;padding:20px">No reachable OpenAPI specs</h2><pre style="padding:20px">' +
                 validation.map((v) => JSON.stringify(v)).join("\n") +
                 "</pre>";
               return;
             }
 
-            console.log(
-              "Initializing Swagger UI with reachable specs",
-              available,
-              "failed:",
-              failed,
-            );
-            // Install requestInterceptor which injects Authorization header (from localStorage)
-            // and enables credentials so that httpOnly session cookie is sent.
-            const ui = SwaggerUIBundle({
+            console.log("Swagger UI ready. Specs:", available, "| Failed:", failed);
+
+            SwaggerUIBundle({
               dom_id: "#swagger-ui",
               urls: available,
-              presets: [
-                SwaggerUIBundle.presets.apis,
-                SwaggerUIStandalonePreset,
-              ],
+              presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
               layout: "StandaloneLayout",
-              requestInterceptor: (req) => {
-                // Attach access token from localStorage if present
-                const token = localStorage.getItem("swagger_access_token");
-                if (token) {
-                  req.headers.Authorization = `Bearer ${token}`;
-                }
-                // Ensure cookies are sent so gateway will receive httpOnly session cookie
-                req.credentials = "include";
-                return req;
-              },
+              requestInterceptor: injectHeaders,
             });
-
-            // UI controls: set/clear access token
-            document
-              .getElementById("btn_set_token")
-              .addEventListener("click", () => {
-                const v = document
-                  .getElementById("ui_access_token")
-                  .value.trim();
-                if (v) {
-                  localStorage.setItem("swagger_access_token", v);
-                  console.log(
-                    "Access token saved locally for Swagger UI requests",
-                  );
-                }
-              });
-            document
-              .getElementById("btn_clear_token")
-              .addEventListener("click", () => {
-                localStorage.removeItem("swagger_access_token");
-                console.log("Access token cleared");
-              });
-
-            // Set/Clear session cookie by calling gateway endpoint which sets an httpOnly cookie
-            async function setSessionCookie(sessionId) {
-              const res = await fetch("/auth/session", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_id: sessionId, max_age: 3600 }),
-                credentials: "include",
-              });
-              return res;
-            }
-
-            document
-              .getElementById("btn_set_session")
-              .addEventListener("click", async () => {
-                const v = document.getElementById("ui_session_id").value.trim();
-                if (!v) {
-                  console.log("Enter session id");
-                  return;
-                }
-                const r = await setSessionCookie(v);
-                if (r.ok) console.log("Session cookie set (httpOnly)");
-                else console.log("Failed to set session");
-              });
-
-            document
-              .getElementById("btn_clear_session")
-              .addEventListener("click", async () => {
-                const r = await setSessionCookie("");
-                if (r.ok) console.log("Session cookie cleared");
-                else console.log("Failed to clear session");
-              });
           })();
         })
         .catch((err) => {
           console.error(err);
           document.body.innerHTML =
-            '<h2 style="color:#c00">Failed to load Swagger configuration</h2><pre>' +
-            err.toString() +
-            "</pre>";
+            '<h2 style="color:#c00;padding:20px">Failed to load Swagger configuration</h2><pre style="padding:20px">' +
+            err.toString() + "</pre>";
         });
     </script>
   </body>

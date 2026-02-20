@@ -51,7 +51,7 @@ func NewGatewayHandler(gatewayService *service.GatewayService, logger *zap.Logge
 // ProxyRequest proxies a request to the appropriate microservice
 // This is the main handler that routes requests to backend microservices
 func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
-	// FIX 1: CRITICAL - OPTIONS should never reach here (handled by CORS middleware)
+	// OPTIONS requests are handled by CORS middleware and should not reach here.
 	if c.Request.Method == "OPTIONS" {
 		h.logger.Error("OPTIONS request reached ProxyRequest - CORS middleware may have failed!")
 		c.AbortWithStatus(204)
@@ -180,23 +180,13 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 		return
 	}
 
-	// Forward response headers from backend to client (except CORS)
-
-	// FIX 2: Skip ALL CORS headers from backend (case-insensitive)
+	// Forward response headers from backend to client (CORS headers are skipped;
+	// the gateway's own CORS middleware handles them).
 	for headerKey, headerValues := range proxyResponse.Headers {
-		// Skip CORS headers - Gateway middleware handles them
 		if isCORSHeader(headerKey) {
-			h.logger.Debug("Skipping CORS header from backend",
-				zap.String("key", headerKey),
-			)
 			continue
 		}
-
 		for _, headerValue := range headerValues {
-			h.logger.Info("Setting response header",
-				zap.String("key", headerKey),
-				zap.String("value", headerValue),
-			)
 			c.Writer.Header().Add(headerKey, headerValue)
 		}
 	}
@@ -206,13 +196,6 @@ func (h *GatewayHandler) ProxyRequest(c *gin.Context) {
 	if ctValues, ok := proxyResponse.Headers["Content-Type"]; ok && len(ctValues) > 0 {
 		contentType = ctValues[0]
 	}
-
-	// FIX 3: Verify CORS headers are present before sending response
-	h.logger.Info("Final response headers before c.Data()",
-		zap.String("Access-Control-Allow-Origin", c.Writer.Header().Get("Access-Control-Allow-Origin")),
-		zap.String("Access-Control-Allow-Credentials", c.Writer.Header().Get("Access-Control-Allow-Credentials")),
-		zap.Int("status_code", proxyResponse.StatusCode),
-	)
 
 	// Write response with backend's content type
 	c.Data(proxyResponse.StatusCode, contentType, proxyResponse.Body)
@@ -381,10 +364,15 @@ func (h *GatewayHandler) SetSessionCookie(c *gin.Context) {
 		return
 	}
 
+	// Resolve role prefix from X-App-Role header (matches RoleCookieRouter convention)
+	prefix := ""
+	if role := strings.ToLower(c.GetHeader("X-App-Role")); role != "" {
+		prefix = role + "_"
+	}
+
 	// If SessionID empty => clear cookie
 	if payload.SessionID == "" {
-		// set cookie with max-age 0 to delete
-		c.SetCookie("session_id", "", 0, "/", "", false, true)
+		c.SetCookie(prefix+"session_id", "", 0, "/", "", false, true)
 		c.JSON(http.StatusOK, gin.H{"status": "cleared"})
 		return
 	}
@@ -397,7 +385,7 @@ func (h *GatewayHandler) SetSessionCookie(c *gin.Context) {
 
 	// Set httpOnly cookie so browser will send it but JS cannot read it
 	// For local dev, Secure=false; in production set Secure=true and SameSite as needed
-	c.SetCookie("session_id", payload.SessionID, maxAge, "/", "", false, true)
+	c.SetCookie(prefix+"session_id", payload.SessionID, maxAge, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 

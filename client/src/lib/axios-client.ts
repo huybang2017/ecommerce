@@ -20,7 +20,6 @@
  */
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { cookies } from "next/headers";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -173,9 +172,27 @@ serverAxios.interceptors.request.use(
     // We must read them from Next.js headers and forward manually
 
     try {
-      const cookieStore = cookies(); // Next.js 13+ App Router
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies(); // Next.js 15 App Router (async)
+
+      // Only forward buyer-role cookies + non-auth cookies.
+      // Drops admin_* / seller_* cookies to prevent cross-role contamination.
+      const rolePrefixes = ["buyer_", "admin_", "seller_"];
+      const buyerCookies = new Set([
+        "buyer_access_token",
+        "buyer_session_id",
+        "buyer_refresh_token",
+      ]);
+
       const cookieHeader = cookieStore
         .getAll()
+        .filter((cookie: { name: string; value: string }) => {
+          const isRoleCookie = rolePrefixes.some((p) =>
+            cookie.name.startsWith(p)
+          );
+          // Keep: buyer-role cookies OR non-role cookies (e.g. _ga, is_logged_in)
+          return !isRoleCookie || buyerCookies.has(cookie.name);
+        })
         .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join("; ");
 
