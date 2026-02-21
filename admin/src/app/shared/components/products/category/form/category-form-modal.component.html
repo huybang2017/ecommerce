@@ -1,0 +1,92 @@
+<app-modal [isOpen]="isOpen" (close)="onClose()" className="max-w-lg p-6">
+  <!-- Header -->
+  <div class="mb-6">
+    <h4 class="text-xl font-semibold text-gray-800 dark:text-white/90">
+      {{ category ? 'Edit Category' : 'Create Category' }}
+    </h4>
+    @if (category) {
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">#{{ category.id }}</p>
+    }
+  </div>
+
+  <div class="space-y-5">
+    <!-- Name -->
+    <div>
+      <app-label for="cat-name">
+        Name <span class="text-error-500">*</span>
+      </app-label>
+      <app-input-field
+        id="cat-name"
+        placeholder="e.g. Electronics"
+        [value]="form.name"
+        (valueChange)="onNameChange($event)"
+        [error]="!!errors['name']"
+        [hint]="errors['name']"
+      />
+    </div>
+
+    <!-- Slug -->
+    <div>
+      <app-label for="cat-slug">Slug</app-label>
+      <app-input-field
+        id="cat-slug"
+        placeholder="e.g. electronics"
+        [value]="form.slug"
+        (valueChange)="onSlugChange($event)"
+      />
+    </div>
+
+    <!-- Description -->
+    <div>
+      <app-label>Description</app-label>
+      <app-text-area
+        placeholder="Category description..."
+        [value]="form.description"
+        (valueChange)="form.description = $event"
+        [rows]="3"
+      />
+    </div>
+
+    <!-- Image URL -->
+    <div>
+      <app-label for="cat-image">Image URL</app-label>
+      <app-input-field
+        id="cat-image"
+        placeholder="https://example.com/image.jpg"
+        [value]="form.image_url"
+        (valueChange)="form.image_url = $event + ''"
+      />
+    </div>
+
+    <!-- Parent ID -->
+    <div>
+      <app-label for="cat-parent">Parent ID</app-label>
+      <app-input-field
+        id="cat-parent"
+        type="number"
+        placeholder="Leave empty for root category"
+        [value]="form.parent_id ?? ''"
+        (valueChange)="onParentIdChange($event)"
+      />
+    </div>
+
+    <!-- Active Status -->
+    <div>
+      <app-switch
+        label="Active"
+        [defaultChecked]="form.is_active"
+        (valueChange)="form.is_active = $event"
+      />
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-7 flex justify-end gap-3">
+    <app-button size="sm" variant="outline" [disabled]="saving" (btnClick)="onClose()">
+      Cancel
+    </app-button>
+    <app-button size="sm" [disabled]="saving" (btnClick)="onSubmit()">
+      {{ saving ? 'Saving...' : (category ? 'Save Changes' : 'Create') }}
+    </app-button>
+  </div>
+</app-modal>

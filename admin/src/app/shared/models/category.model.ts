@@ -10,21 +10,21 @@ export interface Category {
   updated_at: string;
 }
 
+export type CategorySortBy = 'id' | 'name' | 'slug' | 'is_active' | 'created_at' | 'updated_at';
+
 export interface CategoryListParams {
   page?: number;
   page_size?: number;
   search?: string;
-  is_active?: boolean | null;
-  sort_by?: 'name' | 'created_at' | 'updated_at';
+  status?: 'all' | 'active' | 'inactive';
+  sort_by?: CategorySortBy;
   sort_order?: 'asc' | 'desc';
 }
 
 export interface PaginatedResponse<T> {
   data: T[];
-  pagination: {
-    page: number;
-    page_size: number;
-    total: number;
-    total_pages: number;
-  };
+  limit: number;
+  page: number;
+  total: number;
+  total_pages: number;
 }

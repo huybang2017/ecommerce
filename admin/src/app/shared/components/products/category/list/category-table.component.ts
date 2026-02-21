@@ -1,14 +1,16 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, OnDestroy, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ButtonComponent } from "../../../ui/button/button.component";
 import { TableDropdownComponent } from "../../../common/table-dropdown/table-dropdown.component";
 import { BadgeComponent } from "../../../ui/badge/badge.component";
 import { CategoryQueryService } from "../../../../../core/queries/category-query.service";
-import { Category } from "../../../../models/category.model";
-import { Observable, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Category, CategorySortBy } from "../../../../models/category.model";
+import { Observable, Subscription, combineLatest } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
+import { CategoryDetailModalComponent } from "../detail/category-detail-modal.component";
+import { CategoryFormModalComponent } from "../form/category-form-modal.component";
 
 @Component({
   selector: "category-table",
@@ -18,89 +20,95 @@ import { Router, ActivatedRoute } from '@angular/router';
     ButtonComponent,
     TableDropdownComponent,
     BadgeComponent,
+    CategoryDetailModalComponent,
+    CategoryFormModalComponent,
   ],
   templateUrl: "./category-table.component.html",
   styles: ``,
 })
-export class CategoryTableComponent implements OnInit {
-  categories$!: Observable<Category[]>;
-  loading$!: Observable<boolean>;
-  error$!: Observable<any>;
+export class CategoryTableComponent implements OnInit, OnDestroy {
+  // ─── DI via inject() — must come first so property initializers below can use them ───
+  private readonly query = inject(CategoryQueryService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  // Local copies of pagination & filter state for template bindings
-  currentPage = 1;
-  pageSize = 10;
+  // ─── Observables from Query Service ───────────────────────
+
+  readonly categories$: Observable<Category[]> = this.query.list$().pipe(
+    map((res) => res.data),
+  );
+  readonly loading$: Observable<boolean> = this.query.loading$();
+  readonly error$: Observable<any> = this.query.error$();
+
+  readonly currentPage$: Observable<number> = this.query.getCurrentPage$();
+  readonly pageSize$: Observable<number> = this.query.getPageSize$();
+  readonly sortBy$: Observable<CategorySortBy> = this.query.getSortBy$();
+  readonly sortOrder$: Observable<'asc' | 'desc'> = this.query.getSortOrder$();
+
+  readonly status$: Observable<'all' | 'active' | 'inactive'> = this.query.getStatus$();
+
+  // Combined pagination state for the footer
+  readonly pageState$ = combineLatest({
+    currentPage: this.query.getCurrentPage$(),
+    pageSize: this.query.getPageSize$(),
+    totalPages: this.query.list$().pipe(map((r) => r.total_pages), startWith(0)),
+    total: this.query.list$().pipe(map((r) => r.total), startWith(0)),
+  });
+
+  // Local state only for search text input (user types freely)
   searchInput = '';
-  isActiveFilter: boolean | null = null;
-  sortBy: 'name' | 'created_at' | 'updated_at' = 'name';
-  sortOrder: 'asc' | 'desc' = 'asc';
 
-  private subs = new Subscription();
+  // Detail modal state
+  selectedCategory: Category | null = null;
+  isDetailModalOpen = false;
 
-  constructor(
-    private query: CategoryQueryService,
-    private router: Router,
-    private route: ActivatedRoute,
-  ) {}
+  // Form modal state (create / edit)
+  editingCategory: Category | null = null;
+  isFormModalOpen = false;
+
+  private readonly subs = new Subscription();
 
   ngOnInit(): void {
-    this.categories$ = this.query.list$().pipe(map((res) => res.data));
-    this.loading$ = this.query.loading$();
-    this.error$ = this.query.error$();
+    // Keep search input in sync with query state (e.g. on navigation back)
+    this.subs.add(
+      this.query.getSearch$().subscribe((q) => (this.searchInput = q)),
+    );
+  }
 
-    // Sync local state with query service observables
-    this.subs.add(this.query.getCurrentPage$().subscribe((p) => (this.currentPage = p)));
-    this.subs.add(this.query.getPageSize$().subscribe((s) => (this.pageSize = s)));
-    this.subs.add(this.query.getSearch$().subscribe((q) => (this.searchInput = q)));
-    this.subs.add(this.query.getSortBy$().subscribe((sb) => (this.sortBy = sb)));
-    this.subs.add(this.query.getSortOrder$().subscribe((so) => (this.sortOrder = so)));
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   // ─── Pagination ───────────────────────────────────────────
 
   goToPage(page: number): void {
     if (page < 1) return;
-    this.query.setPage(page);
     this.updateUrlParams({ page });
   }
 
   changePageSize(size: number): void {
     if (size <= 0) return;
-    this.query.setPageSize(size);
-    // reset to page 1 when changing page size
     this.updateUrlParams({ page: 1, page_size: size });
   }
 
   // ─── Search & Filter ──────────────────────────────────────
 
   onSearch(query: string): void {
-    this.searchInput = query;
-    this.query.setSearch(query);
     this.updateUrlParams({ search: query, page: 1 });
   }
 
-  onFilterStatusChange(value: string | null): void {
-    if (value === null || value === '') {
-      this.isActiveFilter = null;
-    } else {
-      this.isActiveFilter = value === 'true';
-    }
-    this.query.setIsActive(this.isActiveFilter);
-    const status = this.isActiveFilter === null ? 'all' : this.isActiveFilter ? 'active' : 'inactive';
+  onFilterStatusChange(status: 'all' | 'active' | 'inactive'): void {
     this.updateUrlParams({ status, page: 1 });
   }
 
   // ─── Sorting ──────────────────────────────────────────────
 
-  onSort(sortBy: 'name' | 'created_at' | 'updated_at'): void {
-    this.query.setSortBy(sortBy);
+  onSort(sortBy: CategorySortBy): void {
     this.updateUrlParams({ sort_by: sortBy });
   }
 
-  toggleSortOrder(): void {
-    const next = this.sortOrder === 'asc' ? 'desc' : 'asc';
-    this.query.setSortOrder(next);
-    this.updateUrlParams({ sort_order: next });
+  toggleSortOrder(current: 'asc' | 'desc'): void {
+    this.updateUrlParams({ sort_order: current === 'asc' ? 'desc' : 'asc' });
   }
 
   private updateUrlParams(params: Record<string, any>): void {
@@ -111,14 +119,31 @@ export class CategoryTableComponent implements OnInit {
     });
   }
 
-  ngOnDestroy(): void {
-    this.subs.unsubscribe();
-  }
-
   // ─── Actions ──────────────────────────────────────────────
 
   handleViewMore(item: Category): void {
-    console.log("View More Category:", item);
+    this.selectedCategory = item;
+    this.isDetailModalOpen = true;
+  }
+
+  closeDetailModal(): void {
+    this.isDetailModalOpen = false;
+    this.selectedCategory = null;
+  }
+
+  openCreateModal(): void {
+    this.editingCategory = null;
+    this.isFormModalOpen = true;
+  }
+
+  openEditModal(item: Category): void {
+    this.editingCategory = item;
+    this.isFormModalOpen = true;
+  }
+
+  closeFormModal(): void {
+    this.isFormModalOpen = false;
+    this.editingCategory = null;
   }
 
   handleDelete(item: Category): void {

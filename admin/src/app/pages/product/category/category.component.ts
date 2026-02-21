@@ -3,6 +3,7 @@ import { CategoryTableComponent } from "../../../shared/components/products/cate
 import { ComponentCardComponent } from "../../../shared/components/common/component-card/component-card.component";
 import { ActivatedRoute, Router } from "@angular/router";
 import { CategoryQueryService } from "../../../core/queries/category-query.service";
+import { CategorySortBy } from "../../../shared/models/category.model";
 import { Subscription } from "rxjs";
 
 @Component({
@@ -23,16 +24,29 @@ export class CategoryComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.subs.add(
       this.route.queryParams.subscribe((params) => {
-        // Set defaults for missing params
-        if (!params["page"] || !params["page_size"]) {
+        // Parse and validate params
+        const page = Number(params["page"]);
+        const page_size = Number(params["page_size"]);
+        const search = params["search"] ?? "";
+        const sort_by = params["sort_by"] ?? "name";
+        const sort_order = params["sort_order"] ?? "asc";
+        const status = params["status"] ?? "all";
+
+        // Validate page and page_size
+        const isPageValid = !isNaN(page) && page >= 1;
+        const isPageSizeValid = !isNaN(page_size) && page_size > 0;
+
+        // Redirect if params are missing or invalid
+        if (!isPageValid || !isPageSizeValid) {
           this.router.navigate([], {
             relativeTo: this.route,
             queryParams: {
-              page: Number(params["page"]) || 1,
-              page_size: Number(params["page_size"]) || 10,
-              status: params["status"] || "all",
-              sort_by: params["sort_by"] || "name",
-              sort_order: params["sort_order"] || "asc",
+              page: isPageValid ? page : 1,
+              page_size: isPageSizeValid ? page_size : 10,
+              search: search || undefined,
+              status,
+              sort_by,
+              sort_order,
             },
             queryParamsHandling: "merge",
             replaceUrl: true,
@@ -40,25 +54,15 @@ export class CategoryComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Sync params into the query service
-        const page = Number(params["page"]) || 1;
-        const page_size = Number(params["page_size"]) || 10;
-        const search = params["search"] ?? "";
-        const sort_by = (params["sort_by"] ?? "name") as "name" | "created_at" | "updated_at";
-        const sort_order = (params["sort_order"] ?? "asc") as "asc" | "desc";
-        const status = params["status"] ?? "all";
-
-        this.query.setPage(page);
-        this.query.setPageSize(page_size);
-        this.query.setSearch(search);
-        this.query.setSortBy(sort_by);
-        this.query.setSortOrder(sort_order);
-
-        // Map status to isActive filter
-        let isActive: boolean | null = null;
-        if (status === "active") isActive = true;
-        else if (status === "inactive") isActive = false;
-        this.query.setIsActive(isActive);
+        // Sync all params to query service in one atomic call → single refetch
+        this.query.applyFilters({
+          page,
+          page_size,
+          search,
+          sort_by: sort_by as CategorySortBy,
+          sort_order: sort_order as "asc" | "desc",
+          status: status as "all" | "active" | "inactive",
+        });
       }),
     );
   }

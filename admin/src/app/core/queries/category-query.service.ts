@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
-import { Category, CategoryListParams, PaginatedResponse } from '../../shared/models/category.model';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { filter } from 'rxjs/operators';
+import { Category, CategoryListParams, CategorySortBy, PaginatedResponse } from '../../shared/models/category.model';
 import { CategoryService } from '../services/category.service';
 import { QueryEngine, QueryInstance, cachePlugin, retryPlugin, loggingPlugin } from '../query-engine';
 
@@ -13,8 +13,8 @@ export class CategoryQueryService {
   private currentPageSubject$ = new BehaviorSubject<number>(1);
   private pageSizeSubject$ = new BehaviorSubject<number>(10);
   private searchSubject$ = new BehaviorSubject<string>('');
-  private isActiveSubject$ = new BehaviorSubject<boolean | null>(null);
-  private sortBySubject$ = new BehaviorSubject<'name' | 'created_at' | 'updated_at'>('name');
+  private statusSubject$ = new BehaviorSubject<'all' | 'active' | 'inactive'>('all');
+  private sortBySubject$ = new BehaviorSubject<CategorySortBy>('name');
   private sortOrderSubject$ = new BehaviorSubject<'asc' | 'desc'>('asc');
 
   constructor(
@@ -28,12 +28,12 @@ export class CategoryQueryService {
           page: this.currentPageSubject$.value,
           page_size: this.pageSizeSubject$.value,
           search: this.searchSubject$.value || undefined,
-          is_active: this.isActiveSubject$.value,
+          status: this.statusSubject$.value,
           sort_by: this.sortBySubject$.value,
           sort_order: this.sortOrderSubject$.value,
         }),
       plugins: [
-        cachePlugin({ ttl: 5 * 60_000, staleTime: 30_000 }),
+        cachePlugin({ ttl: 5 * 60_000, staleTime: 0 }),
         retryPlugin({ maxRetries: 2 }),
         loggingPlugin({ verbose: false }),
       ],
@@ -56,7 +56,7 @@ export class CategoryQueryService {
     return this.listQuery.error$;
   }
 
-  // ─── Pagination State ─────────────────────────────────────
+  // ─── State Selectors ──────────────────────────────────────
 
   getCurrentPage$(): Observable<number> {
     return this.currentPageSubject$.asObservable();
@@ -70,7 +70,11 @@ export class CategoryQueryService {
     return this.searchSubject$.asObservable();
   }
 
-  getSortBy$(): Observable<'name' | 'created_at' | 'updated_at'> {
+  getStatus$(): Observable<'all' | 'active' | 'inactive'> {
+    return this.statusSubject$.asObservable();
+  }
+
+  getSortBy$(): Observable<CategorySortBy> {
     return this.sortBySubject$.asObservable();
   }
 
@@ -78,7 +82,31 @@ export class CategoryQueryService {
     return this.sortOrderSubject$.asObservable();
   }
 
-  // ─── Filter/Sort Actions ──────────────────────────────────
+  // ─── Batch Filter Action (use this when syncing from URL params) ──────────
+  //
+  // Applies all filter/sort/pagination state at once and triggers a single
+  // refetch. Prefer this over calling individual setters to avoid firing
+  // multiple redundant HTTP requests per navigation.
+
+  applyFilters(params: {
+    page: number;
+    page_size: number;
+    search: string;
+    sort_by: CategorySortBy;
+    sort_order: 'asc' | 'desc';
+    status: 'all' | 'active' | 'inactive';
+  }): void {
+    this.currentPageSubject$.next(params.page);
+    this.pageSizeSubject$.next(params.page_size);
+    this.searchSubject$.next(params.search);
+    this.sortBySubject$.next(params.sort_by);
+    this.sortOrderSubject$.next(params.sort_order);
+    this.statusSubject$.next(params.status);
+    this.refetch(); // single fetch after all state is set
+  }
+
+  // ─── Individual Filter/Sort Actions ───────────────────────
+  // Use these only when updating a single param standalone (not from URL sync).
 
   setPage(page: number): void {
     if (page >= 1) {
@@ -90,24 +118,24 @@ export class CategoryQueryService {
   setPageSize(size: number): void {
     if (size > 0) {
       this.pageSizeSubject$.next(size);
-      this.currentPageSubject$.next(1); // Reset to page 1 when changing page size
+      this.currentPageSubject$.next(1);
       this.refetch();
     }
   }
 
   setSearch(query: string): void {
     this.searchSubject$.next(query);
-    this.currentPageSubject$.next(1); // Reset pagination on search
-    this.refetch();
-  }
-
-  setIsActive(active: boolean | null): void {
-    this.isActiveSubject$.next(active);
     this.currentPageSubject$.next(1);
     this.refetch();
   }
 
-  setSortBy(sortBy: 'name' | 'created_at' | 'updated_at'): void {
+  setStatus(status: 'all' | 'active' | 'inactive'): void {
+    this.statusSubject$.next(status);
+    this.currentPageSubject$.next(1);
+    this.refetch();
+  }
+
+  setSortBy(sortBy: CategorySortBy): void {
     this.sortBySubject$.next(sortBy);
     this.refetch();
   }
@@ -130,8 +158,6 @@ export class CategoryQueryService {
   snapshot(): PaginatedResponse<Category> | null {
     return this.listQuery.getSnapshot();
   }
-
-
 
   // ─── Mutations ────────────────────────────────────────────
 
@@ -158,12 +184,10 @@ export class CategoryQueryService {
       const prev: PaginatedResponse<Category> =
         cur ?? {
           data: [],
-          pagination: {
-            page: this.currentPageSubject$.value,
-            page_size: this.pageSizeSubject$.value,
-            total: 0,
-            total_pages: 0,
-          },
+          limit: this.pageSizeSubject$.value,
+          page: this.currentPageSubject$.value,
+          total: 0,
+          total_pages: 0,
         };
 
       return {

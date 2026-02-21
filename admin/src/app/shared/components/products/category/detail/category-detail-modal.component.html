@@ -1,0 +1,86 @@
+<app-modal
+  [isOpen]="isOpen"
+  (close)="close.emit()"
+  className="max-w-lg p-6"
+>
+  @if (category) {
+    <!-- Header -->
+    <div class="mb-6">
+      <h4 class="text-xl font-semibold text-gray-800 dark:text-white/90">
+        Category Detail
+      </h4>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        #{{ category.id }}
+      </p>
+    </div>
+
+    <!-- Image -->
+    @if (category.image_url) {
+      <div class="mb-6 flex justify-center">
+        <img
+          [src]="category.image_url"
+          [alt]="category.name"
+          class="h-32 w-32 rounded-2xl object-cover border border-gray-200 dark:border-white/[0.05]"
+        />
+      </div>
+    }
+
+    <!-- Fields -->
+    <div class="space-y-4">
+      <!-- Name -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</span>
+        <span class="text-sm font-medium text-gray-800 dark:text-white/90">{{ category.name }}</span>
+      </div>
+
+      <!-- Slug -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Slug</span>
+        <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ category.slug }}</span>
+      </div>
+
+      <!-- Description -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Description</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          {{ category.description || '—' }}
+        </span>
+      </div>
+
+      <!-- Parent ID -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Parent ID</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">{{ category.parent_id ?? '—' }}</span>
+      </div>
+
+      <!-- Status -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Status</span>
+        <div>
+          <app-badge size="sm" [color]="getBadgeColor(category.is_active)">
+            {{ category.is_active ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <hr class="border-gray-100 dark:border-white/[0.05]" />
+
+      <!-- Timestamps -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Created At</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ category.created_at | date: 'medium' }}
+          </span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Updated At</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ category.updated_at | date: 'medium' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  }
+</app-modal>
