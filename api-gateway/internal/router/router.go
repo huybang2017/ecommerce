@@ -4,6 +4,7 @@ import (
 	"api-gateway/config"
 	"api-gateway/internal/handler"
 	"api-gateway/internal/middleware"
+	"api-gateway/pkg/constants"
 	"fmt"
 	"net/http"
 	"strings"
@@ -122,7 +123,7 @@ func SetupRouter(
 					middleware.SessionMiddleware(logger, redisClient),
 				)
 				{
-					protected.POST("", gatewayHandler.ProxyRequest)
+					protected.POST("", middleware.RoleMiddleware(logger, constants.RoleAdmin, constants.RoleBuyer), gatewayHandler.ProxyRequest)
 					protected.PUT(":id", gatewayHandler.ProxyRequest)
 					protected.PATCH(":id/active", gatewayHandler.ProxyRequest)
 					protected.DELETE(":id", gatewayHandler.ProxyRequest)
@@ -132,10 +133,12 @@ func SetupRouter(
 					middleware.RoleCookieRouter(logger),
 					middleware.AuthMiddleware(&cfg.JWT, logger),
 					middleware.SessionMiddleware(logger, redisClient),
-					middleware.RoleMiddleware(logger, "ADMIN"),
+					middleware.RoleMiddleware(logger, constants.RoleAdmin),
 				)
 				{
 					admin.GET("", gatewayHandler.ProxyRequest)
+					admin.GET("/parents", gatewayHandler.ProxyRequest)
+					admin.POST("/parent", gatewayHandler.ProxyRequest)
 				}
 			}
 			search := v1.Group("/search")

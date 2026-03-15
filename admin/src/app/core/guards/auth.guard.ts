@@ -3,44 +3,13 @@ import { Router, CanActivateFn, ActivatedRouteSnapshot, RouterStateSnapshot } fr
 import { AuthService } from '../services/auth.service';
 import { map, catchError, of } from 'rxjs';
 
-/**
- * ============================================================================
- * AUTH GUARD - Functional Style (Angular 17+)
- * ============================================================================
- *
- * Protects routes by checking if user has valid session.
- *
- * Usage in routes:
- * ```typescript
- * {
- *   path: 'dashboard',
- *   component: DashboardComponent,
- *   canActivate: [authGuard]
- * }
- * ```
- *
- * How it works:
- * 1. Calls AuthService.checkSession() to verify session
- * 2. If valid → Allow navigation (return true)
- * 3. If invalid → Redirect to /signin with returnUrl (return false)
- *
- * Why not trust client-side flags?
- * - Client-side flags can be manipulated
- * - Server-side validation is the source of truth
- * - checkSession() makes an API call to verify token validity
- * ============================================================================
- */
 export const authGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
 ) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-
   console.log('[AUTH GUARD] Checking authentication for:', state.url);
-
-  // Call backend to verify session is still valid
-  // This is better than trusting client-side flags
   return authService.checkSession().pipe(
     map((isValid) => {
       if (isValid) {
@@ -64,28 +33,6 @@ export const authGuard: CanActivateFn = (
   );
 };
 
-/**
- * ============================================================================
- * ADMIN ROLE GUARD - For admin-only routes
- * ============================================================================
- *
- * Usage:
- * ```typescript
- * {
- *   path: 'users',
- *   component: UsersComponent,
- *   canActivate: [authGuard, adminRoleGuard] // ← Both guards
- * }
- * ```
- *
- * Why chain guards?
- * - authGuard: Checks if user is authenticated
- * - adminRoleGuard: Checks if user has admin role
- * - Both must pass for access to be granted
- *
- * NOTE: This guard assumes user is already authenticated (authGuard passed)
- * ============================================================================
- */
 export const adminRoleGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
@@ -97,7 +44,6 @@ export const adminRoleGuard: CanActivateFn = (
 
   return authService.getCurrentUser().pipe(
     map((user) => {
-      // Check if user has ADMIN role
       if (user?.role === 'ADMIN') {
         console.log('[ROLE GUARD] ✅ User is admin, allowing access');
         return true;
@@ -117,21 +63,6 @@ export const adminRoleGuard: CanActivateFn = (
   );
 };
 
-/**
- * ============================================================================
- * SELLER ROLE GUARD - For seller-only routes
- * ============================================================================
- *
- * Usage:
- * ```typescript
- * {
- *   path: 'products/manage',
- *   component: ManageProductsComponent,
- *   canActivate: [authGuard, sellerRoleGuard]
- * }
- * ```
- * ============================================================================
- */
 export const sellerRoleGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
@@ -159,22 +90,6 @@ export const sellerRoleGuard: CanActivateFn = (
   );
 };
 
-/**
- * ============================================================================
- * MULTI-ROLE GUARD - For routes accessible by multiple roles
- * ============================================================================
- *
- * Usage:
- * ```typescript
- * {
- *   path: 'dashboard',
- *   component: DashboardComponent,
- *   canActivate: [authGuard, multiRoleGuard],
- *   data: { allowedRoles: ['ADMIN', 'SELLER'] }
- * }
- * ```
- * ============================================================================
- */
 export const multiRoleGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
   state: RouterStateSnapshot
@@ -209,48 +124,3 @@ export const multiRoleGuard: CanActivateFn = (
     })
   );
 };
-
-/**
- * ============================================================================
- * USAGE EXAMPLES
- * ============================================================================
- *
- * // app.routes.ts
- *
- * import { Routes } from '@angular/router';
- * import { authGuard, adminRoleGuard, multiRoleGuard } from './core/guards/auth.guard';
- *
- * export const routes: Routes = [
- *   // Public routes (no guard)
- *   { path: '', component: HomeComponent },
- *   { path: 'signin', component: SigninComponent },
- *
- *   // Protected routes (auth required)
- *   {
- *     path: 'dashboard',
- *     component: DashboardComponent,
- *     canActivate: [authGuard]
- *   },
- *
- *   // Admin-only routes
- *   {
- *     path: 'users',
- *     component: UsersComponent,
- *     canActivate: [authGuard, adminRoleGuard]
- *   },
- *
- *   // Multi-role routes
- *   {
- *     path: 'analytics',
- *     component: AnalyticsComponent,
- *     canActivate: [authGuard, multiRoleGuard],
- *     data: { allowedRoles: ['ADMIN', 'SELLER'] }
- *   },
- *
- *   // Fallback
- *   { path: 'access-denied', component: AccessDeniedComponent },
- *   { path: '**', redirectTo: '' }
- * ];
- *
- * ============================================================================
- */

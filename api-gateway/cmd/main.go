@@ -189,7 +189,7 @@ func main() {
 	if exists {
 		searchBaseURL := searchServiceConfig.BaseURL
 		if searchBaseURL == "" {
-			searchBaseURL = "http://localhost:8002"
+			searchBaseURL = "http://localhost:8082"
 			appLogger.Warn("Using default base URL for search service", zap.String("url", searchBaseURL))
 		}
 

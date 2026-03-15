@@ -1,11 +1,15 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { HttpApiService } from './http-api.service';
-import { Product, ProductCreate, ProductUpdate } from '../../shared/models/product.model';
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { HttpApiService } from "./http-api.service";
+import {
+  Product,
+  ProductCreate,
+  ProductUpdate,
+} from "../../shared/models/product.model";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class ProductService {
-  private base = '/products';
+  private base = "/products";
 
   constructor(private http: HttpApiService) {}
 

@@ -27,49 +27,34 @@ import { CategoryFormModalComponent } from "../form/category-form-modal.componen
   styles: ``,
 })
 export class CategoryTableComponent implements OnInit, OnDestroy {
-  // ─── DI via inject() — must come first so property initializers below can use them ───
   private readonly query = inject(CategoryQueryService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-
-  // ─── Observables from Query Service ───────────────────────
-
   readonly categories$: Observable<Category[]> = this.query.list$().pipe(
     map((res) => res.data),
   );
   readonly loading$: Observable<boolean> = this.query.loading$();
   readonly error$: Observable<any> = this.query.error$();
-
   readonly currentPage$: Observable<number> = this.query.getCurrentPage$();
   readonly pageSize$: Observable<number> = this.query.getPageSize$();
   readonly sortBy$: Observable<CategorySortBy> = this.query.getSortBy$();
   readonly sortOrder$: Observable<'asc' | 'desc'> = this.query.getSortOrder$();
-
   readonly status$: Observable<'all' | 'active' | 'inactive'> = this.query.getStatus$();
-
-  // Combined pagination state for the footer
   readonly pageState$ = combineLatest({
     currentPage: this.query.getCurrentPage$(),
     pageSize: this.query.getPageSize$(),
     totalPages: this.query.list$().pipe(map((r) => r.total_pages), startWith(0)),
     total: this.query.list$().pipe(map((r) => r.total), startWith(0)),
   });
-
-  // Local state only for search text input (user types freely)
   searchInput = '';
-
-  // Detail modal state
   selectedCategory: Category | null = null;
   isDetailModalOpen = false;
-
-  // Form modal state (create / edit)
   editingCategory: Category | null = null;
   isFormModalOpen = false;
-
+  formModalMode: 'create-parent' | 'create-child' | 'edit' = 'create-child';
   private readonly subs = new Subscription();
 
   ngOnInit(): void {
-    // Keep search input in sync with query state (e.g. on navigation back)
     this.subs.add(
       this.query.getSearch$().subscribe((q) => (this.searchInput = q)),
     );
@@ -78,8 +63,6 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subs.unsubscribe();
   }
-
-  // ─── Pagination ───────────────────────────────────────────
 
   goToPage(page: number): void {
     if (page < 1) return;
@@ -91,8 +74,6 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
     this.updateUrlParams({ page: 1, page_size: size });
   }
 
-  // ─── Search & Filter ──────────────────────────────────────
-
   onSearch(query: string): void {
     this.updateUrlParams({ search: query, page: 1 });
   }
@@ -100,8 +81,6 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
   onFilterStatusChange(status: 'all' | 'active' | 'inactive'): void {
     this.updateUrlParams({ status, page: 1 });
   }
-
-  // ─── Sorting ──────────────────────────────────────────────
 
   onSort(sortBy: CategorySortBy): void {
     this.updateUrlParams({ sort_by: sortBy });
@@ -119,8 +98,6 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Actions ──────────────────────────────────────────────
-
   handleViewMore(item: Category): void {
     this.selectedCategory = item;
     this.isDetailModalOpen = true;
@@ -131,13 +108,21 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
     this.selectedCategory = null;
   }
 
-  openCreateModal(): void {
+  openCreateParentModal(): void {
     this.editingCategory = null;
+    this.formModalMode = 'create-parent';
+    this.isFormModalOpen = true;
+  }
+
+  openCreateChildModal(): void {
+    this.editingCategory = null;
+    this.formModalMode = 'create-child';
     this.isFormModalOpen = true;
   }
 
   openEditModal(item: Category): void {
     this.editingCategory = item;
+    this.formModalMode = 'edit';
     this.isFormModalOpen = true;
   }
 
@@ -154,8 +139,6 @@ export class CategoryTableComponent implements OnInit, OnDestroy {
       });
     }
   }
-
-  // ─── Helpers ──────────────────────────────────────────────
 
   getStatusLabel(isActive: boolean): string {
     return isActive ? "Active" : "Inactive";

@@ -1,28 +1,39 @@
-import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { filter } from 'rxjs/operators';
-import { Category, CategoryListParams, CategorySortBy, PaginatedResponse } from '../../shared/models/category.model';
-import { CategoryService } from '../services/category.service';
-import { QueryEngine, QueryInstance, cachePlugin, retryPlugin, loggingPlugin } from '../query-engine';
+import { Injectable } from "@angular/core";
+import { Observable, BehaviorSubject } from "rxjs";
+import { filter } from "rxjs/operators";
+import {
+  Category,
+  CategoryListParams,
+  CategorySortBy,
+  PaginatedResponse,
+} from "../../shared/models/category.model";
+import { CategoryService } from "../services/category.service";
+import {
+  QueryEngine,
+  QueryInstance,
+  cachePlugin,
+  retryPlugin,
+  loggingPlugin,
+} from "../query-engine";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class CategoryQueryService {
   private listQuery: QueryInstance<PaginatedResponse<Category>>;
-
-  // For admin view: pagination + filtering state
   private currentPageSubject$ = new BehaviorSubject<number>(1);
   private pageSizeSubject$ = new BehaviorSubject<number>(10);
-  private searchSubject$ = new BehaviorSubject<string>('');
-  private statusSubject$ = new BehaviorSubject<'all' | 'active' | 'inactive'>('all');
-  private sortBySubject$ = new BehaviorSubject<CategorySortBy>('name');
-  private sortOrderSubject$ = new BehaviorSubject<'asc' | 'desc'>('asc');
+  private searchSubject$ = new BehaviorSubject<string>("");
+  private statusSubject$ = new BehaviorSubject<"all" | "active" | "inactive">(
+    "all",
+  );
+  private sortBySubject$ = new BehaviorSubject<CategorySortBy>("name");
+  private sortOrderSubject$ = new BehaviorSubject<"asc" | "desc">("asc");
 
   constructor(
     private engine: QueryEngine,
     private api: CategoryService,
   ) {
     this.listQuery = this.engine.query<PaginatedResponse<Category>>({
-      key: 'categories-admin',
+      key: "categories-admin",
       fetchFn: () =>
         this.api.list({
           page: this.currentPageSubject$.value,
@@ -40,12 +51,14 @@ export class CategoryQueryService {
     });
   }
 
-  // ─── Reactive Selectors ───────────────────────────────────
-
   list$(): Observable<PaginatedResponse<Category>> {
     return this.listQuery.data$.pipe(
       filter((v): v is PaginatedResponse<Category> => v !== null),
     );
+  }
+
+  listParentCategoriesAdmin$(): Observable<Category[]> {
+    return this.api.listParentCategoriesAdmin();
   }
 
   loading$(): Observable<boolean> {
@@ -55,8 +68,6 @@ export class CategoryQueryService {
   error$(): Observable<any> {
     return this.listQuery.error$;
   }
-
-  // ─── State Selectors ──────────────────────────────────────
 
   getCurrentPage$(): Observable<number> {
     return this.currentPageSubject$.asObservable();
@@ -70,7 +81,7 @@ export class CategoryQueryService {
     return this.searchSubject$.asObservable();
   }
 
-  getStatus$(): Observable<'all' | 'active' | 'inactive'> {
+  getStatus$(): Observable<"all" | "active" | "inactive"> {
     return this.statusSubject$.asObservable();
   }
 
@@ -78,23 +89,17 @@ export class CategoryQueryService {
     return this.sortBySubject$.asObservable();
   }
 
-  getSortOrder$(): Observable<'asc' | 'desc'> {
+  getSortOrder$(): Observable<"asc" | "desc"> {
     return this.sortOrderSubject$.asObservable();
   }
-
-  // ─── Batch Filter Action (use this when syncing from URL params) ──────────
-  //
-  // Applies all filter/sort/pagination state at once and triggers a single
-  // refetch. Prefer this over calling individual setters to avoid firing
-  // multiple redundant HTTP requests per navigation.
 
   applyFilters(params: {
     page: number;
     page_size: number;
     search: string;
     sort_by: CategorySortBy;
-    sort_order: 'asc' | 'desc';
-    status: 'all' | 'active' | 'inactive';
+    sort_order: "asc" | "desc";
+    status: "all" | "active" | "inactive";
   }): void {
     this.currentPageSubject$.next(params.page);
     this.pageSizeSubject$.next(params.page_size);
@@ -102,11 +107,8 @@ export class CategoryQueryService {
     this.sortBySubject$.next(params.sort_by);
     this.sortOrderSubject$.next(params.sort_order);
     this.statusSubject$.next(params.status);
-    this.refetch(); // single fetch after all state is set
+    this.refetch();
   }
-
-  // ─── Individual Filter/Sort Actions ───────────────────────
-  // Use these only when updating a single param standalone (not from URL sync).
 
   setPage(page: number): void {
     if (page >= 1) {
@@ -129,7 +131,7 @@ export class CategoryQueryService {
     this.refetch();
   }
 
-  setStatus(status: 'all' | 'active' | 'inactive'): void {
+  setStatus(status: "all" | "active" | "inactive"): void {
     this.statusSubject$.next(status);
     this.currentPageSubject$.next(1);
     this.refetch();
@@ -140,12 +142,10 @@ export class CategoryQueryService {
     this.refetch();
   }
 
-  setSortOrder(order: 'asc' | 'desc'): void {
+  setSortOrder(order: "asc" | "desc"): void {
     this.sortOrderSubject$.next(order);
     this.refetch();
   }
-
-  // ─── Actions ──────────────────────────────────────────────
 
   refetch(): void {
     this.listQuery.refetch();
@@ -159,13 +159,20 @@ export class CategoryQueryService {
     return this.listQuery.getSnapshot();
   }
 
-  // ─── Mutations ────────────────────────────────────────────
-
   create(payload: Partial<Category>): Observable<Category> {
     return this.engine
       .mutation<Category, Partial<Category>>({
         mutationFn: (p) => this.api.create(p),
-        invalidateKeys: ['categories-admin'],
+        invalidateKeys: ["categories-admin"],
+      })
+      .mutate(payload);
+  }
+
+  createCategoryParent(payload: Partial<Category>): Observable<Category> {
+    return this.engine
+      .mutation<Category, Partial<Category>>({
+        mutationFn: (p) => this.api.createCategoryParent(p),
+        invalidateKeys: ["categories-admin"],
       })
       .mutate(payload);
   }
@@ -174,21 +181,20 @@ export class CategoryQueryService {
     return this.engine
       .mutation<Category, { id: number; payload: Partial<Category> }>({
         mutationFn: (v) => this.api.update(v.id, v.payload),
-        invalidateKeys: ['categories-admin'],
+        invalidateKeys: ["categories-admin"],
       })
       .mutate({ id, payload });
   }
 
   delete(id: number): Observable<void> {
     const rollback = this.listQuery.optimisticUpdate((cur) => {
-      const prev: PaginatedResponse<Category> =
-        cur ?? {
-          data: [],
-          limit: this.pageSizeSubject$.value,
-          page: this.currentPageSubject$.value,
-          total: 0,
-          total_pages: 0,
-        };
+      const prev: PaginatedResponse<Category> = cur ?? {
+        data: [],
+        limit: this.pageSizeSubject$.value,
+        page: this.currentPageSubject$.value,
+        total: 0,
+        total_pages: 0,
+      };
 
       return {
         ...prev,
@@ -199,7 +205,7 @@ export class CategoryQueryService {
     return this.engine
       .mutation<void, number>({
         mutationFn: (cid) => this.api.remove(cid),
-        invalidateKeys: ['categories-admin'],
+        invalidateKeys: ["categories-admin"],
         onError: () => rollback(),
       })
       .mutate(id);

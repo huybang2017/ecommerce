@@ -1,0 +1,104 @@
+package mapper
+
+import (
+	"product-service/internal/domain"
+	"product-service/internal/dto/request"
+	"product-service/internal/dto/response"
+)
+
+func CategoryToResponse(category *domain.Category) *response.CategoryResponse {
+	if category == nil {
+		return nil
+	}
+
+	return &response.CategoryResponse{
+		ID:          category.ID,
+		ParentID:    category.ParentID,
+		Name:        category.Name,
+		Slug:        category.Slug,
+		Description: category.Description,
+		ImageURL:    category.ImageURL,
+		IsActive:    category.IsActive,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+	}
+}
+
+func CategoriesToResponse(categories []*domain.Category) []*response.CategoryResponse {
+	responses := make([]*response.CategoryResponse, len(categories))
+	for i, category := range categories {
+		responses[i] = CategoryToResponse(category)
+	}
+	return responses
+}
+
+func CreateParentCategoryRequestToDomain(req *request.CreateParentCategoryRequest) *domain.Category {
+	category := &domain.Category{
+		Name:        req.Name,
+		Slug:        req.Slug,
+		Description: req.Description,
+		ImageURL:    req.ImageURL,
+		ParentID:    nil,
+	}
+
+	if req.IsActive != nil {
+		category.IsActive = *req.IsActive
+	} else {
+		category.IsActive = true
+	}
+
+	return category
+}
+
+func CreateChildCategoryRequestToDomain(req *request.CreateChildCategoryRequest, parentID uint) *domain.Category {
+	category := &domain.Category{
+		Name:        req.Name,
+		Slug:        req.Slug,
+		Description: req.Description,
+		ImageURL:    req.ImageURL,
+		ParentID:    &parentID,
+	}
+
+	if req.IsActive != nil {
+		category.IsActive = *req.IsActive
+	} else {
+		category.IsActive = true
+	}
+
+	return category
+}
+
+func UpdateCategoryRequestToDomain(existing *domain.Category, req *request.UpdateCategoryRequest) *domain.Category {
+	if req.Name != "" {
+		existing.Name = req.Name
+	}
+	if req.Slug != "" {
+		existing.Slug = req.Slug
+	}
+	if req.Description != "" {
+		existing.Description = req.Description
+	}
+	if req.ImageURL != "" {
+		existing.ImageURL = req.ImageURL
+	}
+	if req.ParentID != nil {
+		existing.ParentID = req.ParentID
+	}
+	if req.IsActive != nil {
+		existing.IsActive = *req.IsActive
+	}
+
+	return existing
+}
+
+func CategoryQueryRequestToDomain(req *request.CategoryQueryRequest) domain.CategoryQueryParams {
+	return domain.CategoryQueryParams{
+		Page:      req.Page,
+		Limit:     req.Limit,
+		Search:    req.Search,
+		ParentID:  req.ParentID,
+		IsActive:  req.IsActive,
+		SortBy:    req.SortBy,
+		SortOrder: req.SortOrder,
+	}
+}

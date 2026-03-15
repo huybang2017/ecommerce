@@ -2,7 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"product-service/internal/domain"
+	"product-service/internal/dto/request"
+	"product-service/internal/dto/response"
+	"product-service/internal/mapper"
 	"product-service/internal/service"
 	"strconv"
 
@@ -10,16 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// CategoryHandler handles HTTP requests for category operations
-// This is the transport layer - it knows HOW to handle HTTP (Gin framework)
-// It delegates business logic to the service layer
 type CategoryHandler struct {
 	categoryService *service.CategoryService
 	logger          *zap.Logger
 }
 
-// NewCategoryHandler creates a new category handler
-// Dependency injection: we inject the service
 func NewCategoryHandler(categoryService *service.CategoryService, logger *zap.Logger) *CategoryHandler {
 	return &CategoryHandler{
 		categoryService: categoryService,
@@ -27,52 +24,111 @@ func NewCategoryHandler(categoryService *service.CategoryService, logger *zap.Lo
 	}
 }
 
-// CreateCategoryRequest represents the request body for creating a category
-type CreateCategoryRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Slug        string `json:"slug"`
-	ParentID    *uint  `json:"parent_id,omitempty"`
-	Description string `json:"description"`
-}
-
-// UpdateCategoryRequest represents the request body for updating a category
-type UpdateCategoryRequest struct {
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	ParentID    *uint  `json:"parent_id,omitempty"`
-	Description string `json:"description"`
-}
-
-type CategoryActiveRequest struct {
-	IsActive bool `json:"is_active"`
-}
-
-// CreateCategory handles POST /categories
-// @Summary Create a new category
-// @Description Create a new category with name, slug, optional parent_id, and description
-// @Tags Categories
+// CreateParentCategory handles POST /categories/admin/parent
+// @Summary Create a new parent category (ADMIN only)
+// @Description Admin creates a new parent category (no parent_id)
+// @Tags Admin Categories
 // @Accept json
 // @Produce json
-// @Param request body CreateCategoryRequest true "Create Category Request"
-// @Success 201 {object} map[string]interface{} "Category created successfully"
+// @Param request body request.CreateParentCategoryRequest true "Create Parent Category Request"
+// @Success 201 {object} response.CategoryResponse "Parent category created successfully"
 // @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden - Admin role required"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /categories [post]
-func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var req CreateCategoryRequest
+// @Router /categories/admin/parent [post]
+func (h *CategoryHandler) CreateParentCategory(c *gin.Context) {
+	var req request.CreateParentCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Convert request to domain entity
-	category := &domain.Category{
+	// Convert DTO to domain entity
+	category := mapper.CreateParentCategoryRequestToDomain(&req)
+
+	// Call service layer
+	if err := h.categoryService.CreateParentCategory(c.Request.Context(), category); err != nil {
+		h.logger.Error("failed to create parent category", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert domain to response DTO
+	c.JSON(http.StatusCreated, mapper.CategoryToResponse(category))
+}
+
+// CreateChildCategory handles POST /categories/:id/children
+// @Summary Create a child category under a parent (BUYER)
+// @Description Creates a new child category under the specified parent category
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Param id path int true "Parent Category ID"
+// @Param request body request.CreateChildCategoryRequest true "Create Child Category Request"
+// @Success 201 {object} response.CategoryResponse "Child category created successfully"
+// @Failure 400 {object} map[string]string "Invalid request payload or parent ID"
+// @Failure 404 {object} map[string]string "Parent category not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /categories/{id}/children [post]
+func (h *CategoryHandler) CreateChildCategory(c *gin.Context) {
+	// Parse parent ID from URL
+	parentID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parent category ID"})
+		return
+	}
+
+	var req request.CreateChildCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("invalid request body", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert DTO to domain entity with parentID
+	category := mapper.CreateChildCategoryRequestToDomain(&req, uint(parentID))
+
+	// Call service layer
+	if err := h.categoryService.CreateChildCategory(c.Request.Context(), category); err != nil {
+		h.logger.Error("failed to create child category", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert domain to response DTO
+	c.JSON(http.StatusCreated, mapper.CategoryToResponse(category))
+}
+
+// CreateCategory handles POST /categories (backward compatibility)
+// @Summary Create a new category
+// @Description Create a new category with name, slug, optional parent_id, and description
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Param request body request.CreateChildCategoryRequest true "Create Category Request"
+// @Success 201 {object} response.CategoryResponse "Category created successfully"
+// @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /categories [post]
+func (h *CategoryHandler) CreateCategory(c *gin.Context) {
+	var req request.CreateChildCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("invalid request body", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// For backward compatibility, allow creating without explicit parent
+	// This will use the generic CreateCategory service method
+	category := mapper.CreateParentCategoryRequestToDomain(&request.CreateParentCategoryRequest{
 		Name:        req.Name,
 		Slug:        req.Slug,
-		ParentID:    req.ParentID,
 		Description: req.Description,
-	}
+		ImageURL:    req.ImageURL,
+		IsActive:    req.IsActive,
+	})
 
 	// Call service layer
 	if err := h.categoryService.CreateCategory(c.Request.Context(), category); err != nil {
@@ -81,9 +137,28 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message":  "category created successfully",
-		"category": category,
+	c.JSON(http.StatusCreated, mapper.CategoryToResponse(category))
+}
+
+// GetAdminCategoryParent handles GET /categories/admin/parents
+// @Summary Get parent categories for admin
+// @Description Retrieve a list of parent categories for admin management
+// @Tags Admin Categories
+// @Accept json
+// @Produce json
+// @Success 200 {array} response.CategoryResponse "List of parent categories"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /categories/admin/parents [get]
+func (h *CategoryHandler) GetAdminCategoryParent(c *gin.Context) {
+	parents, err := h.categoryService.GetAdminCategoryParent(c.Request.Context())
+	if err != nil {
+		h.logger.Error("failed to get admin category parents", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.CategoryListResponse{
+		Data: mapper.CategoriesToResponse(parents),
 	})
 }
 
@@ -94,8 +169,8 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Category ID"
-// @Param request body UpdateCategoryRequest true "Update Category Request"
-// @Success 200 {object} map[string]interface{} "Category updated successfully"
+// @Param request body request.UpdateCategoryRequest true "Update Category Request"
+// @Success 200 {object} response.CategoryResponse "Category updated successfully"
 // @Failure 400 {object} map[string]string "Invalid request payload or category ID"
 // @Failure 404 {object} map[string]string "Category not found"
 // @Failure 500 {object} map[string]string "Internal server error"
@@ -107,7 +182,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	var req UpdateCategoryRequest
+	var req request.UpdateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -120,19 +195,8 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	// Update fields
-	if req.Name != "" {
-		category.Name = req.Name
-	}
-	if req.Slug != "" {
-		category.Slug = req.Slug
-	}
-	if req.ParentID != nil {
-		category.ParentID = req.ParentID
-	}
-	if req.Description != "" {
-		category.Description = req.Description
-	}
+	// Update fields using mapper
+	category = mapper.UpdateCategoryRequestToDomain(category, &req)
 
 	// Call service layer
 	if err := h.categoryService.UpdateCategory(c.Request.Context(), category); err != nil {
@@ -141,44 +205,39 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "category updated successfully",
-		"category": category,
-	})
+	c.JSON(http.StatusOK, mapper.CategoryToResponse(category))
 }
 
-// PatchCategoryActive xử lý PATCH /categories/:id/active
-// @Summary Cập nhật trạng thái kích hoạt của danh mục
+// PatchCategoryActive handles PATCH /categories/:id/active
+// @Summary Update category active status
 // @Tags Categories
 // @Accept json
 // @Produce json
 // @Param id path int true "Category ID"
-// @Param request body CategoryActiveRequest true "Trạng thái mới"
+// @Param request body map[string]bool true "Active status" example({"is_active": true})
 // @Success 200 {object} map[string]interface{}
 // @Router /categories/{id}/active [patch]
 func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
-	// 1. Lấy ID từ URL
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
 		return
 	}
 
-	// 2. Bind JSON body
-	var req CategoryActiveRequest
+	var req struct {
+		IsActive bool `json:"is_active" binding:"required"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	// 3. Gọi xuống Service layer (hàm PatchIsActive đã viết ở câu trước)
 	if err := h.categoryService.IsActiveCategory(c.Request.Context(), uint(id), req.IsActive); err != nil {
 		h.logger.Error("failed to patch category status", zap.Uint("id", uint(id)), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 4. Trả về phản hồi thành công
 	c.JSON(http.StatusOK, gin.H{
 		"message":   "category status updated successfully",
 		"is_active": req.IsActive,
@@ -191,7 +250,7 @@ func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
 // @Tags Categories
 // @Produce json
 // @Param id path int true "Category ID"
-// @Success 200 {object} handler.CategoryResponse "Category details"
+// @Success 200 {object} response.CategoryResponse "Category details"
 // @Failure 400 {object} map[string]string "Invalid category ID"
 // @Failure 404 {object} map[string]string "Category not found"
 // @Failure 500 {object} map[string]string "Internal server error"
@@ -209,8 +268,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 		return
 	}
 
-	// Use DTO to prevent domain leak
-	c.JSON(http.StatusOK, ToCategoryResponse(category))
+	c.JSON(http.StatusOK, mapper.CategoryToResponse(category))
 }
 
 // GetCategoryBySlug handles GET /categories/slug/:slug
@@ -219,7 +277,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 // @Tags Categories
 // @Produce json
 // @Param slug path string true "Category Slug"
-// @Success 200 {object} handler.CategoryResponse "Category details"
+// @Success 200 {object} response.CategoryResponse "Category details"
 // @Failure 400 {object} map[string]string "Slug is required"
 // @Failure 404 {object} map[string]string "Category not found"
 // @Failure 500 {object} map[string]string "Internal server error"
@@ -237,8 +295,7 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 		return
 	}
 
-	// Use DTO to prevent domain leak
-	c.JSON(http.StatusOK, ToCategoryResponse(category))
+	c.JSON(http.StatusOK, mapper.CategoryToResponse(category))
 }
 
 // GetAllCategories handles GET /categories
@@ -246,7 +303,7 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 // @Description Get a list of all categories
 // @Tags Categories
 // @Produce json
-// @Success 200 {array} handler.CategoryResponse "List of categories"
+// @Success 200 {object} response.CategoryListResponse "List of categories"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /categories [get]
 func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
@@ -257,8 +314,9 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 		return
 	}
 
-	// Use DTO to prevent domain leak
-	c.JSON(http.StatusOK, ToCategoryResponses(categories))
+	c.JSON(http.StatusOK, response.CategoryListResponse{
+		Data: mapper.CategoriesToResponse(categories),
+	})
 }
 
 // GetAdminCategories handles GET /admin/categories
@@ -268,44 +326,38 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
 // @Param search query string false "Search by name or slug"
-// @Param status query string false "Filter by status (active/inactive/all)"
+// @Param parent_id query int false "Filter by parent ID"
+// @Param is_active query bool false "Filter by active status"
 // @Param sort_by query string false "Sort field (id, name, created_at)" default(id)
 // @Param sort_order query string false "Sort order (asc/desc)" default(desc)
-// @Success 200 {object} domain.AdminCategoryResponse
+// @Success 200 {object} response.AdminCategoryListResponse
 // @Router /categories/admin [get]
 func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
-	// 1. Lấy và chuẩn hóa Query Parameters
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-
-	params := domain.CategoryQueryParams{
-		Page:      page,
-		Limit:     limit,
-		Search:    c.Query("search"),
-		Status:    c.Query("status"),
-		SortBy:    c.DefaultQuery("sort_by", "id"),
-		SortOrder: c.DefaultQuery("sort_order", "desc"),
+	var req request.CategoryQueryRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	// 2. Gọi Service
-	result, err := h.categoryService.GetAdminCategories(c.Request.Context(), params)
+	// Convert DTO to domain params
+	params := mapper.CategoryQueryRequestToDomain(&req)
+
+	// Call service
+	categories, total, totalPages, err := h.categoryService.GetAdminCategories(c.Request.Context(), params)
 	if err != nil {
 		h.logger.Error("failed to get admin categories", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 3. Trả về dữ liệu kèm Metadata phân trang
-	// Map list domain sang list DTO để tránh lộ dữ liệu nhạy cảm
-	response := gin.H{
-		"data":        ToCategoryResponses(result.Data), // Chuyển đổi slice domain sang DTO
-		"total":       result.Total,
-		"page":        result.Page,
-		"limit":       result.Limit,
-		"total_pages": result.TotalPages,
-	}
-
-	c.JSON(http.StatusOK, response)
+	// Return response with pagination metadata
+	c.JSON(http.StatusOK, response.AdminCategoryListResponse{
+		Data:       mapper.CategoriesToResponse(categories),
+		Total:      total,
+		Page:       params.Page,
+		Limit:      params.Limit,
+		TotalPages: totalPages,
+	})
 }
 
 // GetCategoryChildren handles GET /categories/:id/children
@@ -313,8 +365,8 @@ func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
 // @Description Get all child categories of a parent category
 // @Tags Categories
 // @Produce json
-// @Param id path int true "Category ID"
-// @Success 200 {array} handler.CategoryResponse "List of child categories"
+// @Param id path int true "Parent Category ID"
+// @Success 200 {object} response.CategoryListResponse "List of child categories"
 // @Failure 400 {object} map[string]string "Invalid category ID"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /categories/{id}/children [get]
@@ -332,8 +384,9 @@ func (h *CategoryHandler) GetCategoryChildren(c *gin.Context) {
 		return
 	}
 
-	// Use DTO to prevent domain leak
-	c.JSON(http.StatusOK, ToCategoryResponses(children))
+	c.JSON(http.StatusOK, response.CategoryListResponse{
+		Data: mapper.CategoriesToResponse(children),
+	})
 }
 
 // DeleteCategory handles DELETE /categories/:id
