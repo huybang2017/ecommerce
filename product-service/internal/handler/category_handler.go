@@ -7,6 +7,7 @@ import (
 	"product-service/internal/mapper"
 	"product-service/internal/service"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -24,6 +25,38 @@ func NewCategoryHandler(categoryService *service.CategoryService, logger *zap.Lo
 	}
 }
 
+// mapServiceError maps service layer errors to appropriate HTTP status codes
+func (h *CategoryHandler) mapServiceError(c *gin.Context, err error, defaultMsg string) {
+	errMsg := err.Error()
+	errLower := strings.ToLower(errMsg)
+
+	// Check for validation errors (400 Bad Request)
+	if strings.Contains(errLower, "required") ||
+		strings.Contains(errLower, "invalid") ||
+		strings.Contains(errLower, "must") ||
+		strings.Contains(errLower, "cannot") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errMsg})
+		return
+	}
+
+	// Check for conflict errors (409 Conflict)
+	if strings.Contains(errLower, "already exists") ||
+		strings.Contains(errLower, "duplicate") {
+		c.JSON(http.StatusConflict, gin.H{"error": errMsg})
+		return
+	}
+
+	// Check for not found errors (404 Not Found)
+	if strings.Contains(errLower, "not found") {
+		c.JSON(http.StatusNotFound, gin.H{"error": errMsg})
+		return
+	}
+
+	// Default to 500 Internal Server Error
+	h.logger.Error(defaultMsg, zap.Error(err))
+	c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+}
+
 // CreateParentCategory handles POST /categories/admin/parent
 // @Summary Create a new parent category (ADMIN only)
 // @Description Admin creates a new parent category (no parent_id)
@@ -32,9 +65,10 @@ func NewCategoryHandler(categoryService *service.CategoryService, logger *zap.Lo
 // @Produce json
 // @Param request body request.CreateParentCategoryRequest true "Create Parent Category Request"
 // @Success 201 {object} response.CategoryResponse "Parent category created successfully"
-// @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 400 {object} map[string]string "Invalid request payload or validation error"
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 403 {object} map[string]string "Forbidden - Admin role required"
+// @Failure 409 {object} map[string]string "Conflict - category with this slug already exists"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /categories/admin/parent [post]
 func (h *CategoryHandler) CreateParentCategory(c *gin.Context) {
@@ -45,35 +79,31 @@ func (h *CategoryHandler) CreateParentCategory(c *gin.Context) {
 		return
 	}
 
-	// Convert DTO to domain entity
 	category := mapper.CreateParentCategoryRequestToDomain(&req)
 
-	// Call service layer
 	if err := h.categoryService.CreateParentCategory(c.Request.Context(), category); err != nil {
-		h.logger.Error("failed to create parent category", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.mapServiceError(c, err, "failed to create parent category")
 		return
 	}
 
-	// Convert domain to response DTO
 	c.JSON(http.StatusCreated, mapper.CategoryToResponse(category))
 }
 
 // CreateChildCategory handles POST /categories/:id/children
-// @Summary Create a child category under a parent (BUYER)
-// @Description Creates a new child category under the specified parent category
+// @Summary Create a child category under a parent
+// @Description Creates a child category under the specified parent category. The parent category ID is provided in the URL path, NOT in the request body.
 // @Tags Categories
 // @Accept json
 // @Produce json
 // @Param id path int true "Parent Category ID"
-// @Param request body request.CreateChildCategoryRequest true "Create Child Category Request"
+// @Param request body request.CreateChildCategoryRequest true "Child Category Properties (no parent_id)"
 // @Success 201 {object} response.CategoryResponse "Child category created successfully"
-// @Failure 400 {object} map[string]string "Invalid request payload or parent ID"
+// @Failure 400 {object} map[string]string "Invalid request payload, parent ID, or validation error"
 // @Failure 404 {object} map[string]string "Parent category not found"
+// @Failure 409 {object} map[string]string "Conflict - category with this slug already exists"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /categories/{id}/children [post]
 func (h *CategoryHandler) CreateChildCategory(c *gin.Context) {
-	// Parse parent ID from URL
 	parentID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parent category ID"})
@@ -87,53 +117,44 @@ func (h *CategoryHandler) CreateChildCategory(c *gin.Context) {
 		return
 	}
 
-	// Convert DTO to domain entity with parentID
+	// Convert DTO to domain entity with parentID from path
 	category := mapper.CreateChildCategoryRequestToDomain(&req, uint(parentID))
 
 	// Call service layer
 	if err := h.categoryService.CreateChildCategory(c.Request.Context(), category); err != nil {
-		h.logger.Error("failed to create child category", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.mapServiceError(c, err, "failed to create child category")
 		return
 	}
 
-	// Convert domain to response DTO
 	c.JSON(http.StatusCreated, mapper.CategoryToResponse(category))
 }
 
 // CreateCategory handles POST /categories (backward compatibility)
-// @Summary Create a new category
-// @Description Create a new category with name, slug, optional parent_id, and description
+// @Summary Create a new category (generic endpoint)
+// @Description Create a category with optional parent_id in the request body. If parent_id is null or omitted, creates a parent (root) category. If parent_id is provided, creates a child category under that parent.
 // @Tags Categories
 // @Accept json
 // @Produce json
-// @Param request body request.CreateChildCategoryRequest true "Create Category Request"
+// @Param request body request.CreateCategoryRequest true "Create Category Request"
 // @Success 201 {object} response.CategoryResponse "Category created successfully"
-// @Failure 400 {object} map[string]string "Invalid request payload"
+// @Failure 400 {object} map[string]string "Invalid request payload or validation error"
+// @Failure 404 {object} map[string]string "Parent category not found (if parent_id provided)"
+// @Failure 409 {object} map[string]string "Conflict - category with this slug already exists"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /categories [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var req request.CreateChildCategoryRequest
+	var req request.CreateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// For backward compatibility, allow creating without explicit parent
-	// This will use the generic CreateCategory service method
-	category := mapper.CreateParentCategoryRequestToDomain(&request.CreateParentCategoryRequest{
-		Name:        req.Name,
-		Slug:        req.Slug,
-		Description: req.Description,
-		ImageURL:    req.ImageURL,
-		IsActive:    req.IsActive,
-	})
+	category := mapper.CreateCategoryRequestToDomain(&req)
 
 	// Call service layer
 	if err := h.categoryService.CreateCategory(c.Request.Context(), category); err != nil {
-		h.logger.Error("failed to create category", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.mapServiceError(c, err, "failed to create category")
 		return
 	}
 
@@ -200,8 +221,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 	// Call service layer
 	if err := h.categoryService.UpdateCategory(c.Request.Context(), category); err != nil {
-		h.logger.Error("failed to update category", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.mapServiceError(c, err, "failed to update category")
 		return
 	}
 
@@ -408,8 +428,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	}
 
 	if err := h.categoryService.DeleteCategory(c.Request.Context(), uint(id)); err != nil {
-		h.logger.Error("failed to delete category", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		h.mapServiceError(c, err, "failed to delete category")
 		return
 	}
 

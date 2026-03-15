@@ -8,10 +8,18 @@ type CreateParentCategoryRequest struct {
 	IsActive    *bool  `json:"is_active"`
 }
 
+type CreateCategoryRequest struct {
+	ParentID    *uint  `json:"parent_id" binding:"omitempty"`
+	Name        string `json:"name" binding:"required,min=1,max=100"`
+	Slug        string `json:"slug" binding:"omitempty,max=100"`
+	Description string `json:"description" binding:"omitempty,max=500"`
+	ImageURL    string `json:"image_url" binding:"omitempty,url"`
+	IsActive    bool   `json:"is_active"`
+}
+
 type CreateChildCategoryRequest struct {
 	Name        string `json:"name" binding:"required,min=2,max=100"`
 	Slug        string `json:"slug" binding:"omitempty,min=2,max=100"`
-	ParentID    *uint  `json:"parent_id" binding:"required"`
 	Description string `json:"description" binding:"max=500"`
 	ImageURL    string `json:"image_url" binding:"omitempty,url"`
 	IsActive    *bool  `json:"is_active"`

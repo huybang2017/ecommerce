@@ -17,6 +17,7 @@ import { LabelComponent } from "../../../form/label/label.component";
 import { SelectComponent, Option } from "../../../form/select/select.component";
 import { Category } from "../../../../models/category.model";
 import { CategoryQueryService } from "../../../../../core/queries/category-query.service";
+import { Observable } from "rxjs";
 
 interface CategoryForm {
   name: string;
@@ -144,7 +145,7 @@ export class CategoryFormModalComponent implements OnChanges {
       is_active: this.form.is_active,
     };
 
-    let obs$;
+    let obs$: Observable<Category>;
     if (this.isEditing) {
       obs$ = this.query.update(this.category!.id, payload);
     } else if (this.isCreatingParent) {

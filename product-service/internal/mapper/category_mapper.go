@@ -50,6 +50,17 @@ func CreateParentCategoryRequestToDomain(req *request.CreateParentCategoryReques
 	return category
 }
 
+func CreateCategoryRequestToDomain(req *request.CreateCategoryRequest) *domain.Category {
+	return &domain.Category{
+		ParentID:    req.ParentID,
+		Name:        req.Name,
+		Slug:        req.Slug,
+		Description: req.Description,
+		ImageURL:    req.ImageURL,
+		IsActive:    req.IsActive,
+	}
+}
+
 func CreateChildCategoryRequestToDomain(req *request.CreateChildCategoryRequest, parentID uint) *domain.Category {
 	category := &domain.Category{
 		Name:        req.Name,

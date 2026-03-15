@@ -37,7 +37,7 @@ export class CategoryQueryService {
       fetchFn: () =>
         this.api.list({
           page: this.currentPageSubject$.value,
-          page_size: this.pageSizeSubject$.value,
+          limit: this.pageSizeSubject$.value,
           search: this.searchSubject$.value || undefined,
           status: this.statusSubject$.value,
           sort_by: this.sortBySubject$.value,
