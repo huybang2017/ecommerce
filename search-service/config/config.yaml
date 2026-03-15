@@ -3,7 +3,7 @@
 # Environment variables will override these values (using Viper)
 
 server:
-  port: 8002
+  port: 8082
   mode: "debug" # debug, release, test
   read_timeout: 30s
   write_timeout: 30s

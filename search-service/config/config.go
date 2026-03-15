@@ -114,7 +114,7 @@ func LoadConfig(configPath string) (*Config, error) {
 // These are fallbacks if neither config file nor env vars are set
 func setDefaults() {
 	// Server defaults
-	viper.SetDefault("server.port", 8002)
+	viper.SetDefault("server.port", 8082)
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("server.read_timeout", "30s")
 	viper.SetDefault("server.write_timeout", "30s")
