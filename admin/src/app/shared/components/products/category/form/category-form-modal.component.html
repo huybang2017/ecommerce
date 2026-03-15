@@ -1,16 +1,19 @@
 <app-modal [isOpen]="isOpen" (close)="onClose()" className="max-w-lg p-6">
-  <!-- Header -->
   <div class="mb-6">
     <h4 class="text-xl font-semibold text-gray-800 dark:text-white/90">
-      {{ category ? 'Edit Category' : 'Create Category' }}
+      {{ modalTitle }}
     </h4>
     @if (category) {
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">#{{ category.id }}</p>
     }
+    @if (isCreatingParent) {
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Parent categories have no parent and appear at the top level.
+      </p>
+    }
   </div>
 
   <div class="space-y-5">
-    <!-- Name -->
     <div>
       <app-label for="cat-name">
         Name <span class="text-error-500">*</span>
@@ -25,7 +28,6 @@
       />
     </div>
 
-    <!-- Slug -->
     <div>
       <app-label for="cat-slug">Slug</app-label>
       <app-input-field
@@ -36,7 +38,6 @@
       />
     </div>
 
-    <!-- Description -->
     <div>
       <app-label>Description</app-label>
       <app-text-area
@@ -47,7 +48,6 @@
       />
     </div>
 
-    <!-- Image URL -->
     <div>
       <app-label for="cat-image">Image URL</app-label>
       <app-input-field
@@ -58,19 +58,19 @@
       />
     </div>
 
-    <!-- Parent ID -->
-    <div>
-      <app-label for="cat-parent">Parent ID</app-label>
-      <app-input-field
-        id="cat-parent"
-        type="number"
-        placeholder="Leave empty for root category"
-        [value]="form.parent_id ?? ''"
-        (valueChange)="onParentIdChange($event)"
-      />
-    </div>
+    @if (!isCreatingParent) {
+      <div>
+        <app-label for="cat-parent">Parent Category</app-label>
+        <app-select
+          [options]="parentCategoryOptions"
+          [placeholder]="loadingParents ? 'Loading parent categories...' : 'Select Parent Category'"
+          [value]="parentValue"
+          (valueChange)="onParentIdChange($event)"
+          className="dark:bg-dark-900"
+        ></app-select>
+      </div>
+    }
 
-    <!-- Active Status -->
     <div>
       <app-switch
         label="Active"
@@ -80,7 +80,6 @@
     </div>
   </div>
 
-  <!-- Actions -->
   <div class="mt-7 flex justify-end gap-3">
     <app-button size="sm" variant="outline" [disabled]="saving" (btnClick)="onClose()">
       Cancel

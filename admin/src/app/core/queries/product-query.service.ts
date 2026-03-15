@@ -1,11 +1,21 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
-import { Product, ProductCreate, ProductUpdate } from '../../shared/models/product.model';
-import { ProductService } from '../services/product.service';
-import { QueryEngine, QueryInstance, cachePlugin, retryPlugin, loggingPlugin } from '../query-engine';
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { filter } from "rxjs/operators";
+import {
+  Product,
+  ProductCreate,
+  ProductUpdate,
+} from "../../shared/models/product.model";
+import { ProductService } from "../services/product.service";
+import {
+  QueryEngine,
+  QueryInstance,
+  cachePlugin,
+  retryPlugin,
+  loggingPlugin,
+} from "../query-engine";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class ProductQueryService {
   private listQuery: QueryInstance<Product[]>;
 
@@ -14,7 +24,7 @@ export class ProductQueryService {
     private api: ProductService,
   ) {
     this.listQuery = this.engine.query<Product[]>({
-      key: 'products',
+      key: "products",
       fetchFn: () => this.api.list(),
       plugins: [
         cachePlugin({ ttl: 60_000, staleTime: 10_000 }),
@@ -24,13 +34,8 @@ export class ProductQueryService {
     });
   }
 
-  // ─── Reactive Selectors ───────────────────────────────────
-
-  /** Emits only non-null product arrays (waits for first fetch) */
   list$(): Observable<Product[]> {
-    return this.listQuery.data$.pipe(
-      filter((v): v is Product[] => v !== null),
-    );
+    return this.listQuery.data$.pipe(filter((v): v is Product[] => v !== null));
   }
 
   loading$(): Observable<boolean> {
@@ -40,8 +45,6 @@ export class ProductQueryService {
   error$(): Observable<any> {
     return this.listQuery.error$;
   }
-
-  // ─── Actions ──────────────────────────────────────────────
 
   refetch(): void {
     this.listQuery.refetch();
@@ -55,13 +58,11 @@ export class ProductQueryService {
     return this.listQuery.getSnapshot();
   }
 
-  // ─── Mutations ────────────────────────────────────────────
-
   create(payload: ProductCreate): Observable<Product> {
     return this.engine
       .mutation<Product, ProductCreate>({
         mutationFn: (p) => this.api.create(p),
-        invalidateKeys: ['products'],
+        invalidateKeys: ["products"],
       })
       .mutate(payload);
   }
@@ -70,21 +71,20 @@ export class ProductQueryService {
     return this.engine
       .mutation<Product, { id: number; payload: ProductUpdate }>({
         mutationFn: (v) => this.api.update(v.id, v.payload),
-        invalidateKeys: ['products'],
+        invalidateKeys: ["products"],
       })
       .mutate({ id, payload });
   }
 
   delete(id: number): Observable<void> {
-    // Optimistic removal — rolls back on error
-    const rollback = this.listQuery.optimisticUpdate(
-      (cur) => (cur ?? []).filter((p) => p.id !== id),
+    const rollback = this.listQuery.optimisticUpdate((cur) =>
+      (cur ?? []).filter((p) => p.id !== id),
     );
 
     return this.engine
       .mutation<void, number>({
         mutationFn: (pid) => this.api.remove(pid),
-        invalidateKeys: ['products'],
+        invalidateKeys: ["products"],
         onError: () => rollback(),
       })
       .mutate(id);

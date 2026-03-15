@@ -1,40 +1,4 @@
 definitions:
-  domain.AdminCategoryResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/domain.Category'
-        type: array
-      limit:
-        type: integer
-      page:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
-  domain.Category:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      image_url:
-        type: string
-      is_active:
-        type: boolean
-      name:
-        type: string
-      parent_id:
-        type: integer
-      slug:
-        type: string
-      updated_at:
-        type: string
-    type: object
   domain.CategoryAttribute:
     properties:
       attribute_name:
@@ -172,45 +136,6 @@ definitions:
       variation_id:
         type: integer
     type: object
-  handler.CategoryActiveRequest:
-    properties:
-      is_active:
-        type: boolean
-    type: object
-  handler.CategoryResponse:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      image_url:
-        type: string
-      is_active:
-        type: boolean
-      name:
-        type: string
-      parent_id:
-        type: integer
-      slug:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  handler.CreateCategoryRequest:
-    properties:
-      description:
-        type: string
-      name:
-        type: string
-      parent_id:
-        type: integer
-      slug:
-        type: string
-    required:
-    - name
-    type: object
   handler.CreateProductRequest:
     properties:
       base_price:
@@ -264,17 +189,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  handler.UpdateCategoryRequest:
-    properties:
-      description:
-        type: string
-      name:
-        type: string
-      parent_id:
-        type: integer
-      slug:
-        type: string
-    type: object
   handler.UpdateProductRequest:
     properties:
       base_price:
@@ -306,6 +220,112 @@ definitions:
         items:
           $ref: '#/definitions/domain.VariationOption'
         type: array
+    type: object
+  request.CreateChildCategoryRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    - parent_id
+    type: object
+  request.CreateParentCategoryRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
+  request.UpdateCategoryRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        maxLength: 100
+        minLength: 2
+        type: string
+    type: object
+  response.AdminCategoryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/response.CategoryResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.CategoryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/response.CategoryResponse'
+        type: array
+    type: object
+  response.CategoryResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+      updated_at:
+        type: string
     type: object
   service.CreateCategoryAttributeRequest:
     properties:
@@ -384,9 +404,7 @@ paths:
         "200":
           description: List of categories
           schema:
-            items:
-              $ref: '#/definitions/handler.CategoryResponse'
-            type: array
+            $ref: '#/definitions/response.CategoryListResponse'
         "500":
           description: Internal server error
           schema:
@@ -407,15 +425,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.CreateCategoryRequest'
+          $ref: '#/definitions/request.CreateChildCategoryRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Category created successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.CategoryResponse'
         "400":
           description: Invalid request payload
           schema:
@@ -587,7 +604,7 @@ paths:
         "200":
           description: Category details
           schema:
-            $ref: '#/definitions/handler.CategoryResponse'
+            $ref: '#/definitions/response.CategoryResponse'
         "400":
           description: Invalid category ID
           schema:
@@ -624,15 +641,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.UpdateCategoryRequest'
+          $ref: '#/definitions/request.UpdateCategoryRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Category updated successfully
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.CategoryResponse'
         "400":
           description: Invalid request payload or category ID
           schema:
@@ -664,12 +680,14 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Trạng thái mới
+      - description: Active status
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.CategoryActiveRequest'
+          additionalProperties:
+            type: boolean
+          type: object
       produces:
       - application/json
       responses:
@@ -678,14 +696,14 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Cập nhật trạng thái kích hoạt của danh mục
+      summary: Update category active status
       tags:
       - Categories
   /categories/{id}/children:
     get:
       description: Get all child categories of a parent category
       parameters:
-      - description: Category ID
+      - description: Parent Category ID
         in: path
         name: id
         required: true
@@ -696,9 +714,7 @@ paths:
         "200":
           description: List of child categories
           schema:
-            items:
-              $ref: '#/definitions/handler.CategoryResponse'
-            type: array
+            $ref: '#/definitions/response.CategoryListResponse'
         "400":
           description: Invalid category ID
           schema:
@@ -712,6 +728,50 @@ paths:
               type: string
             type: object
       summary: Get child categories
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Creates a new child category under the specified parent category
+      parameters:
+      - description: Parent Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Create Child Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateChildCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Child category created successfully
+          schema:
+            $ref: '#/definitions/response.CategoryResponse'
+        "400":
+          description: Invalid request payload or parent ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Parent category not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a child category under a parent (BUYER)
       tags:
       - Categories
   /categories/{id}/products:
@@ -773,10 +833,14 @@ paths:
         in: query
         name: search
         type: string
-      - description: Filter by status (active/inactive/all)
+      - description: Filter by parent ID
         in: query
-        name: status
-        type: string
+        name: parent_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
       - default: id
         description: Sort field (id, name, created_at)
         in: query
@@ -793,8 +857,77 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.AdminCategoryResponse'
+            $ref: '#/definitions/response.AdminCategoryListResponse'
       summary: Get categories for admin with pagination, filter and sort
+      tags:
+      - Admin Categories
+  /categories/admin/parent:
+    post:
+      consumes:
+      - application/json
+      description: Admin creates a new parent category (no parent_id)
+      parameters:
+      - description: Create Parent Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateParentCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Parent category created successfully
+          schema:
+            $ref: '#/definitions/response.CategoryResponse'
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - Admin role required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new parent category (ADMIN only)
+      tags:
+      - Admin Categories
+  /categories/admin/parents:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of parent categories for admin management
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of parent categories
+          schema:
+            items:
+              $ref: '#/definitions/response.CategoryResponse'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get parent categories for admin
       tags:
       - Admin Categories
   /categories/slug/{slug}:
@@ -812,7 +945,7 @@ paths:
         "200":
           description: Category details
           schema:
-            $ref: '#/definitions/handler.CategoryResponse'
+            $ref: '#/definitions/response.CategoryResponse'
         "400":
           description: Slug is required
           schema:

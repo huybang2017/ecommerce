@@ -26,6 +26,59 @@ func NewCategoryService(
 	}
 }
 
+func (s *CategoryService) CreateParentCategory(ctx context.Context, category *domain.Category) error {
+	if category.ParentID != nil {
+		return errors.New("parent category cannot have a parent_id")
+	}
+	if category.Name == "" {
+		return errors.New("category name is required")
+	}
+	if category.Slug == "" {
+		category.Slug = s.generateSlug(category.Name)
+	}
+	existing, err := s.categoryRepo.GetBySlug(category.Slug)
+	if err == nil && existing != nil {
+		return errors.New("category with this slug already exists")
+	}
+	if err := s.categoryRepo.Create(category); err != nil {
+		s.logger.Error("failed to create parent category in database", zap.Error(err))
+		return fmt.Errorf("failed to create parent category: %w", err)
+	}
+
+	s.logger.Info("parent category created", zap.Uint("category_id", category.ID))
+	return nil
+}
+
+func (s *CategoryService) CreateChildCategory(ctx context.Context, category *domain.Category) error {
+	if category.ParentID == nil {
+		return errors.New("child category must have a parent_id")
+	}
+	if category.Name == "" {
+		return errors.New("category name is required")
+	}
+	parent, err := s.categoryRepo.GetByID(*category.ParentID)
+	if err != nil || parent == nil {
+		return errors.New("parent category not found")
+	}
+	if category.Slug == "" {
+		category.Slug = s.generateSlug(category.Name)
+	}
+	existing, err := s.categoryRepo.GetBySlug(category.Slug)
+	if err == nil && existing != nil {
+		return errors.New("category with this slug already exists")
+	}
+	if err := s.categoryRepo.Create(category); err != nil {
+		s.logger.Error("failed to create child category in database", zap.Error(err))
+		return fmt.Errorf("failed to create child category: %w", err)
+	}
+
+	s.logger.Info("child category created",
+		zap.Uint("category_id", category.ID),
+		zap.Uint("parent_id", *category.ParentID),
+	)
+	return nil
+}
+
 func (s *CategoryService) CreateCategory(ctx context.Context, category *domain.Category) error {
 	if category.Name == "" {
 		return errors.New("category name is required")
@@ -133,7 +186,7 @@ func (s *CategoryService) GetCategory(ctx context.Context, id uint) (*domain.Cat
 	return category, nil
 }
 
-func (s *CategoryService) GetAdminCategories(ctx context.Context, params domain.CategoryQueryParams) (*domain.AdminCategoryResponse, error) {
+func (s *CategoryService) GetAdminCategories(ctx context.Context, params domain.CategoryQueryParams) ([]*domain.Category, int64, int, error) {
 	if params.Page <= 0 {
 		params.Page = 1
 	}
@@ -149,18 +202,20 @@ func (s *CategoryService) GetAdminCategories(ctx context.Context, params domain.
 
 	categories, total, err := s.categoryRepo.GetAdminList(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch admin categories: %w", err)
+		return nil, 0, 0, fmt.Errorf("failed to fetch admin categories: %w", err)
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(params.Limit)))
 
-	return &domain.AdminCategoryResponse{
-		Data:       categories,
-		Total:      total,
-		Page:       params.Page,
-		Limit:      params.Limit,
-		TotalPages: totalPages,
-	}, nil
+	return categories, total, totalPages, nil
+}
+
+func (s *CategoryService) GetAdminCategoryParent(ctx context.Context) ([]*domain.Category, error) {
+	parents, err := s.categoryRepo.GetAdminCategoryParent(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get admin category parents: %w", err)
+	}
+	return parents, nil
 }
 
 func (s *CategoryService) GetCategoryBySlug(ctx context.Context, slug string) (*domain.Category, error) {

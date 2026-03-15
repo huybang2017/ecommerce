@@ -20,12 +20,6 @@ type SessionData struct {
 	UserID int64  `json:"user_id"`
 }
 
-const (
-	RoleAdmin  = "ADMIN"
-	RoleSeller = "SELLER"
-	RoleBuyer  = "BUYER"
-)
-
 // resolvedPrefix reads the role_prefix set by RoleCookieRouter middleware.
 // Falls back to deriving it from X-App-Role if the router hasn't run (backward compat).
 func resolvedPrefix(c *gin.Context) string {

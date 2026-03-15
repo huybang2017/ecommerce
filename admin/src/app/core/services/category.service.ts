@@ -1,14 +1,26 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Category, PaginatedResponse } from '../../shared/models/category.model';
-import { HttpApiService } from './http-api.service';
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
+import {
+  Category,
+  PaginatedResponse,
+} from "../../shared/models/category.model";
+import { HttpApiService } from "./http-api.service";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class CategoryService {
   constructor(private api: HttpApiService) {}
 
   list(params?: any): Observable<PaginatedResponse<Category>> {
-    return this.api.get<PaginatedResponse<Category>>('/categories/admin', { params });
+    return this.api.get<PaginatedResponse<Category>>("/categories/admin", {
+      params,
+    });
+  }
+
+  listParentCategoriesAdmin(): Observable<Category[]> {
+    return this.api.get<{ data: Category[] }>("/categories/admin/parents").pipe(
+      map((response) => response.data)
+    );
   }
 
   getById(id: number): Observable<Category> {
@@ -16,7 +28,11 @@ export class CategoryService {
   }
 
   create(payload: Partial<Category>): Observable<Category> {
-    return this.api.post<Category>('/categories', payload);
+    return this.api.post<Category>("/categories", payload);
+  }
+
+  createCategoryParent(payload: Partial<Category>): Observable<Category> {
+    return this.api.post<Category>("/categories/admin/parent", payload);
   }
 
   update(id: number, payload: Partial<Category>): Observable<Category> {
