@@ -10,11 +10,11 @@ export interface Category {
   updated_at: string;
 }
 
-export type CategorySortBy = 'id' | 'name' | 'slug' | 'is_active' | 'created_at' | 'updated_at';
+export type CategorySortBy = 'id' | 'name' | 'created_at' | 'updated_at';
 
 export interface CategoryListParams {
   page?: number;
-  page_size?: number;
+  limit?: number;
   search?: string;
   status?: 'all' | 'active' | 'inactive';
   sort_by?: CategorySortBy;
