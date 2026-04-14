@@ -221,6 +221,27 @@ definitions:
           $ref: '#/definitions/domain.VariationOption'
         type: array
     type: object
+  request.CreateCategoryRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        maxLength: 100
+        type: string
+    required:
+    - name
+    type: object
   request.CreateChildCategoryRequest:
     properties:
       description:
@@ -234,15 +255,12 @@ definitions:
         maxLength: 100
         minLength: 2
         type: string
-      parent_id:
-        type: integer
       slug:
         maxLength: 100
         minLength: 2
         type: string
     required:
     - name
-    - parent_id
     type: object
   request.CreateParentCategoryRequest:
     properties:
@@ -325,6 +343,21 @@ definitions:
       slug:
         type: string
       updated_at:
+        type: string
+    type: object
+  response.CategoryTreeResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/response.CategoryResponse'
+        type: array
+    type: object
+  response.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
         type: string
     type: object
   service.CreateCategoryAttributeRequest:
@@ -417,15 +450,16 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new category with name, slug, optional parent_id, and
-        description
+      description: Create a category with optional parent_id in the request body.
+        If parent_id is null or omitted, creates a parent (root) category. If parent_id
+        is provided, creates a child category under that parent.
       parameters:
       - description: Create Category Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CreateChildCategoryRequest'
+          $ref: '#/definitions/request.CreateCategoryRequest'
       produces:
       - application/json
       responses:
@@ -434,7 +468,19 @@ paths:
           schema:
             $ref: '#/definitions/response.CategoryResponse'
         "400":
-          description: Invalid request payload
+          description: Invalid request payload or validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Parent category not found (if parent_id provided)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict - category with this slug already exists
           schema:
             additionalProperties:
               type: string
@@ -445,7 +491,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new category
+      summary: Create a new category (generic endpoint)
       tags:
       - Categories
   /categories/{category_id}/attributes:
@@ -733,14 +779,15 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new child category under the specified parent category
+      description: Creates a child category under the specified parent category. The
+        parent category ID is provided in the URL path, NOT in the request body.
       parameters:
       - description: Parent Category ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Create Child Category Request
+      - description: Child Category Properties (no parent_id)
         in: body
         name: request
         required: true
@@ -754,7 +801,7 @@ paths:
           schema:
             $ref: '#/definitions/response.CategoryResponse'
         "400":
-          description: Invalid request payload or parent ID
+          description: Invalid request payload, parent ID, or validation error
           schema:
             additionalProperties:
               type: string
@@ -765,13 +812,19 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "409":
+          description: Conflict - category with this slug already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Create a child category under a parent (BUYER)
+      summary: Create a child category under a parent
       tags:
       - Categories
   /categories/{id}/products:
@@ -881,7 +934,7 @@ paths:
           schema:
             $ref: '#/definitions/response.CategoryResponse'
         "400":
-          description: Invalid request payload
+          description: Invalid request payload or validation error
           schema:
             additionalProperties:
               type: string
@@ -894,6 +947,12 @@ paths:
             type: object
         "403":
           description: Forbidden - Admin role required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict - category with this slug already exists
           schema:
             additionalProperties:
               type: string
@@ -965,6 +1024,25 @@ paths:
               type: string
             type: object
       summary: Get a category by slug
+      tags:
+      - Categories
+  /categories/tree:
+    get:
+      consumes:
+      - application/json
+      description: Get all categories in a hierarchical tree structure
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.CategoryTreeResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get category tree
       tags:
       - Categories
   /product-items/{id}/stock:

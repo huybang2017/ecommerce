@@ -114,6 +114,7 @@ func SetupRouter(
 				categories.GET("/slug/:slug", gatewayHandler.ProxyRequest)
 				categories.GET("/:id/children", gatewayHandler.ProxyRequest)
 				categories.GET("/:id/products", gatewayHandler.ProxyRequest)
+				categories.GET("/tree", gatewayHandler.ProxyRequest)
 
 				// Protected: RoleCookieRouter → Auth → Session
 				protected := categories.Group("")

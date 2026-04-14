@@ -113,3 +113,40 @@ func CategoryQueryRequestToDomain(req *request.CategoryQueryRequest) domain.Cate
 		SortOrder: req.SortOrder,
 	}
 }
+
+func BuildCategoryTree(categories []*domain.Category) []*response.CategoryResponse {
+	categoryMap := make(map[uint]*response.CategoryResponse)
+	var roots []*response.CategoryResponse
+
+	for _, c := range categories {
+		categoryMap[c.ID] = &response.CategoryResponse{
+			ID:          c.ID,
+			ParentID:    c.ParentID,
+			Name:        c.Name,
+			Slug:        c.Slug,
+			Description: c.Description,
+			ImageURL:    c.ImageURL,
+			IsActive:    c.IsActive,
+			CreatedAt:   c.CreatedAt,
+			UpdatedAt:   c.UpdatedAt,
+		}
+	}
+
+	for _, c := range categories {
+		node := categoryMap[c.ID]
+
+		if c.ParentID == nil {
+			roots = append(roots, node)
+		} else {
+			parent, ok := categoryMap[*c.ParentID]
+			if ok {
+				parent.Children = append(parent.Children, node)
+			} else {
+				// Keep orphaned categories visible instead of dropping them.
+				roots = append(roots, node)
+			}
+		}
+	}
+
+	return roots
+}

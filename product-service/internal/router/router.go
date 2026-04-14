@@ -85,6 +85,7 @@ func SetupRouter(productHandler *handler.ProductHandler, categoryHandler *handle
 			categories.POST("/:id/attributes", attrHandler.CreateCategoryAttribute)
 			categories.GET("/:id/attributes", attrHandler.GetCategoryAttributes)
 			categories.DELETE("/:id/attributes/:attr_id", attrHandler.DeleteCategoryAttribute)
+			categories.GET("/tree", categoryHandler.GetCategoryTree)
 
 			adminCategories := categories.Group("/admin")
 			{
