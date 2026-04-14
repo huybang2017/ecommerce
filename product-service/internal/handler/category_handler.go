@@ -6,6 +6,7 @@ import (
 	"product-service/internal/dto/response"
 	"product-service/internal/mapper"
 	"product-service/internal/service"
+	"product-service/pkg/utils"
 	"strconv"
 	"strings"
 
@@ -433,4 +434,29 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "category deleted successfully"})
+}
+
+// @Summary Get category tree
+// @Description Get all categories in a hierarchical tree structure
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.CategoryTreeResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /categories/tree [get]
+func (h *CategoryHandler) GetCategoryTree(c *gin.Context) {
+	categories, err := h.categoryService.GetAllCategories(c.Request.Context())
+	if err != nil {
+		h.logger.Error("failed to get category tree", zap.Error(err))
+		utils.Error(
+			c,
+			http.StatusInternalServerError,
+			"INTERNAL_ERROR",
+			"Failed to get category tree",
+		)
+		return
+	}
+	c.JSON(http.StatusOK, response.CategoryTreeResponse{
+		Data: mapper.BuildCategoryTree(categories),
+	})
 }

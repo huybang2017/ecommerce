@@ -44,7 +44,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new category with name, slug, optional parent_id, and description",
+                "description": "Create a category with optional parent_id in the request body. If parent_id is null or omitted, creates a parent (root) category. If parent_id is provided, creates a child category under that parent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -54,7 +54,7 @@ const docTemplate = `{
                 "tags": [
                     "Categories"
                 ],
-                "summary": "Create a new category",
+                "summary": "Create a new category (generic endpoint)",
                 "parameters": [
                     {
                         "description": "Create Category Request",
@@ -62,7 +62,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CreateChildCategoryRequest"
+                            "$ref": "#/definitions/request.CreateCategoryRequest"
                         }
                     }
                 ],
@@ -74,7 +74,25 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request payload or validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Parent category not found (if parent_id provided)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - category with this slug already exists",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -193,7 +211,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload",
+                        "description": "Invalid request payload or validation error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -212,6 +230,15 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden - Admin role required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - category with this slug already exists",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -317,6 +344,35 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/tree": {
+            "get": {
+                "description": "Get all categories in a hierarchical tree structure",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get category tree",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.CategoryTreeResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
                         }
                     }
                 }
@@ -742,7 +798,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a new child category under the specified parent category",
+                "description": "Creates a child category under the specified parent category. The parent category ID is provided in the URL path, NOT in the request body.",
                 "consumes": [
                     "application/json"
                 ],
@@ -752,7 +808,7 @@ const docTemplate = `{
                 "tags": [
                     "Categories"
                 ],
-                "summary": "Create a child category under a parent (BUYER)",
+                "summary": "Create a child category under a parent",
                 "parameters": [
                     {
                         "type": "integer",
@@ -762,7 +818,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Create Child Category Request",
+                        "description": "Child Category Properties (no parent_id)",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -779,7 +835,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload or parent ID",
+                        "description": "Invalid request payload, parent ID, or validation error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -789,6 +845,15 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Parent category not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - category with this slug already exists",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2348,11 +2413,40 @@ const docTemplate = `{
                 }
             }
         },
+        "request.CreateCategoryRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "parent_id": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
         "request.CreateChildCategoryRequest": {
             "type": "object",
             "required": [
-                "name",
-                "parent_id"
+                "name"
             ],
             "properties": {
                 "description": {
@@ -2369,9 +2463,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 2
-                },
-                "parent_id": {
-                    "type": "integer"
                 },
                 "slug": {
                     "type": "string",
@@ -2498,6 +2589,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.CategoryTreeResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.CategoryResponse"
+                    }
+                }
+            }
+        },
+        "response.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {},
+                "message": {
                     "type": "string"
                 }
             }
