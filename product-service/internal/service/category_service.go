@@ -34,7 +34,7 @@ func (s *CategoryService) CreateParentCategory(ctx context.Context, category *do
 		return errors.New("category name is required")
 	}
 	if category.Slug == "" {
-		category.Slug = s.GenerateSlug(category.Name)
+		category.Slug = s.generateSlug(category.Name)
 	}
 	existing, err := s.categoryRepo.GetBySlug(category.Slug)
 	if err == nil && existing != nil {
@@ -61,7 +61,7 @@ func (s *CategoryService) CreateChildCategory(ctx context.Context, category *dom
 		return errors.New("parent category not found")
 	}
 	if category.Slug == "" {
-		category.Slug = s.GenerateSlug(category.Name)
+		category.Slug = s.generateSlug(category.Name)
 	}
 	existing, err := s.categoryRepo.GetBySlug(category.Slug)
 	if err == nil && existing != nil {
@@ -85,7 +85,7 @@ func (s *CategoryService) CreateCategory(ctx context.Context, category *domain.C
 	}
 
 	if category.Slug == "" {
-		category.Slug = s.GenerateSlug(category.Name)
+		category.Slug = s.generateSlug(category.Name)
 	}
 
 	existing, err := s.categoryRepo.GetBySlug(category.Slug)
@@ -147,7 +147,7 @@ func (s *CategoryService) UpdateCategory(ctx context.Context, category *domain.C
 	}
 
 	if category.Name != existing.Name && category.Slug == "" {
-		category.Slug = s.GenerateSlug(category.Name)
+		category.Slug = s.generateSlug(category.Name)
 	}
 
 	if category.Slug != existing.Slug {
@@ -264,7 +264,7 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *CategoryService) GenerateSlug(name string) string {
+func (s *CategoryService) generateSlug(name string) string {
 	slug := strings.ToLower(name)
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "_", "-")

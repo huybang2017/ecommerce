@@ -326,6 +326,10 @@ definitions:
     type: object
   response.CategoryResponse:
     properties:
+      children:
+        items:
+          $ref: '#/definitions/response.CategoryResponse'
+        type: array
       created_at:
         type: string
       description:
@@ -351,14 +355,6 @@ definitions:
         items:
           $ref: '#/definitions/response.CategoryResponse'
         type: array
-    type: object
-  response.ErrorResponse:
-    properties:
-      code:
-        type: string
-      details: {}
-      message:
-        type: string
     type: object
   service.CreateCategoryAttributeRequest:
     properties:
@@ -425,6 +421,14 @@ definitions:
       status:
         type: string
     type: object
+  utils.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -441,9 +445,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get all categories
       tags:
       - Categories
@@ -470,27 +472,19 @@ paths:
         "400":
           description: Invalid request payload or validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Parent category not found (if parent_id provided)
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "409":
           description: Conflict - category with this slug already exists
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Create a new category (generic endpoint)
       tags:
       - Categories
@@ -618,21 +612,15 @@ paths:
         "400":
           description: Invalid category ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Category not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error or category has children
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Delete a category
       tags:
       - Categories
@@ -654,21 +642,15 @@ paths:
         "400":
           description: Invalid category ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Category not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get a category by ID
       tags:
       - Categories
@@ -698,21 +680,15 @@ paths:
         "400":
           description: Invalid request payload or category ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Category not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Update an existing category
       tags:
       - Categories
@@ -764,15 +740,11 @@ paths:
         "400":
           description: Invalid category ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get child categories
       tags:
       - Categories
@@ -803,27 +775,19 @@ paths:
         "400":
           description: Invalid request payload, parent ID, or validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Parent category not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "409":
           description: Conflict - category with this slug already exists
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Create a child category under a parent
       tags:
       - Categories
@@ -936,33 +900,23 @@ paths:
         "400":
           description: Invalid request payload or validation error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "403":
           description: Forbidden - Admin role required
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "409":
           description: Conflict - category with this slug already exists
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Create a new parent category (ADMIN only)
       tags:
       - Admin Categories
@@ -983,9 +937,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get parent categories for admin
       tags:
       - Admin Categories
@@ -1008,21 +960,15 @@ paths:
         "400":
           description: Slug is required
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Category not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get a category by slug
       tags:
       - Categories
@@ -1041,7 +987,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get category tree
       tags:
       - Categories
