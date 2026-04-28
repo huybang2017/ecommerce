@@ -36,26 +36,26 @@ func (h *CategoryHandler) mapServiceError(c *gin.Context, err error, defaultMsg 
 		strings.Contains(errLower, "invalid") ||
 		strings.Contains(errLower, "must") ||
 		strings.Contains(errLower, "cannot") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errMsg})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", errMsg)
 		return
 	}
 
 	// Check for conflict errors (409 Conflict)
 	if strings.Contains(errLower, "already exists") ||
 		strings.Contains(errLower, "duplicate") {
-		c.JSON(http.StatusConflict, gin.H{"error": errMsg})
+		utils.Error(c, http.StatusConflict, "CONFLICT", errMsg)
 		return
 	}
 
 	// Check for not found errors (404 Not Found)
 	if strings.Contains(errLower, "not found") {
-		c.JSON(http.StatusNotFound, gin.H{"error": errMsg})
+		utils.Error(c, http.StatusNotFound, "NOT_FOUND", errMsg)
 		return
 	}
 
 	// Default to 500 Internal Server Error
 	h.logger.Error(defaultMsg, zap.Error(err))
-	c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+	utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", errMsg)
 }
 
 // CreateParentCategory handles POST /categories/admin/parent
@@ -76,7 +76,7 @@ func (h *CategoryHandler) CreateParentCategory(c *gin.Context) {
 	var req request.CreateParentCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
@@ -107,14 +107,14 @@ func (h *CategoryHandler) CreateParentCategory(c *gin.Context) {
 func (h *CategoryHandler) CreateChildCategory(c *gin.Context) {
 	parentID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parent category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid parent category ID")
 		return
 	}
 
 	var req request.CreateChildCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	var req request.CreateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
@@ -175,7 +175,7 @@ func (h *CategoryHandler) GetAdminCategoryParent(c *gin.Context) {
 	parents, err := h.categoryService.GetAdminCategoryParent(c.Request.Context())
 	if err != nil {
 		h.logger.Error("failed to get admin category parents", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
 
@@ -200,20 +200,20 @@ func (h *CategoryHandler) GetAdminCategoryParent(c *gin.Context) {
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid category ID")
 		return
 	}
 
 	var req request.UpdateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
 	// Get existing category
 	category, err := h.categoryService.GetCategory(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+		utils.Error(c, http.StatusNotFound, "NOT_FOUND", "category not found")
 		return
 	}
 
@@ -241,7 +241,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid category ID")
 		return
 	}
 
@@ -249,13 +249,13 @@ func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
 		IsActive bool `json:"is_active" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid request body")
 		return
 	}
 
 	if err := h.categoryService.IsActiveCategory(c.Request.Context(), uint(id), req.IsActive); err != nil {
 		h.logger.Error("failed to patch category status", zap.Uint("id", uint(id)), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
 
@@ -279,13 +279,13 @@ func (h *CategoryHandler) PatchCategoryActive(c *gin.Context) {
 func (h *CategoryHandler) GetCategory(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid category ID")
 		return
 	}
 
 	category, err := h.categoryService.GetCategory(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+		utils.Error(c, http.StatusNotFound, "NOT_FOUND", "category not found")
 		return
 	}
 
@@ -306,13 +306,13 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 	slug := c.Param("slug")
 	if slug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "slug is required"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "slug is required")
 		return
 	}
 
 	category, err := h.categoryService.GetCategoryBySlug(c.Request.Context(), slug)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+		utils.Error(c, http.StatusNotFound, "NOT_FOUND", "category not found")
 		return
 	}
 
@@ -331,7 +331,7 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 	categories, err := h.categoryService.GetAllCategories(c.Request.Context())
 	if err != nil {
 		h.logger.Error("failed to get all categories", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
 
@@ -356,7 +356,7 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
 	var req request.CategoryQueryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
@@ -367,7 +367,7 @@ func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
 	categories, total, totalPages, err := h.categoryService.GetAdminCategories(c.Request.Context(), params)
 	if err != nil {
 		h.logger.Error("failed to get admin categories", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
 
@@ -394,14 +394,14 @@ func (h *CategoryHandler) GetAdminCategories(c *gin.Context) {
 func (h *CategoryHandler) GetCategoryChildren(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid category ID")
 		return
 	}
 
 	children, err := h.categoryService.GetCategoryChildren(c.Request.Context(), uint(id))
 	if err != nil {
 		h.logger.Error("failed to get category children", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
 	}
 
@@ -424,7 +424,7 @@ func (h *CategoryHandler) GetCategoryChildren(c *gin.Context) {
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		utils.Error(c, http.StatusBadRequest, "BAD_REQUEST", "invalid category ID")
 		return
 	}
 
