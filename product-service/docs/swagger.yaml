@@ -326,6 +326,10 @@ definitions:
     type: object
   response.CategoryResponse:
     properties:
+      children:
+        items:
+          $ref: '#/definitions/response.CategoryResponse'
+        type: array
       created_at:
         type: string
       description:
@@ -351,14 +355,6 @@ definitions:
         items:
           $ref: '#/definitions/response.CategoryResponse'
         type: array
-    type: object
-  response.ErrorResponse:
-    properties:
-      code:
-        type: string
-      details: {}
-      message:
-        type: string
     type: object
   service.CreateCategoryAttributeRequest:
     properties:
@@ -423,6 +419,14 @@ definitions:
       qty_in_stock:
         type: integer
       status:
+        type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
         type: string
     type: object
 info:
@@ -1041,7 +1045,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.ErrorResponse'
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get category tree
       tags:
       - Categories

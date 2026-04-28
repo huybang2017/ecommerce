@@ -442,7 +442,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} response.CategoryTreeResponse
-// @Failure 500 {object} response.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
 // @Router /categories/tree [get]
 func (h *CategoryHandler) GetCategoryTree(c *gin.Context) {
 	categories, err := h.categoryService.GetAllCategories(c.Request.Context())
